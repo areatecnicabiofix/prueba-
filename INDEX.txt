@@ -302,21 +302,19 @@
   }
 
   async function fetchLotes(tipo, medida) {
-    document.getElementById('lotes-loading').classList.remove('hidden');
-    hideMsg();
-    try {
-      const res = await fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        body: JSON.stringify({ accion: 'obtenerLotes', tipo_imp: tipo, medida: medida })
-      });
-      const data = await res.json();
-      if (!data.ok) throw new Error(data.error);
-      mostrarLotes(data.lotes || [], data.rowIndex || null);
-    } catch (err) {
-      document.getElementById('lotes-loading').classList.add('hidden');
-      showError('No se pudo obtener los lotes: ' + err.message);
-    }
+  document.getElementById('lotes-loading').classList.remove('hidden');
+  hideMsg();
+  try {
+    const url = `${APPS_SCRIPT_URL}?accion=obtenerLotes&tipo_imp=${encodeURIComponent(tipo)}&medida=${encodeURIComponent(medida)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    mostrarLotes(data.lotes || [], data.rowIndex || null);
+  } catch (err) {
+    document.getElementById('lotes-loading').classList.add('hidden');
+    showError('No se pudo obtener los lotes: ' + err.message);
   }
+}
 
   function mostrarLotes(lotes, rowIndex) {
     document.getElementById('lotes-loading').classList.add('hidden');
