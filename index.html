@@ -301,19 +301,32 @@
     if (m) fetchLotes(state.tipo, m);
   }
 
-  async function fetchLotes(tipo, medida) {
+  async function function fetchLotes(tipo, medida) {
   document.getElementById('lotes-loading').classList.remove('hidden');
   hideMsg();
-  try {
-    const url = `${APPS_SCRIPT_URL}?accion=obtenerLotes&tipo_imp=${encodeURIComponent(tipo)}&medida=${encodeURIComponent(medida)}`;
-    const res = await fetch(url);
-    const data = await res.json();
-    if (!data.ok) throw new Error(data.error);
-    mostrarLotes(data.lotes || [], data.rowIndex || null);
-  } catch (err) {
+  
+  var callbackName = 'cb_' + Date.now();
+  var script = document.createElement('script');
+  
+  window[callbackName] = function(data) {
+    delete window[callbackName];
+    document.body.removeChild(script);
     document.getElementById('lotes-loading').classList.add('hidden');
-    showError('No se pudo obtener los lotes: ' + err.message);
-  }
+    if (!data.ok) {
+      showError('Error: ' + data.error);
+      return;
+    }
+    mostrarLotes(data.lotes || [], data.rowIndex || null);
+  };
+  
+  var url = APPS_SCRIPT_URL + 
+    '?accion=obtenerLotes' +
+    '&tipo_imp=' + encodeURIComponent(tipo) +
+    '&medida=' + encodeURIComponent(medida) +
+    '&callback=' + callbackName;
+    
+  script.src = url;
+  document.body.appendChild(script);
 }
 
   function mostrarLotes(lotes, rowIndex) {
