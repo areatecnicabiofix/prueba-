@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Stock Implantes</title>
+  <title>Stock Implantes - Buscador Inteligente por Hojas</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -15,382 +15,328 @@
     .q{margin-bottom:1.25rem}
     .q.hidden,.hidden{display:none!important}
     .label{font-size:13px;font-weight:500;color:#374151;display:block;margin-bottom:6px}
-    .sub{font-size:12px;color:#6b7280;display:block;margin-bottom:7px}
-    .hint{font-size:11px;color:#9ca3af;margin-top:5px;display:block}
+    .hint{font-size:11px;color:#2563eb;margin-top:5px;display:block;font-weight:500}
     select,input[type=text],input[type=number],textarea{width:100%;padding:10px 12px;border-radius:8px;border:0.5px solid #d1d5db;background:#f9fafb;font-size:14px;color:#111827;font-family:inherit}
     select:focus,input:focus,textarea:focus{outline:none;border-color:#2563eb;background:#fff}
-    textarea{resize:vertical;min-height:72px}
     .radio-row{display:flex;gap:8px;flex-wrap:wrap}
-    .ropt{flex:1;min-width:100px;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 14px;border:0.5px solid #d1d5db;border-radius:8px;cursor:pointer;font-size:14px;background:#f9fafb;color:#374151;user-select:none;transition:all .15s}
-    .ropt.dep.on{background:#f0fdf4;color:#15803d;border-color:#86efac;font-weight:500}
-    .ropt.sal.on{background:#fff7ed;color:#c2410c;border-color:#fdba74;font-weight:500}
-    .ropt.sub-sal.on{background:#fff7ed;color:#c2410c;border-color:#fdba74;font-weight:500}
-    .btn{padding:11px 24px;border-radius:8px;background:#2563eb;color:#fff;font-size:14px;font-weight:500;border:none;cursor:pointer;font-family:inherit}
-    .btn:hover{background:#1d4ed8}
-    .btn:disabled{background:#93c5fd;cursor:not-allowed}
-    .btn-sec{padding:10px 16px;border-radius:8px;background:transparent;color:#6b7280;font-size:13px;border:0.5px solid #d1d5db;cursor:pointer;font-family:inherit}
-    .divider{height:0.5px;background:#f1f5f9;margin:1.25rem 0}
-    .section-label{font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.07em;margin:1.25rem 0 .75rem;display:block}
-    .loading-row{display:flex;align-items:center;gap:8px;font-size:13px;color:#6b7280;padding:8px 0}
-    .spinner{width:16px;height:16px;border:2px solid #e2e8f0;border-top-color:#2563eb;border-radius:50%;animation:spin .6s linear infinite;flex-shrink:0}
+    .ropt{flex:1;min-width:100px;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 14px;border:0.5px solid #d1d5db;border-radius:8px;cursor:pointer;font-size:13px;background:#f9fafb;color:#374151;user-select:none;transition:all .15s}
+    .ropt.on{border-width:1.5px}
+    .ropt.dep.on{background:#f0fdf4;color:#15803d;border-color:#15803d}
+    .ropt.sal.on{background:#fff7ed;color:#c2410c;border-color:#c2410c}
+    .ropt.apa.on{background:#f0f9ff;color:#0369a1;border-color:#0369a1}
+    .btn{width:100%;padding:12px;border-radius:8px;background:#2563eb;color:#fff;font-size:14px;font-weight:600;border:none;cursor:pointer;margin-top:10px}
+    .btn:disabled{background:#cbd5e1;cursor:not-allowed}
+    .loading-overlay{display:flex;align-items:center;gap:8px;font-size:13px;color:#2563eb;padding:10px;background:#eff6ff;border-radius:8px;margin-bottom:1rem}
+    .spinner{width:14px;height:14px;border:2px solid #2563eb;border-top-color:transparent;border-radius:50%;animation:spin .6s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
-    .alert{border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:1rem;display:flex;align-items:flex-start;gap:8px}
-    .alert-success{background:#f0fdf4;color:#166534;border:0.5px solid #bbf7d0}
-    .alert-error{background:#fef2f2;color:#991b1b;border:0.5px solid #fecaca}
-    .summary-box{background:#f8fafc;border:0.5px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin:1rem 0}
-    .summary-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}
-    .summary-row .sk{color:#6b7280}
-    .summary-row .sv{color:#111827;font-weight:500}
-    .lote-nuevo-tag{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:99px;background:#fefce8;color:#854d0e;border:0.5px solid #fde68a;font-size:11px;font-weight:500;margin-left:6px}
+    .summary-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin:1rem 0}
+    .summary-row{display:flex;justify-content:space-between;font-size:12px;padding:2px 0}
   </style>
 </head>
 <body>
 <div class="card">
   <div class="header">
-    <div class="header-title"><i class="ti ti-building-hospital" style="font-size:18px;vertical-align:-2px;margin-right:6px"></i>Registro de Movimiento</div>
-    <div class="header-sub">Sistema de trazabilidad de implantes dentales</div>
+    <div class="header-title">Registro de Movimiento</div>
+    <div class="header-sub">Gestión de stock inteligente por hojas</div>
   </div>
 
-  <!-- TIPO DE MOVIMIENTO -->
   <div class="q">
     <span class="label">Tipo de movimiento</span>
     <div class="radio-row">
-      <div class="ropt dep on" id="rb-dep" onclick="selMov('dep')"><i class="ti ti-arrow-bar-to-down"></i> Depósito</div>
-      <div class="ropt sal" id="rb-sal" onclick="selMov('sal')"><i class="ti ti-arrow-bar-up"></i> Salida</div>
+      <div class="ropt dep on" id="rb-dep" onclick="selMov('deposito')">Depósito</div>
+      <div class="ropt sal" id="rb-sal" onclick="selMov('salida')">Salida</div>
+      <div class="ropt apa" id="rb-apa" onclick="selMov('apartado')">Apartado</div>
     </div>
   </div>
 
-  <!-- TIPO DE SALIDA -->
-  <div class="q hidden" id="pq-tipo-salida">
-    <span class="label">Tipo de salida</span>
+  <div class="q hidden" id="pq-destino-apartado">
+    <span class="label">¿Qué querés hacer con el Apartado?</span>
     <div class="radio-row">
-      <div class="ropt sub-sal" id="rb-venta" onclick="selTipoSalida('venta')"><i class="ti ti-receipt"></i> Venta</div>
-      <div class="ropt sub-sal" id="rb-contramuestra" onclick="selTipoSalida('contramuestra')"><i class="ti ti-test-pipe"></i> Contramuestra</div>
-      <div class="ropt sub-sal" id="rb-revision" onclick="selTipoSalida('revision')"><i class="ti ti-eye"></i> Revisión</div>
+      <div class="ropt dep" id="rb-apa-dep" onclick="selDestinoApartado('deposito')">Devolver a Depósito</div>
+      <div class="ropt sal" id="rb-apa-sal" onclick="selDestinoApartado('salida')">Pasar a Salida</div>
+      <div class="ropt apa" id="rb-apa-apa" onclick="selDestinoApartado('apartado')">Generar Nuevo Apartado</div>
     </div>
   </div>
 
-  <!-- TIPO DE IMPLANTE -->
-  <div class="q">
+  <div class="q hidden" id="pq-tipo-salida">
+    <span class="label">¿Motivo de la Salida?</span>
+    <div class="radio-row">
+      <div class="ropt sal" id="rb-sal-venta"  onclick="selTipoSalida('venta')">Venta</div>
+      <div class="ropt sal" id="rb-sal-contra" onclick="selTipoSalida('contramuestra')">Contramuestra</div>
+      <div class="ropt sal" id="rb-sal-revi"   onclick="selTipoSalida('revision')">Revisión</div>
+    </div>
+  </div>
+
+  <div id="loader" class="loading-overlay hidden">
+    <div class="spinner"></div> <span id="loader-text">Consultando existencias...</span>
+  </div>
+
+  <div class="q" id="pq-tipo">
     <span class="label">Tipo de implante</span>
-    <select id="tipo-sel" onchange="onTipo()">
-      <option value="">— Seleccioná el tipo —</option>
-      <option value="MP">Monopieza (MP)</option>
-      <option value="HI">Hexágono Interno (HI)</option>
-      <option value="HE">Hexágono Externo (HE)</option>
-      <option value="MBP">Monopieza Basal Pulido (MBP)</option>
-      <option value="MBT">Monopieza Basal Tratado (MBT)</option>
-      <option value="CM">Cono Morse (CM)</option>
-      <option value="CMU">Compresivo MultiUnit (CMU)</option>
-      <option value="CMU3">Compresivo MultiUnit C3 (CMU3)</option>
-    </select>
+    <select id="tipo-sel" onchange="onTipo()"><option value="">— Seleccioná —</option></select>
   </div>
 
-  <!-- MEDIDA -->
-  <div class="q hidden" id="pq3">
+  <div class="q hidden" id="pq-medida">
     <span class="label">Medida</span>
-    <select id="med-sel" onchange="onMedida()"><option value="">— Seleccioná la medida —</option></select>
+    <select id="med-sel" onchange="onMedida()"><option value="">— Seleccioná —</option></select>
   </div>
 
-  <!-- LOADING LOTES -->
-  <div class="hidden" id="lotes-loading">
-    <div class="loading-row"><div class="spinner"></div><span>Consultando lotes disponibles...</span></div>
-  </div>
-
-  <!-- LOTE -->
-  <div class="q hidden" id="pq4">
+  <div class="q hidden" id="pq-lote">
     <span class="label">Lote</span>
-    <select id="lote-sel" onchange="onLote()"><option value="">— Seleccioná el lote —</option></select>
-    <span class="hint" id="hint-lote"></span>
+    <select id="lote-sel" onchange="onLote()"><option value="">— Seleccioná —</option></select>
+    <span class="hint" id="hint-stock"></span>
   </div>
 
-  <!-- LOTE NUEVO -->
-  <div class="q hidden" id="pq4b">
-    <span class="label">Número de lote nuevo <span class="lote-nuevo-tag"><i class="ti ti-plus" style="font-size:10px"></i> nuevo</span></span>
-    <span class="sub">Se creará una columna nueva en la hoja</span>
-    <input type="text" id="lote-nuevo-inp" placeholder="Ej: Lot-MP 0180">
-  </div>
-
-  <!-- CANTIDAD -->
-  <div class="q hidden" id="pq5">
+  <div class="q hidden" id="pq-cantidad">
     <span class="label">Cantidad</span>
-    <input type="number" min="1" placeholder="Ej: 5" id="cant-inp">
-    <span class="hint" id="hint-cant"></span>
+    <input type="number" id="cant-inp" min="1" placeholder="Ej: 5">
   </div>
 
-  <!-- DATOS VENTA -->
-  <div class="q hidden" id="pq-venta">
-    <div class="divider" style="margin:0 0 1.25rem"></div>
-    <span class="section-label">Datos de venta</span>
-    <div class="q"><span class="label">Profesional o clínica</span><input type="text" id="inp-profesional" placeholder="Ej: Dr. García Ramírez"></div>
-    <div class="q"><span class="label">N° remito / vía cargo</span><input type="text" id="inp-remito" placeholder="Ej: REM-0412"></div>
-    <div class="q"><span class="label">N° presupuesto</span><input type="text" id="inp-presupuesto" placeholder="Autocompleta automáticamente" style="color:#9ca3af"></div>
-    <div class="q" style="margin-bottom:0"><span class="label">Observación</span><textarea id="inp-obs-venta" placeholder="Opcional..."></textarea></div>
+  <div id="summary" class="summary-box hidden">
+    <div class="summary-row"><span>Operación Destino:</span><strong id="sum-op">-</strong></div>
+    <div class="summary-row"><span>Stock disponible en Hoja:</span><strong id="sum-stock">-</strong></div>
   </div>
 
-  <!-- DATOS REVISIÓN -->
-  <div class="q hidden" id="pq-revision">
-    <div class="divider" style="margin:0 0 1.25rem"></div>
-    <span class="section-label">Datos de revisión</span>
-    <div class="q" style="margin-bottom:0"><span class="label">Observación</span><textarea id="inp-obs-revision" placeholder="Opcional..."></textarea></div>
-  </div>
-
-  <!-- RESUMEN -->
-  <div id="summary-box" class="summary-box hidden">
-    <div style="font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Resumen</div>
-    <div class="summary-row"><span class="sk">Tipo</span><span class="sv" id="sum-tipo">—</span></div>
-    <div class="summary-row"><span class="sk">Medida</span><span class="sv" id="sum-medida">—</span></div>
-    <div class="summary-row"><span class="sk">Lote</span><span class="sv" id="sum-lote">—</span></div>
-    <div class="summary-row"><span class="sk">Operación</span><span class="sv" id="sum-op">—</span></div>
-  </div>
-
-  <!-- MENSAJES -->
-  <div id="msg-error" class="alert alert-error hidden">
-    <i class="ti ti-alert-circle" style="font-size:16px;flex-shrink:0;margin-top:1px"></i>
-    <span id="msg-error-text"></span>
-  </div>
-  <div id="msg-success" class="alert alert-success hidden">
-    <i class="ti ti-check" style="font-size:16px;flex-shrink:0;margin-top:1px"></i>
-    <span>Movimiento registrado correctamente.</span>
-  </div>
-
-  <div style="display:flex;gap:8px;margin-top:1.25rem;align-items:center">
-    <button class="btn" id="btn-submit" onclick="submitForm()" disabled>
-      <i class="ti ti-send" style="font-size:14px;vertical-align:-1px;margin-right:4px"></i> Registrar movimiento
-    </button>
-    <button class="btn-sec" onclick="resetForm()">Limpiar</button>
-  </div>
+  <button class="btn" id="btn-submit" onclick="submitForm()" disabled>Registrar movimiento</button>
+  <button style="background:none;border:none;color:#64748b;font-size:12px;cursor:pointer;width:100%;margin-top:10px" onclick="resetForm()">Limpiar formulario</button>
 </div>
 
 <script>
-var URL_API = 'https://script.google.com/macros/s/AKfycbxpcS82KlWgejuM5--oosV5Tm9GrPnOM0I49csx6KRQGvCTBgDfGinn7Z-xRUVO_lkN/exec';
+var URL_API = 'https://script.google.com/macros/s/AKfycbwYdID4wTtKgGrZcwT1VP1aDprBN8BIB9999AxUGzQef8AWw2lTi5jQ2JD4-d9gDKV_/exec';
 
-var MEDIDAS = {
-  MP:['Ø3.0 X 6mm','Ø3.0 X 8mm','Ø3.0 X 10mm','Ø3.0 X 11,5mm','Ø3.0 X 13mm','Ø3.0 X 15mm','Ø3.0 X 18mm','Ø3.0 X 20mm','Ø3.5 X 6mm','Ø3.5 X 8mm','Ø3.5 X 10mm','Ø3.5 X 11,5mm','Ø3.5 X 13mm','Ø3.5 X 15mm','Ø3.5 X 18mm','Ø3.5 X 20mm','Ø4.0 X 6mm','Ø4.0 X 8mm','Ø4.0 X 10mm','Ø4.0 X 11,5mm','Ø4.0 X 13mm','Ø4.0 X 15mm','Ø4.0 X 18mm','Ø4.0 X 20mm','Ø4.5 X 6mm','Ø4.5 X 8mm','Ø4.5 X 10mm','Ø4.5 X 11,5mm','Ø4.5 X 13mm','Ø4.5 X 15mm','Ø4.5 X 18mm','Ø4.5 X 20mm','Ø5.0 X 6mm','Ø5.0 X 8mm','Ø5.0 X 10mm','Ø5.0 X 11,5mm','Ø5.0 X 13mm','Ø5.5 X 6mm','Ø5.5 X 8mm','Ø5.5 X 10mm','Ø5.5 X 11,5mm','Ø5.5 X 13mm'],
-  HI:['Ø3.30 X 6,5mm','Ø3.30 X 8mm','Ø3.30 X 10mm','Ø3.30 X 11,5mm','Ø3.30 X 13mm','Ø3.30 X 16mm','Ø3,75 X 6,5mm','Ø3.75 X 8mm','Ø3.75 X 10mm','Ø3.75 X 11,5mm','Ø3.75 X 13mm','Ø3.75 X 16mm','Ø4,2 X 6,5mm','Ø4.2 X 8mm','Ø4.2 X 10mm','Ø4.2 X 11,5mm','Ø4.2 X 13mm','Ø4.2 X 16mm','Ø5,0 X 6,5mm','Ø5.0 X 8mm','Ø5.0 X 10mm','Ø5.0 X 11,5mm','Ø5.0 X 13mm','Ø5.0 X 16mm'],
-  HE:['Ø3.30 X 8,5mm','Ø3.30 X 10mm','Ø3.30 X 11,5mm','Ø3.30 X 13mm','Ø3.30 X 15mm','Ø3.75 X 8,5mm','Ø3.75 X 10mm','Ø3.75 X 11,5mm','Ø3.75 X 13mm','Ø3.75 X 15mm','Ø4.0 X 6mm','Ø4.0 X 8,5mm','Ø4.0 X 10mm','Ø4.0 X 11,5mm','Ø4.0 X 13mm','Ø4.0 X 15mm','Ø5.0 X 8,5mm','Ø5.0 X 10mm','Ø5.0 X 11,5mm','Ø5.0 X 13mm','Ø5.0 X 15mm'],
-  MBP:['Ø3.5 X 10mm','Ø3.5 X 12mm','Ø3.5 X 15mm','Ø3.5 X 18mm','Ø3.5 X 21mm','Ø3.5 X 23mm','Ø3.5 X 24mm','Ø3.5 X 26mm','Ø3.5 X 28mm','Ø3.5 X 24mm C14','Ø3.5 X 26mm C16','Ø3.5 X 28mm C18','Ø4.5 X 10mm','Ø4.5 X 12mm','Ø4.5 X 15mm','Ø4.5 X 18mm','Ø4.5 X 21mm','Ø4.5 X 23mm','Ø4.5 X 24mm','Ø4.5 X 26mm','Ø4.5 X 28mm','Ø4.5 X 24mm C14','Ø4.5 X 26mm C16','Ø4.5 X 28mm C18','Ø5.5 X 9mm','Ø5.5 X 10mm','Ø5.5 X 12mm','Ø5.5 X 15mm','Ø5.5 X 18mm','Ø6.5 X 10mm','Ø6.5 X 12mm'],
-  MBT:['Ø3.5 X 10mm','Ø3.5 X 12mm','Ø3.5 X 15mm','Ø3.5 X 18mm','Ø3.5 X 21mm','Ø3.5 X 23mm','Ø3.5 X 24mm','Ø3.5 X 26mm','Ø3.5 X 28mm','Ø3.5 X 24mm C14','Ø3.5 X 26mm C16','Ø3.5 X 28mm C18','Ø4.5 X 10mm','Ø4.5 X 12mm','Ø4.5 X 15mm','Ø4.5 X 18mm','Ø4.5 X 21mm','Ø4.5 X 23mm','Ø4.5 X 24mm','Ø4.5 X 26mm','Ø4.5 X 28mm','Ø4.5 X 24mm C14','Ø4.5 X 26mm C16','Ø4.5 X 28mm C18','Ø5.5 X 9mm','Ø5.5 X 10mm','Ø5.5 X 12mm','Ø5.5 X 15mm','Ø5.5 X 18mm','Ø6.5 X 9mm','Ø6.5 X 10mm'],
-  CM:['3.30 X 8','3.30 X 10','3.30 X 11,5','3.30 X 13','3.30 X 16','3.75 X 8','3.75 X 10','3.75 X 11,5','3.75 X 13','3.75 X 16','4.2  X  8','4.2  X  10','4.2  X  11,5','4.2  X  13','4.2  X  16','5.0  X  8','5.0  X  10','5.0  X  11,5','5.0  X  13','5.0  X  16'],
-  CMU:['Ø3.0 X 6mm','Ø3.0 X 8mm','Ø3.0 X 10mm','Ø3.0 X 11,5mm','Ø3.0 X 13mm','Ø3.0 X 15mm','Ø3.0 X 18mm','Ø3.0 X 20mm','Ø3.5 X 6mm','Ø3.5 X 8mm','Ø3.5 X 10mm','Ø3.5 X 11,5mm','Ø3.5 X 13mm','Ø3.5 X 15mm','Ø3.5 X 18mm','Ø3.5 X 20mm','Ø4.0 X 6mm','Ø4.0 X 8mm','Ø4.0 X 10mm','Ø4.0 X 11,5mm','Ø4.0 X 13mm','Ø4.0 X 15mm','Ø4.0 X 18mm','Ø4.0 X 20mm','Ø4.5 X 6mm','Ø4.5 X 8mm','Ø4.5 X 10mm','Ø4.5 X 11,5mm','Ø4.5 X 13mm','Ø4.5 X 15mm','Ø4.5 X 18mm','Ø4.5 X 20mm','Ø5.0 X 6mm','Ø5.0 X 8mm','Ø5.0 X 10mm','Ø5.0 X 11,5mm','Ø5.0 X 13mm','Ø5.0 X 15mm','Ø5.0 X 18mm','Ø5.0 X 20mm','Ø5.5 X 6mm','Ø5.5 X 8mm','Ø5.5 X 10mm','Ø5.5 X 11,5mm','Ø5.5 X 13mm'],
-  CMU3:['Ø3.0 X 6mm C3','Ø3.0 X 8mm C3','Ø3.0 X 10mm C3','Ø3.0 X 11,5mm C3','Ø3.0 X 13mm C3','Ø3.0 X 15mm C3','Ø3.0 X 18mm C3','Ø3.0 X 20mm C3','Ø3.5 X 6mm C3','Ø3.5 X 8mm C3','Ø3.5 X 10mm C3','Ø3.5 X 11,5mm C3','Ø3.5 X 13mm C3','Ø3.5 X 15mm C3','Ø3.5 X 18mm C3','Ø3.5 X 20mm C3','Ø4.0 X 6mm C3','Ø4.0 X 8mm C3','Ø4.0 X 10mm C3','Ø4.0 X 11,5mm C3','Ø4.0 X 13mm C3','Ø4.0 X 15mm C3','Ø4.0 X 18mm C3','Ø4.0 X 20mm C3','Ø4.5 X 6mm C3','Ø4.5 X 8mm C3','Ø4.5 X 10mm C3','Ø4.5 X 11,5mm C3','Ø4.5 X 13mm C3','Ø4.5 X 15mm C3','Ø4.5 X 18mm C3','Ø4.5 X 20mm C3','Ø5.0 X 6mm C3','Ø5.0 X 8mm C3','Ø5.0 X 10mm C3','Ø5.0 X 11,5mm C3','Ø5.0 X 13mm C3','Ø5.0 X 15mm C3','Ø5.0 X 18mm C3','Ø5.0 X 20mm C3','Ø5.5 X 6mm C3','Ø5.5 X 8mm C3','Ø5.5 X 10mm C3','Ø5.5 X 11,5mm C3','Ø5.5 X 13mm C3']
-};
+var datosFiltradosHoja = []; 
+var state = { mov: 'deposito', destino: '', subSalida: '', tipo: '', medida: '', lote: '', stockMax: 0 };
 
-var state = {mov:'dep',tipoSalida:'',tipo:'',medida:'',lote:'',rowIndex:null};
-
-function hideMsg() {
-  document.getElementById('msg-error').classList.add('hidden');
-  document.getElementById('msg-success').classList.add('hidden');
-}
-function showError(msg) {
-  hideMsg();
-  document.getElementById('msg-error-text').textContent = msg;
-  document.getElementById('msg-error').classList.remove('hidden');
-}
+var IMPLANTES_BASE = [
+  { id: "MP", nombre: "Monopieza (MP)" },
+  { id: "HI", nombre: "Hexágono Interno (HI)" },
+  { id: "HE", nombre: "Hexágono Externo (HE)" },
+  { id: "CM", nombre: "Cono Morse (CM)" },
+  { id: "CMU", nombre: "Compresivo Multiunit (CMU)" },
+  { id: "CMU3", nombre: "Compresivo Multiunit C3 (CMU3)" },
+  { id: "MBT", nombre: "Monopieza Basal Tratado (MBT)" },
+  { id: "MBP", nombre: "Monopieza Basal Pulido (MBP)" }
+];
 
 function jsonp(params, cb) {
   var cbName = 'jscb_' + Date.now();
   var s = document.createElement('script');
-  window[cbName] = function(data) {
-    delete window[cbName];
-    if (document.body.contains(s)) document.body.removeChild(s);
-    cb(null, data);
-  };
-  s.onerror = function() {
-    delete window[cbName];
-    if (document.body.contains(s)) document.body.removeChild(s);
-    cb('Error de conexion', null);
-  };
+  window[cbName] = function(d){ delete window[cbName]; document.body.removeChild(s); cb(null, d); };
   var qs = '?callback=' + cbName;
-  Object.keys(params).forEach(function(k) {
-    qs += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
-  });
+  Object.keys(params).forEach(k => qs += `&${k}=${encodeURIComponent(params[k])}`);
   s.src = URL_API + qs;
   document.body.appendChild(s);
 }
 
-function selMov(v) {
-  hideMsg();
-  state.mov = v;
-  state.tipoSalida = '';
-  document.getElementById('rb-dep').classList.toggle('on', v==='dep');
-  document.getElementById('rb-sal').classList.toggle('on', v==='sal');
-  document.getElementById('pq-tipo-salida').classList.toggle('hidden', v!=='sal');
-  document.getElementById('pq-venta').classList.add('hidden');
-  document.getElementById('pq-revision').classList.add('hidden');
-  ['rb-venta','rb-contramuestra','rb-revision'].forEach(function(id){
-    document.getElementById(id).classList.remove('on');
+window.onload = function() {
+  cargarOpcionesNormales();
+};
+
+function cargarOpcionesNormales() {
+  var sel = document.getElementById('tipo-sel');
+  sel.innerHTML = '<option value="">— Seleccioná —</option>';
+  IMPLANTES_BASE.forEach(i => {
+    var opt = document.createElement('option');
+    opt.value = i.id; opt.textContent = i.nombre; sel.appendChild(opt);
   });
-  updateSummary(); checkSubmit();
+  resetSelects();
+}
+
+function selMov(v) {
+  state.mov = v;
+  state.destino = '';
+  state.subSalida = '';
+  document.getElementById('rb-dep').classList.toggle('on', v==='deposito');
+  document.getElementById('rb-sal').classList.toggle('on', v==='salida');
+  document.getElementById('rb-apa').classList.toggle('on', v==='apartado');
+  document.getElementById('pq-destino-apartado').classList.toggle('hidden', v !== 'apartado');
+  document.getElementById('pq-tipo-salida').classList.toggle('hidden', v !== 'salida');
+  ['rb-sal-venta','rb-sal-contra','rb-sal-revi'].forEach(id => document.getElementById(id).classList.remove('on'));
+
+  cargarOpcionesNormales();
 }
 
 function selTipoSalida(v) {
-  hideMsg();
-  state.tipoSalida = v;
-  ['rb-venta','rb-contramuestra','rb-revision'].forEach(function(id){
-    document.getElementById(id).classList.remove('on');
+  state.subSalida = v;
+  ['rb-sal-venta','rb-sal-contra','rb-sal-revi'].forEach(id => document.getElementById(id).classList.remove('on'));
+  var map = { venta:'rb-sal-venta', contramuestra:'rb-sal-contra', revision:'rb-sal-revi' };
+  document.getElementById(map[v]).classList.add('on');
+}
+
+function selDestinoApartado(v) {
+  state.destino = v;
+  ['rb-apa-dep', 'rb-apa-sal', 'rb-apa-apa'].forEach(id => document.getElementById(id).classList.remove('on'));
+  document.getElementById('rb-apa-' + v.slice(0,3)).classList.add('on');
+  
+  resetSelects();
+  
+  if (v === 'deposito' || v === 'salida') {
+    document.getElementById('loader').classList.remove('hidden');
+    document.getElementById('loader-text').textContent = "Consultando existencias en HOJA APARTADOS...";
+    jsonp({ accion: 'obtenerSoloApartados' }, (err, data) => {
+      document.getElementById('loader').classList.add('hidden');
+      if (data && data.ok) {
+        datosFiltradosHoja = data.items;
+        actualizarSelectTipoApartados();
+      }
+    });
+  } else {
+    cargarOpcionesNormales();
+  }
+}
+
+function actualizarSelectTipoApartados() {
+  var sel = document.getElementById('tipo-sel');
+  sel.innerHTML = '<option value="">— Seleccioná —</option>';
+  var tiposDisponibles = [...new Set(datosFiltradosHoja.map(i => i.tipo))];
+  
+  if(tiposDisponibles.length === 0) {
+    sel.innerHTML = '<option value="">Sin registros en Apartados</option>';
+    return;
+  }
+  tiposDisponibles.forEach(t => {
+    var base = IMPLANTES_BASE.find(b => b.id === t);
+    var opt = document.createElement('option');
+    opt.value = t; opt.textContent = base ? base.nombre : t; sel.appendChild(opt);
   });
-  document.getElementById('rb-' + v).classList.add('on');
-  document.getElementById('pq-venta').classList.toggle('hidden', v !== 'venta');
-  document.getElementById('pq-revision').classList.toggle('hidden', v !== 'revision');
-  updateSummary(); checkSubmit();
 }
 
 function onTipo() {
-  hideMsg();
-  var t = document.getElementById('tipo-sel').value;
-  state.tipo = t; state.medida = ''; state.lote = '';
-  var mSel = document.getElementById('med-sel');
-  mSel.innerHTML = '<option value="">— Seleccioná la medida —</option>';
-  if (t && MEDIDAS[t]) {
-    MEDIDAS[t].forEach(function(m) {
-      var o = document.createElement('option');
-      o.value = m; o.textContent = m; mSel.appendChild(o);
-    });
-    document.getElementById('pq3').classList.remove('hidden');
+  state.tipo = document.getElementById('tipo-sel').value;
+  if (!state.tipo) return;
+
+  document.getElementById('pq-medida').classList.add('hidden');
+  document.getElementById('pq-lote').classList.add('hidden');
+  document.getElementById('pq-cantidad').classList.add('hidden');
+  document.getElementById('summary').classList.add('hidden');
+
+  if (state.mov === 'apartado' && (state.destino === 'deposito' || state.destino === 'salida')) {
+    var itemsFiltrados = datosFiltradosHoja.filter(i => i.tipo === state.tipo);
+    procesarMedidasFiltro(itemsFiltrados);
   } else {
-    document.getElementById('pq3').classList.add('hidden');
+    document.getElementById('loader').classList.remove('hidden');
+    document.getElementById('loader-text').textContent = "Buscando medidas en hoja " + state.tipo + "...";
+    
+    jsonp({ accion: 'obtenerStockReal', tipo: state.tipo }, (err, data) => {
+      document.getElementById('loader').classList.add('hidden');
+      if (data && data.ok) {
+        datosFiltradosHoja = data.items;
+        procesarMedidasFiltro(datosFiltradosHoja);
+      } else {
+        alert("Atención: No se pudieron extraer datos de la hoja vinculada a " + state.tipo);
+      }
+    });
   }
-  hideLotes(); hideSummary(); checkSubmit();
+}
+
+function procesarMedidasFiltro(items) {
+  var selMed = document.getElementById('med-sel');
+  selMed.innerHTML = '<option value="">— Seleccioná Medida —</option>';
+  
+  var medidas = [...new Set(items.map(i => i.medida))];
+  if(medidas.length === 0) {
+    selMed.innerHTML = '<option value="">No hay medidas con stock</option>';
+  } else {
+    medidas.forEach(m => {
+      var opt = document.createElement('option');
+      opt.value = m; opt.textContent = m; selMed.appendChild(opt);
+    });
+  }
+  document.getElementById('pq-medida').classList.remove('hidden');
 }
 
 function onMedida() {
-  hideMsg();
-  var m = document.getElementById('med-sel').value;
-  state.medida = m; state.lote = '';
-  hideLotes(); hideSummary(); checkSubmit();
-  if (m) {
-    document.getElementById('lotes-loading').classList.remove('hidden');
-    jsonp({accion:'obtenerLotes', tipo_imp:state.tipo, medida:m}, function(err, data) {
-      document.getElementById('lotes-loading').classList.add('hidden');
-      if (err || !data || !data.ok) { showError(err || (data && data.error) || 'Error'); return; }
-      var lSel = document.getElementById('lote-sel');
-      lSel.innerHTML = '<option value="">— Seleccioná el lote —</option>';
-      (data.lotes || []).forEach(function(l) {
-        var o = document.createElement('option');
-        o.value = l; o.textContent = l; lSel.appendChild(o);
-      });
-      var oN = document.createElement('option');
-      oN.value = 'nuevo'; oN.textContent = '+ Crear nuevo lote';
-      lSel.appendChild(oN);
-      state.rowIndex = data.rowIndex || null;
-      document.getElementById('pq4').classList.remove('hidden');
-      document.getElementById('hint-lote').textContent =
-        data.lotes.length > 0
-          ? data.lotes.length + ' lote(s) disponible(s) — en tiempo real'
-          : 'Sin lotes con stock. Podés crear uno nuevo.';
-    });
-  }
+  state.medida = document.getElementById('med-sel').value;
+  var selLote = document.getElementById('lote-sel');
+  selLote.innerHTML = '<option value="">— Seleccioná Lote —</option>';
+
+  var lotes = datosFiltradosHoja.filter(i => i.medida === state.medida && (state.mov !== 'apartado' || i.tipo === state.tipo));
+  lotes.forEach(l => {
+    var opt = document.createElement('option');
+    opt.value = l.lote; 
+    opt.textContent = l.lote + " (Disp: " + l.stock + ")";
+    selLote.appendChild(opt);
+  });
+  
+  document.getElementById('pq-lote').classList.remove('hidden');
 }
 
 function onLote() {
-  hideMsg();
-  var v = document.getElementById('lote-sel').value;
-  state.lote = v;
-  document.getElementById('pq4b').classList.toggle('hidden', v !== 'nuevo');
-  document.getElementById('pq5').classList.toggle('hidden', !v);
-  if (v) {
-    document.getElementById('hint-cant').textContent =
-      'Cantidad a ' + (state.mov === 'dep' ? 'agregar' : 'retirar') +
-      (v === 'nuevo' ? ' al nuevo lote' : ' de ' + v);
-  }
-  updateSummary(); checkSubmit();
+  state.lote = document.getElementById('lote-sel').value;
+  var item = datosFiltradosHoja.find(i => i.medida === state.medida && i.lote === state.lote && (state.mov !== 'apartado' || i.tipo === state.tipo));
+  state.stockMax = item ? item.stock : 0;
+  
+  document.getElementById('hint-stock').textContent = `Stock actual registrado: ${state.stockMax} u.`;
+  document.getElementById('sum-op').textContent = state.mov === 'apartado'
+    ? `Mover Apartado -> A ${state.destino}`
+    : (state.mov === 'salida' && state.subSalida ? `Salida por ${state.subSalida}` : `Operación en ${state.mov}`);
+  document.getElementById('sum-stock').textContent = state.stockMax;
+  
+  document.getElementById('pq-cantidad').classList.remove('hidden');
+  document.getElementById('summary').classList.remove('hidden');
+  document.getElementById('btn-submit').disabled = false;
 }
 
-function submitForm() {
-  hideMsg();
-  var lote = state.lote === 'nuevo'
-    ? document.getElementById('lote-nuevo-inp').value.trim()
-    : state.lote;
-  var cantidad = parseInt(document.getElementById('cant-inp').value);
-  if (state.lote === 'nuevo' && !lote) { showError('Ingresá el número del nuevo lote.'); return; }
-  if (!cantidad || cantidad < 1) { showError('Ingresá una cantidad válida.'); return; }
-
-  var observacion = '';
-  if (state.tipoSalida === 'venta') {
-    observacion = document.getElementById('inp-obs-venta').value.trim();
-  } else if (state.tipoSalida === 'revision') {
-    observacion = document.getElementById('inp-obs-revision').value.trim();
-  }
-
-  var tipo_mov_final = state.mov === 'dep' ? 'deposito' : state.tipoSalida;
-
-  var btn = document.getElementById('btn-submit');
-  btn.disabled = true;
-  btn.innerHTML = '<div class="spinner" style="display:inline-block;vertical-align:-3px;margin-right:6px"></div> Registrando...';
-
-  jsonp({
-    accion: 'registrarMovimiento',
-    tipo_imp: state.tipo,
-    medida: state.medida,
-    tipo_mov: tipo_mov_final,
-    lote_sel: state.lote,
-    lote_nombre: lote,
-    cantidad: cantidad,
-    profesional: state.tipoSalida === 'venta' ? document.getElementById('inp-profesional').value.trim() : '',
-    nro_remito: state.tipoSalida === 'venta' ? document.getElementById('inp-remito').value.trim() : '',
-    nro_presupuesto: state.tipoSalida === 'venta' ? document.getElementById('inp-presupuesto').value.trim() : '',
-    observacion: observacion
-  }, function(err, data) {
-    if (err || !data || !data.ok) {
-      showError(err || (data && data.error) || 'Error desconocido');
-      btn.disabled = false;
-      btn.innerHTML = '<i class="ti ti-send" style="font-size:14px;vertical-align:-1px;margin-right:4px"></i>Registrar movimiento';
-      return;
-    }
-    document.getElementById('msg-success').classList.remove('hidden');
-    setTimeout(function() {
-      hideMsg();
-      resetForm();
-    }, 3000);
-  });
-}
-
-function checkSubmit() {
-  var ok = state.tipo && state.medida && state.lote;
-  if (state.mov === 'sal' && !state.tipoSalida) ok = false;
-  document.getElementById('btn-submit').disabled = !ok;
-}
-
-function updateSummary() {
-  if (!state.tipo || !state.medida || !state.lote) { hideSummary(); return; }
-  if (state.mov === 'sal' && !state.tipoSalida) { hideSummary(); return; }
-  document.getElementById('sum-tipo').textContent = state.tipo;
-  document.getElementById('sum-medida').textContent = state.medida;
-  document.getElementById('sum-lote').textContent = state.lote === 'nuevo' ? '(nuevo lote)' : state.lote;
-  var op = state.mov === 'dep' ? 'Depósito' : (state.tipoSalida.charAt(0).toUpperCase() + state.tipoSalida.slice(1));
-  document.getElementById('sum-op').textContent = state.lote === 'nuevo' ? 'Depósito — lote nuevo' : op;
-  document.getElementById('summary-box').classList.remove('hidden');
-}
-
-function hideSummary() { document.getElementById('summary-box').classList.add('hidden'); }
-function hideLotes() {
-  ['pq4','pq4b','pq5'].forEach(function(id){ document.getElementById(id).classList.add('hidden'); });
-  document.getElementById('lotes-loading').classList.add('hidden');
+function resetSelects() {
+  ['pq-medida','pq-lote','pq-cantidad','summary','loader'].forEach(id => document.getElementById(id).classList.add('hidden'));
+  document.getElementById('hint-stock').textContent = '';
+  document.getElementById('btn-submit').disabled = true;
 }
 
 function resetForm() {
-  hideMsg();
-  document.getElementById('tipo-sel').value = '';
-  document.getElementById('med-sel').innerHTML = '<option value="">— Seleccioná la medida —</option>';
-  document.getElementById('lote-nuevo-inp').value = '';
-  document.getElementById('cant-inp').value = '';
-  document.getElementById('inp-profesional').value = '';
-  document.getElementById('inp-remito').value = '';
-  document.getElementById('inp-presupuesto').value = '';
-  document.getElementById('inp-obs-venta').value = '';
-  document.getElementById('inp-obs-revision').value = '';
-  state = {mov:'dep',tipoSalida:'',tipo:'',medida:'',lote:'',rowIndex:null};
-  ['pq3','pq4','pq4b','pq5','pq-tipo-salida','pq-venta','pq-revision','summary-box','lotes-loading'].forEach(function(id){
-    document.getElementById(id).classList.add('hidden');
-  });
-  ['rb-venta','rb-contramuestra','rb-revision'].forEach(function(id){
-    document.getElementById(id).classList.remove('on');
-  });
-  document.getElementById('rb-dep').classList.add('on');
-  document.getElementById('rb-sal').classList.remove('on');
+  location.reload();
+}
+
+// CONEXIÓN REAL CON EL SERVIDOR GOOGLE APPS SCRIPT
+function submitForm() {
+  var cant = parseInt(document.getElementById('cant-inp').value) || 0;
+  if (cant <= 0) {
+    alert("Por favor ingresá una cantidad válida mayor a 0.");
+    return;
+  }
+  if (cant > state.stockMax) {
+    alert("No podés procesar más cantidad de la disponible en el stock actual (" + state.stockMax + ").");
+    return;
+  }
+  if (state.mov === 'salida' && !state.subSalida) {
+    alert("Elegí el motivo de la salida (Venta, Contramuestra o Revisión).");
+    return;
+  }
+
+  // Desactivamos el botón y mostramos cargando para evitar clics duplicados
   document.getElementById('btn-submit').disabled = true;
-  document.getElementById('btn-submit').innerHTML = '<i class="ti ti-send" style="font-size:14px;vertical-align:-1px;margin-right:4px"></i>Registrar movimiento';
+  document.getElementById('loader').classList.remove('hidden');
+  document.getElementById('loader-text').textContent = "Procesando operación en Google Sheets...";
+
+  // Construimos el paquete de datos adaptado a los parámetros que espera tu función registrarMovimiento
+  var parametros = {
+    accion: 'registrarMovimiento',
+    tipo_mov: state.mov,
+    tipo_apartado: state.mov === 'apartado' ? state.destino : '',
+    tipo_salida: state.mov === 'salida' ? state.subSalida : '',
+    tipo_imp: state.tipo,
+    medida: state.medida,
+    lote_sel: state.lote,
+    cantidad: cant,
+    profesional: '', 
+    nro_remito: '',
+    nro_presupuesto: '',
+    observacion: 'Movimiento automático desde App Web'
+  };
+
+  // Enviamos al script vía JSONP para ejecutar las funciones de actualización y recalculado de totales
+  jsonp(parametros, (err, data) => {
+    document.getElementById('loader').classList.add('hidden');
+    
+    // El backend responde a través de la API si todo salió exitoso
+    if (data && data.ok) {
+      alert("¡Movimiento registrado con éxito en tu planilla de cálculo!");
+      resetForm(); // Reinicia por completo el formulario para dejarlo limpio para el próximo uso
+    } else {
+      alert("Error en el servidor: " + (data ? data.error : "No hubo respuesta."));
+      document.getElementById('btn-submit').disabled = false;
+    }
+  });
 }
 </script>
 </body>
