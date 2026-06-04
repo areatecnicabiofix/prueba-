@@ -18,6 +18,7 @@
     .label .req{color:#dc2626;font-weight:600}
     .label .opt{color:#94a3b8;font-weight:400}
     .hint{font-size:11px;color:#2563eb;margin-top:5px;display:block;font-weight:500}
+    .hint.ok{color:#15803d}
     select,input[type=text],input[type=number],textarea{width:100%;padding:10px 12px;border-radius:8px;border:0.5px solid #d1d5db;background:#f9fafb;font-size:14px;color:#111827;font-family:inherit}
     textarea{resize:vertical;min-height:60px}
     select:focus,input:focus,textarea:focus{outline:none;border-color:#2563eb;background:#fff}
@@ -99,6 +100,7 @@
   <div class="q hidden" id="pq-profesional">
     <span class="label">Profesional / Clínica <span class="req">*</span></span>
     <input type="text" id="prof-inp" placeholder="Nombre del profesional o clínica">
+    <span class="hint ok hidden" id="hint-prof">Autocompletado desde el apartado original (podés editarlo).</span>
   </div>
 
   <div class="q hidden" id="pq-remito">
@@ -126,7 +128,7 @@
 </div>
 
 <script>
-var URL_API = 'https://script.google.com/macros/s/AKfycbySrR-bs6QNrx3xMfCHvyR0dEC3qQyJ2bFGCQNcz59vhD6P8PaIjepnMxb7Jsawy6B_/exec';
+var URL_API = 'https://script.google.com/macros/s/AKfycbwt3x4lTXg5YL9mnuNHpXewKn0BnWWL4-Zr9Prj5V8VOmLABYC0W_Q1NYRKy07NstjO/exec';
 
 var datosFiltradosHoja = []; 
 var state = { mov: 'deposito', destino: '', subSalida: '', tipo: '', medida: '', lote: '', stockMax: 0 };
@@ -143,7 +145,7 @@ var IMPLANTES_BASE = [
 ];
 
 function jsonp(params, cb) {
-  var cbName = 'jscb_' + Date.now();
+  var cbName = 'jscb_' + Date.now() + '_' + Math.floor(Math.random()*1000);
   var s = document.createElement('script');
   window[cbName] = function(d){ delete window[cbName]; document.body.removeChild(s); cb(null, d); };
   var qs = '?callback=' + cbName;
@@ -174,6 +176,7 @@ function selMov(v) {
   document.getElementById('rb-sal').classList.toggle('on', v==='salida');
   document.getElementById('rb-apa').classList.toggle('on', v==='apartado');
   document.getElementById('pq-destino-apartado').classList.toggle('hidden', v !== 'apartado');
+  // El menú de motivo de salida se muestra en Salida directa
   document.getElementById('pq-tipo-salida').classList.toggle('hidden', v !== 'salida');
   ['rb-sal-venta','rb-sal-contra','rb-sal-revi'].forEach(id => document.getElementById(id).classList.remove('on'));
   ocultarCamposExtra();
@@ -185,19 +188,25 @@ function selTipoSalida(v) {
   ['rb-sal-venta','rb-sal-contra','rb-sal-revi'].forEach(id => document.getElementById(id).classList.remove('on'));
   var map = { venta:'rb-sal-venta', contramuestra:'rb-sal-contra', revision:'rb-sal-revi' };
   document.getElementById(map[v]).classList.add('on');
-  // Si ya estaba el bloque de cantidad visible, refrescamos los campos extra
+  // Si ya elegimos lote (campos visibles), refrescamos y reintentamos autocompletar
   if (!document.getElementById('pq-cantidad').classList.contains('hidden')) {
     actualizarCamposExtra();
+    autocompletarProfesional();
   }
 }
 
 function selDestinoApartado(v) {
   state.destino = v;
+  // En "Pasar a Salida" el único motivo posible es Venta (se fija automáticamente)
+  state.subSalida = (v === 'salida') ? 'venta' : '';
   ['rb-apa-dep', 'rb-apa-sal', 'rb-apa-apa'].forEach(id => document.getElementById(id).classList.remove('on'));
   document.getElementById('rb-apa-' + v.slice(0,3)).classList.add('on');
-  
+  // No mostramos el menú de motivos para apartado: la salida desde apartado es siempre Venta
+  document.getElementById('pq-tipo-salida').classList.add('hidden');
+  ['rb-sal-venta','rb-sal-contra','rb-sal-revi'].forEach(id => document.getElementById(id).classList.remove('on'));
+
   resetSelects();
-  
+
   if (v === 'deposito' || v === 'salida') {
     document.getElementById('loader').classList.remove('hidden');
     document.getElementById('loader-text').textContent = "Consultando existencias en HOJA APARTADOS...";
@@ -296,29 +305,49 @@ function onLote() {
   state.stockMax = item ? item.stock : 0;
   
   document.getElementById('hint-stock').textContent = `Stock actual registrado: ${state.stockMax} u.`;
-  document.getElementById('sum-op').textContent = state.mov === 'apartado'
-    ? `Mover Apartado -> A ${state.destino}`
-    : (state.mov === 'salida' && state.subSalida ? `Salida por ${state.subSalida}` : `Operación en ${state.mov}`);
+  document.getElementById('sum-op').textContent = textoOperacion();
   document.getElementById('sum-stock').textContent = state.stockMax;
   
   document.getElementById('pq-cantidad').classList.remove('hidden');
   actualizarCamposExtra();
+  autocompletarProfesional();
   document.getElementById('summary').classList.remove('hidden');
   document.getElementById('btn-submit').disabled = false;
 }
 
-// Muestra/oculta los campos extra según el tipo de movimiento y motivo de salida
+function textoOperacion() {
+  if (state.mov === 'apartado') {
+    var base = `Mover Apartado -> A ${state.destino}`;
+    if (state.destino === 'salida' && state.subSalida) base += ` (${state.subSalida})`;
+    return base;
+  }
+  if (state.mov === 'salida' && state.subSalida) return `Salida por ${state.subSalida}`;
+  return `Operación en ${state.mov}`;
+}
+
+// Devuelve true si en el contexto actual la salida es de tipo Venta
+function esVenta() {
+  if (state.mov === 'salida' && state.subSalida === 'venta') return true;
+  if (state.mov === 'apartado' && state.destino === 'salida' && state.subSalida === 'venta') return true;
+  return false;
+}
+
+// Muestra/oculta los campos extra según el tipo de movimiento y motivo
 function actualizarCamposExtra() {
   var showProf = false, showRem = false, showPres = false, showObs = false;
 
   if (state.mov === 'salida') {
-    if (state.subSalida === 'venta') {
-      showProf = showRem = showPres = showObs = true;
-    } else if (state.subSalida === 'contramuestra' || state.subSalida === 'revision') {
+    if (state.subSalida === 'venta') { showProf = showRem = showPres = showObs = true; }
+    else if (state.subSalida === 'contramuestra' || state.subSalida === 'revision') { showObs = true; }
+  } else if (state.mov === 'apartado') {
+    if (state.destino === 'apartado') {            // Generar nuevo apartado
+      showProf = showObs = true;
+    } else if (state.destino === 'salida') {       // Pasar a salida
+      if (state.subSalida === 'venta') { showProf = showRem = showPres = showObs = true; }
+      else if (state.subSalida === 'contramuestra' || state.subSalida === 'revision') { showObs = true; }
+    } else if (state.destino === 'deposito') {     // Devolver a depósito
       showObs = true;
     }
-  } else if (state.mov === 'apartado') {
-    showObs = true;
   }
   // Depósito: sin campos extra
 
@@ -328,8 +357,30 @@ function actualizarCamposExtra() {
   document.getElementById('pq-observacion').classList.toggle('hidden', !showObs);
 }
 
+// Autocompleta el profesional cuando un apartado pasa a salida por venta
+function autocompletarProfesional() {
+  var hint = document.getElementById('hint-prof');
+  hint.classList.add('hidden');
+
+  if (!(state.mov === 'apartado' && state.destino === 'salida' && state.subSalida === 'venta')) return;
+  if (!state.tipo || !state.medida || !state.lote) return;
+
+  var profInput = document.getElementById('prof-inp');
+  profInput.value = 'Cargando...';
+  jsonp({ accion: 'obtenerProfesionalApartado', tipo_imp: state.tipo, medida: state.medida, lote: state.lote }, (err, data) => {
+    if (data && data.ok && data.profesional) {
+      profInput.value = data.profesional;
+      hint.classList.remove('hidden');
+    } else {
+      profInput.value = '';
+      hint.classList.add('hidden');
+    }
+  });
+}
+
 function ocultarCamposExtra() {
   ['pq-profesional','pq-remito','pq-presupuesto','pq-observacion'].forEach(id => document.getElementById(id).classList.add('hidden'));
+  document.getElementById('hint-prof').classList.add('hidden');
 }
 
 function resetSelects() {
@@ -354,7 +405,9 @@ function submitForm() {
     alert("No podés procesar más cantidad de la disponible en el stock actual (" + state.stockMax + ").");
     return;
   }
-  if (state.mov === 'salida' && !state.subSalida) {
+  // Si el flujo requiere motivo de salida y no se eligió
+  var requiereMotivo = (state.mov === 'salida') || (state.mov === 'apartado' && state.destino === 'salida');
+  if (requiereMotivo && !state.subSalida) {
     alert("Elegí el motivo de la salida (Venta, Contramuestra o Revisión).");
     return;
   }
@@ -365,8 +418,14 @@ function submitForm() {
   var nroPresupuesto = document.getElementById('presu-inp').value.trim();
   var observacion = document.getElementById('obs-inp').value.trim();
 
-  // Validación: en Venta, profesional/remito/presupuesto son obligatorios
-  if (state.mov === 'salida' && state.subSalida === 'venta') {
+  // Validación: en Generar Nuevo Apartado el profesional es obligatorio
+  if (state.mov === 'apartado' && state.destino === 'apartado' && !profesional) {
+    alert("Para generar un apartado tenés que indicar el Profesional / Clínica.");
+    return;
+  }
+
+  // Validación: en Venta (directa o desde apartado) profesional, remito y presupuesto son obligatorios
+  if (esVenta()) {
     if (!profesional || !nroRemito || !nroPresupuesto) {
       alert("Para una Venta tenés que completar Profesional/Clínica, Número de Remito y Número de Presupuesto.");
       return;
@@ -378,12 +437,14 @@ function submitForm() {
   document.getElementById('loader').classList.remove('hidden');
   document.getElementById('loader-text').textContent = "Procesando operación en Google Sheets...";
 
-  // Construimos el paquete de datos adaptado a los parámetros que espera tu función registrarMovimiento
+  // tipo_salida se manda en salida directa y también cuando un apartado pasa a salida
+  var tipoSalidaFinal = ((state.mov === 'salida') || (state.mov === 'apartado' && state.destino === 'salida')) ? state.subSalida : '';
+
   var parametros = {
     accion: 'registrarMovimiento',
     tipo_mov: state.mov,
     tipo_apartado: state.mov === 'apartado' ? state.destino : '',
-    tipo_salida: state.mov === 'salida' ? state.subSalida : '',
+    tipo_salida: tipoSalidaFinal,
     tipo_imp: state.tipo,
     medida: state.medida,
     lote_sel: state.lote,
@@ -394,14 +455,12 @@ function submitForm() {
     observacion: observacion
   };
 
-  // Enviamos al script vía JSONP para ejecutar las funciones de actualización y recalculado de totales
   jsonp(parametros, (err, data) => {
     document.getElementById('loader').classList.add('hidden');
     
-    // El backend responde a través de la API si todo salió exitoso
     if (data && data.ok) {
       alert("¡Movimiento registrado con éxito en tu planilla de cálculo!");
-      resetForm(); // Reinicia por completo el formulario para dejarlo limpio para el próximo uso
+      resetForm();
     } else {
       alert("Error en el servidor: " + (data ? data.error : "No hubo respuesta."));
       document.getElementById('btn-submit').disabled = false;
