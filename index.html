@@ -15,8 +15,11 @@
     .q{margin-bottom:1.25rem}
     .q.hidden,.hidden{display:none!important}
     .label{font-size:13px;font-weight:500;color:#374151;display:block;margin-bottom:6px}
+    .label .req{color:#dc2626;font-weight:600}
+    .label .opt{color:#94a3b8;font-weight:400}
     .hint{font-size:11px;color:#2563eb;margin-top:5px;display:block;font-weight:500}
     select,input[type=text],input[type=number],textarea{width:100%;padding:10px 12px;border-radius:8px;border:0.5px solid #d1d5db;background:#f9fafb;font-size:14px;color:#111827;font-family:inherit}
+    textarea{resize:vertical;min-height:60px}
     select:focus,input:focus,textarea:focus{outline:none;border-color:#2563eb;background:#fff}
     .radio-row{display:flex;gap:8px;flex-wrap:wrap}
     .ropt{flex:1;min-width:100px;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 14px;border:0.5px solid #d1d5db;border-radius:8px;cursor:pointer;font-size:13px;background:#f9fafb;color:#374151;user-select:none;transition:all .15s}
@@ -92,6 +95,27 @@
     <input type="number" id="cant-inp" min="1" placeholder="Ej: 5">
   </div>
 
+  <!-- CAMPOS EXTRA DINÁMICOS -->
+  <div class="q hidden" id="pq-profesional">
+    <span class="label">Profesional / Clínica <span class="req">*</span></span>
+    <input type="text" id="prof-inp" placeholder="Nombre del profesional o clínica">
+  </div>
+
+  <div class="q hidden" id="pq-remito">
+    <span class="label">Número de Remito <span class="req">*</span></span>
+    <input type="text" id="remito-inp" placeholder="Ej: R-0001">
+  </div>
+
+  <div class="q hidden" id="pq-presupuesto">
+    <span class="label">Número de Presupuesto <span class="req">*</span></span>
+    <input type="text" id="presu-inp" placeholder="Ej: P-0001">
+  </div>
+
+  <div class="q hidden" id="pq-observacion">
+    <span class="label">Observación <span class="opt">(opcional)</span></span>
+    <textarea id="obs-inp" placeholder="Notas adicionales..."></textarea>
+  </div>
+
   <div id="summary" class="summary-box hidden">
     <div class="summary-row"><span>Operación Destino:</span><strong id="sum-op">-</strong></div>
     <div class="summary-row"><span>Stock disponible en Hoja:</span><strong id="sum-stock">-</strong></div>
@@ -102,7 +126,7 @@
 </div>
 
 <script>
-var URL_API = 'https://script.google.com/macros/s/AKfycbwHqFGxxU62Ftg6N37i0BtFdFdj1sMO2NduWdUKNBEhpjyHa4kwtMIHLWhnSb04I3k/exec';
+var URL_API = 'var URL_API = 'https://script.google.com/macros/s/AKfycbySrR-bs6QNrx3xMfCHvyR0dEC3qQyJ2bFGCQNcz59vhD6P8PaIjepnMxb7Jsawy6B_/exec';
 
 var datosFiltradosHoja = []; 
 var state = { mov: 'deposito', destino: '', subSalida: '', tipo: '', medida: '', lote: '', stockMax: 0 };
@@ -152,7 +176,7 @@ function selMov(v) {
   document.getElementById('pq-destino-apartado').classList.toggle('hidden', v !== 'apartado');
   document.getElementById('pq-tipo-salida').classList.toggle('hidden', v !== 'salida');
   ['rb-sal-venta','rb-sal-contra','rb-sal-revi'].forEach(id => document.getElementById(id).classList.remove('on'));
-
+  ocultarCamposExtra();
   cargarOpcionesNormales();
 }
 
@@ -161,6 +185,10 @@ function selTipoSalida(v) {
   ['rb-sal-venta','rb-sal-contra','rb-sal-revi'].forEach(id => document.getElementById(id).classList.remove('on'));
   var map = { venta:'rb-sal-venta', contramuestra:'rb-sal-contra', revision:'rb-sal-revi' };
   document.getElementById(map[v]).classList.add('on');
+  // Si ya estaba el bloque de cantidad visible, refrescamos los campos extra
+  if (!document.getElementById('pq-cantidad').classList.contains('hidden')) {
+    actualizarCamposExtra();
+  }
 }
 
 function selDestinoApartado(v) {
@@ -209,6 +237,7 @@ function onTipo() {
   document.getElementById('pq-lote').classList.add('hidden');
   document.getElementById('pq-cantidad').classList.add('hidden');
   document.getElementById('summary').classList.add('hidden');
+  ocultarCamposExtra();
 
   if (state.mov === 'apartado' && (state.destino === 'deposito' || state.destino === 'salida')) {
     var itemsFiltrados = datosFiltradosHoja.filter(i => i.tipo === state.tipo);
@@ -273,12 +302,39 @@ function onLote() {
   document.getElementById('sum-stock').textContent = state.stockMax;
   
   document.getElementById('pq-cantidad').classList.remove('hidden');
+  actualizarCamposExtra();
   document.getElementById('summary').classList.remove('hidden');
   document.getElementById('btn-submit').disabled = false;
 }
 
+// Muestra/oculta los campos extra según el tipo de movimiento y motivo de salida
+function actualizarCamposExtra() {
+  var showProf = false, showRem = false, showPres = false, showObs = false;
+
+  if (state.mov === 'salida') {
+    if (state.subSalida === 'venta') {
+      showProf = showRem = showPres = showObs = true;
+    } else if (state.subSalida === 'contramuestra' || state.subSalida === 'revision') {
+      showObs = true;
+    }
+  } else if (state.mov === 'apartado') {
+    showObs = true;
+  }
+  // Depósito: sin campos extra
+
+  document.getElementById('pq-profesional').classList.toggle('hidden', !showProf);
+  document.getElementById('pq-remito').classList.toggle('hidden', !showRem);
+  document.getElementById('pq-presupuesto').classList.toggle('hidden', !showPres);
+  document.getElementById('pq-observacion').classList.toggle('hidden', !showObs);
+}
+
+function ocultarCamposExtra() {
+  ['pq-profesional','pq-remito','pq-presupuesto','pq-observacion'].forEach(id => document.getElementById(id).classList.add('hidden'));
+}
+
 function resetSelects() {
   ['pq-medida','pq-lote','pq-cantidad','summary','loader'].forEach(id => document.getElementById(id).classList.add('hidden'));
+  ocultarCamposExtra();
   document.getElementById('hint-stock').textContent = '';
   document.getElementById('btn-submit').disabled = true;
 }
@@ -303,6 +359,20 @@ function submitForm() {
     return;
   }
 
+  // Leemos los campos extra
+  var profesional = document.getElementById('prof-inp').value.trim();
+  var nroRemito = document.getElementById('remito-inp').value.trim();
+  var nroPresupuesto = document.getElementById('presu-inp').value.trim();
+  var observacion = document.getElementById('obs-inp').value.trim();
+
+  // Validación: en Venta, profesional/remito/presupuesto son obligatorios
+  if (state.mov === 'salida' && state.subSalida === 'venta') {
+    if (!profesional || !nroRemito || !nroPresupuesto) {
+      alert("Para una Venta tenés que completar Profesional/Clínica, Número de Remito y Número de Presupuesto.");
+      return;
+    }
+  }
+
   // Desactivamos el botón y mostramos cargando para evitar clics duplicados
   document.getElementById('btn-submit').disabled = true;
   document.getElementById('loader').classList.remove('hidden');
@@ -318,10 +388,10 @@ function submitForm() {
     medida: state.medida,
     lote_sel: state.lote,
     cantidad: cant,
-    profesional: '', 
-    nro_remito: '',
-    nro_presupuesto: '',
-    observacion: 'Movimiento automático desde App Web'
+    profesional: profesional,
+    nro_remito: nroRemito,
+    nro_presupuesto: nroPresupuesto,
+    observacion: observacion
   };
 
   // Enviamos al script vía JSONP para ejecutar las funciones de actualización y recalculado de totales
