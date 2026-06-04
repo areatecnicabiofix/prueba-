@@ -91,6 +91,12 @@
     <span class="hint" id="hint-stock"></span>
   </div>
 
+  <div class="q hidden" id="pq-lote-nuevo">
+    <span class="label">Nombre del nuevo lote <span class="req">*</span></span>
+    <input type="text" id="lote-nuevo-inp" placeholder="Ej: Lot-MP 0185">
+    <span class="hint ok">Se va a crear este lote al registrar el depósito.</span>
+  </div>
+
   <div class="q hidden" id="pq-cantidad">
     <span class="label">Cantidad</span>
     <input type="number" id="cant-inp" min="1" placeholder="Ej: 5">
@@ -132,6 +138,9 @@ var URL_API = 'https://script.google.com/macros/s/AKfycbx9z39imT9ecwOJtMGicYKNwS
 
 var datosFiltradosHoja = []; 
 var state = { mov: 'deposito', destino: '', subSalida: '', tipo: '', medida: '', lote: '', stockMax: 0 };
+
+// Caché en memoria de esta sesión: evita volver a pedir al servidor lo ya consultado
+var cacheStock = {};  // por tipo de implante, ej: cacheStock['MP'] = [...items]
 
 var IMPLANTES_BASE = [
   { id: "MP", nombre: "Monopieza (MP)" },
@@ -252,6 +261,13 @@ function onTipo() {
     var itemsFiltrados = datosFiltradosHoja.filter(i => i.tipo === state.tipo);
     procesarMedidasFiltro(itemsFiltrados);
   } else {
+    // Si ya consultamos este tipo en esta sesión, lo mostramos al instante
+    if (cacheStock[state.tipo]) {
+      datosFiltradosHoja = cacheStock[state.tipo];
+      procesarMedidasFiltro(datosFiltradosHoja);
+      return;
+    }
+
     document.getElementById('loader').classList.remove('hidden');
     document.getElementById('loader-text').textContent = "Buscando medidas en hoja " + state.tipo + "...";
     
@@ -259,6 +275,7 @@ function onTipo() {
       document.getElementById('loader').classList.add('hidden');
       if (data && data.ok) {
         datosFiltradosHoja = data.items;
+        cacheStock[state.tipo] = data.items;   // guardamos en caché
         procesarMedidasFiltro(datosFiltradosHoja);
       } else {
         alert("Atención: No se pudieron extraer datos de la hoja vinculada a " + state.tipo);
@@ -295,12 +312,40 @@ function onMedida() {
     opt.textContent = l.lote + " (Disp: " + l.stock + ")";
     selLote.appendChild(opt);
   });
-  
+
+  // Solo en Depósito permitimos crear un lote nuevo
+  if (state.mov === 'deposito') {
+    var optNuevo = document.createElement('option');
+    optNuevo.value = 'nuevo';
+    optNuevo.textContent = '+ Agregar nuevo lote';
+    selLote.appendChild(optNuevo);
+  }
+
+  // Ocultamos el campo de lote nuevo hasta que se elija esa opción
+  document.getElementById('pq-lote-nuevo').classList.add('hidden');
+  document.getElementById('lote-nuevo-inp').value = '';
+
   document.getElementById('pq-lote').classList.remove('hidden');
 }
 
 function onLote() {
   state.lote = document.getElementById('lote-sel').value;
+
+  // Caso: crear un lote nuevo (solo en Depósito)
+  if (state.lote === 'nuevo') {
+    state.stockMax = 0;
+    document.getElementById('pq-lote-nuevo').classList.remove('hidden');
+    document.getElementById('hint-stock').textContent = '';
+    document.getElementById('sum-op').textContent = textoOperacion();
+    document.getElementById('sum-stock').textContent = 'Lote nuevo';
+    document.getElementById('pq-cantidad').classList.remove('hidden');
+    actualizarCamposExtra();
+    document.getElementById('summary').classList.remove('hidden');
+    document.getElementById('btn-submit').disabled = false;
+    return;
+  }
+
+  document.getElementById('pq-lote-nuevo').classList.add('hidden');
   var item = datosFiltradosHoja.find(i => i.medida === state.medida && i.lote === state.lote && (state.mov !== 'apartado' || i.tipo === state.tipo));
   state.stockMax = item ? item.stock : 0;
   
@@ -384,9 +429,10 @@ function ocultarCamposExtra() {
 }
 
 function resetSelects() {
-  ['pq-medida','pq-lote','pq-cantidad','summary','loader'].forEach(id => document.getElementById(id).classList.add('hidden'));
+  ['pq-medida','pq-lote','pq-lote-nuevo','pq-cantidad','summary','loader'].forEach(id => document.getElementById(id).classList.add('hidden'));
   ocultarCamposExtra();
   document.getElementById('hint-stock').textContent = '';
+  document.getElementById('lote-nuevo-inp').value = '';
   document.getElementById('btn-submit').disabled = true;
 }
 
@@ -401,10 +447,23 @@ function submitForm() {
     alert("Por favor ingresá una cantidad válida mayor a 0.");
     return;
   }
-  if (cant > state.stockMax) {
+  // En Depósito sumás stock, así que no se limita por la cantidad actual.
+  // En Salida/Apartado sí se controla no pasarse del disponible.
+  if (state.mov !== 'deposito' && cant > state.stockMax) {
     alert("No podés procesar más cantidad de la disponible en el stock actual (" + state.stockMax + ").");
     return;
   }
+
+  // Si se está creando un lote nuevo, validamos que tenga nombre
+  var loteNuevoNombre = '';
+  if (state.lote === 'nuevo') {
+    loteNuevoNombre = document.getElementById('lote-nuevo-inp').value.trim();
+    if (!loteNuevoNombre) {
+      alert("Ingresá el nombre del nuevo lote.");
+      return;
+    }
+  }
+
   // Si el flujo requiere motivo de salida y no se eligió
   var requiereMotivo = (state.mov === 'salida') || (state.mov === 'apartado' && state.destino === 'salida');
   if (requiereMotivo && !state.subSalida) {
@@ -448,6 +507,7 @@ function submitForm() {
     tipo_imp: state.tipo,
     medida: state.medida,
     lote_sel: state.lote,
+    lote_nombre: loteNuevoNombre,
     cantidad: cant,
     profesional: profesional,
     nro_remito: nroRemito,
