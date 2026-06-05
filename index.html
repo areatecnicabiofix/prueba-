@@ -242,8 +242,11 @@ function selTipoSalida(v) {
     document.getElementById('btn-submit').textContent = 'Registrar movimiento';
     document.getElementById('btn-add-item').classList.add('hidden');
     document.getElementById('cart-box').classList.add('hidden');
-    // Si ya elegimos lote (campos visibles), refrescamos y reintentamos autocompletar
-    if (!document.getElementById('pq-cantidad').classList.contains('hidden')) {
+    carritoVenta = [];
+    // Contramuestra/Revisión: ocultamos los campos de venta que pudieron quedar de antes
+    ocultarCamposExtra();
+    // Si ya hay un lote elegido, recalculamos qué campos corresponden (solo Observación)
+    if (state.lote && !document.getElementById('pq-cantidad').classList.contains('hidden')) {
       actualizarCamposExtra();
       autocompletarProfesional();
     }
