@@ -35,6 +35,14 @@
     @keyframes spin{to{transform:rotate(360deg)}}
     .summary-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin:1rem 0}
     .summary-row{display:flex;justify-content:space-between;font-size:12px;padding:2px 0}
+    .cart-box{background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px;margin:1rem 0}
+    .cart-title{font-size:12px;font-weight:600;color:#9a3412;margin-bottom:8px}
+    .cart-item{display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid #fde9d3;border-radius:8px;padding:8px 10px;margin-bottom:6px}
+    .cart-item-info{font-size:12px;color:#374151;line-height:1.4}
+    .cart-item-info b{color:#111827}
+    .cart-del{background:none;border:none;color:#dc2626;font-weight:700;font-size:16px;cursor:pointer;padding:0 4px}
+    .btn-add{width:100%;padding:11px;border-radius:8px;background:#c2410c;color:#fff;font-size:13px;font-weight:600;border:none;cursor:pointer;margin-top:6px}
+    .btn-add:disabled{background:#e7c4ad;cursor:not-allowed}
   </style>
 </head>
 <body>
@@ -102,6 +110,15 @@
     <input type="number" id="cant-inp" min="1" placeholder="Ej: 5">
   </div>
 
+  <!-- BOTÓN AGREGAR AL PEDIDO (solo en venta) -->
+  <button class="btn-add hidden" id="btn-add-item" onclick="agregarItemVenta()">+ Agregar al pedido</button>
+
+  <!-- LISTA DEL CARRITO (solo en venta) -->
+  <div class="cart-box hidden" id="cart-box">
+    <div class="cart-title">Ítems en esta venta</div>
+    <div id="cart-list"></div>
+  </div>
+
   <!-- CAMPOS EXTRA DINÁMICOS -->
   <div class="q hidden" id="pq-profesional">
     <span class="label">Profesional / Clínica <span class="req">*</span></span>
@@ -134,13 +151,16 @@
 </div>
 
 <script>
-var URL_API = 'https://script.google.com/macros/s/AKfycbx9z39imT9ecwOJtMGicYKNwSYtUffmZm8r4MdUyrUACNRFUVDmAsXAr4ilaYfy6A3v/exec';
+var URL_API = 'https://script.google.com/macros/s/AKfycbw1PXsWTIe33ClYN92HOsM8TrQz1uCFlmj1Sbfacd_tDbOXmXRhuuwSwCgXLc1HZQy-/exec';
 
 var datosFiltradosHoja = []; 
 var state = { mov: 'deposito', destino: '', subSalida: '', tipo: '', medida: '', lote: '', stockMax: 0 };
 
 // Caché en memoria de esta sesión: evita volver a pedir al servidor lo ya consultado
 var cacheStock = {};  // por tipo de implante, ej: cacheStock['MP'] = [...items]
+
+// Carrito de venta (Salida -> Venta con varios ítems)
+var carritoVenta = [];
 
 var IMPLANTES_BASE = [
   { id: "MP", nombre: "Monopieza (MP)" },
@@ -181,6 +201,10 @@ function selMov(v) {
   state.mov = v;
   state.destino = '';
   state.subSalida = '';
+  carritoVenta = [];
+  document.getElementById('cart-box').classList.add('hidden');
+  document.getElementById('btn-add-item').classList.add('hidden');
+  document.getElementById('btn-submit').textContent = 'Registrar movimiento';
   document.getElementById('rb-dep').classList.toggle('on', v==='deposito');
   document.getElementById('rb-sal').classList.toggle('on', v==='salida');
   document.getElementById('rb-apa').classList.toggle('on', v==='apartado');
@@ -192,15 +216,37 @@ function selMov(v) {
   cargarOpcionesNormales();
 }
 
+function esVentaCarrito() {
+  // Venta directa (Salida -> Venta) usa carrito multi-ítem
+  return state.mov === 'salida' && state.subSalida === 'venta';
+}
+
 function selTipoSalida(v) {
   state.subSalida = v;
   ['rb-sal-venta','rb-sal-contra','rb-sal-revi'].forEach(id => document.getElementById(id).classList.remove('on'));
   var map = { venta:'rb-sal-venta', contramuestra:'rb-sal-contra', revision:'rb-sal-revi' };
   document.getElementById(map[v]).classList.add('on');
-  // Si ya elegimos lote (campos visibles), refrescamos y reintentamos autocompletar
-  if (!document.getElementById('pq-cantidad').classList.contains('hidden')) {
-    actualizarCamposExtra();
-    autocompletarProfesional();
+
+  if (esVentaCarrito()) {
+    // Modo carrito: mostramos los datos de la venta arriba (una sola vez)
+    carritoVenta = [];
+    renderCarrito();
+    document.getElementById('pq-profesional').classList.remove('hidden');
+    document.getElementById('pq-remito').classList.remove('hidden');
+    document.getElementById('pq-presupuesto').classList.remove('hidden');
+    document.getElementById('pq-observacion').classList.remove('hidden');
+    document.getElementById('hint-prof').classList.add('hidden');
+    // El botón principal pasa a "Registrar venta"
+    document.getElementById('btn-submit').textContent = 'Registrar venta';
+  } else {
+    document.getElementById('btn-submit').textContent = 'Registrar movimiento';
+    document.getElementById('btn-add-item').classList.add('hidden');
+    document.getElementById('cart-box').classList.add('hidden');
+    // Si ya elegimos lote (campos visibles), refrescamos y reintentamos autocompletar
+    if (!document.getElementById('pq-cantidad').classList.contains('hidden')) {
+      actualizarCamposExtra();
+      autocompletarProfesional();
+    }
   }
 }
 
@@ -348,8 +394,19 @@ function onLote() {
   document.getElementById('pq-lote-nuevo').classList.add('hidden');
   var item = datosFiltradosHoja.find(i => i.medida === state.medida && i.lote === state.lote && (state.mov !== 'apartado' || i.tipo === state.tipo));
   state.stockMax = item ? item.stock : 0;
-  
-  document.getElementById('hint-stock').textContent = `Stock actual registrado: ${state.stockMax} u.`;
+
+  document.getElementById('hint-stock').textContent = `Disponible en este lote: ${state.stockMax} u.`;
+
+  // MODO CARRITO (venta directa): mostramos cantidad + botón "Agregar al pedido"
+  if (esVentaCarrito()) {
+    document.getElementById('pq-cantidad').classList.remove('hidden');
+    document.getElementById('btn-add-item').classList.remove('hidden');
+    document.getElementById('summary').classList.add('hidden');
+    // el botón "Registrar venta" se habilita según haya ítems en el carrito
+    document.getElementById('btn-submit').disabled = carritoVenta.length === 0;
+    return;
+  }
+
   document.getElementById('sum-op').textContent = textoOperacion();
   document.getElementById('sum-stock').textContent = state.stockMax;
   
@@ -379,6 +436,9 @@ function esVenta() {
 
 // Muestra/oculta los campos extra según el tipo de movimiento y motivo
 function actualizarCamposExtra() {
+  // En modo carrito los datos de venta están fijos arriba; no los tocamos por ítem
+  if (esVentaCarrito()) return;
+
   var showProf = false, showRem = false, showPres = false, showObs = false;
 
   if (state.mov === 'salida') {
@@ -430,10 +490,86 @@ function ocultarCamposExtra() {
 
 function resetSelects() {
   ['pq-medida','pq-lote','pq-lote-nuevo','pq-cantidad','summary','loader'].forEach(id => document.getElementById(id).classList.add('hidden'));
-  ocultarCamposExtra();
+  // En modo carrito mantenemos visibles los datos de la venta y la lista
+  if (!esVentaCarrito()) {
+    ocultarCamposExtra();
+    document.getElementById('btn-add-item').classList.add('hidden');
+    document.getElementById('cart-box').classList.add('hidden');
+  }
   document.getElementById('hint-stock').textContent = '';
   document.getElementById('lote-nuevo-inp').value = '';
   document.getElementById('btn-submit').disabled = true;
+}
+
+// ===== CARRITO DE VENTA =====
+function agregarItemVenta() {
+  var cant = parseInt(document.getElementById('cant-inp').value) || 0;
+  if (!state.tipo || !state.medida || !state.lote) {
+    alert("Elegí tipo, medida y lote antes de agregar.");
+    return;
+  }
+  if (cant <= 0) {
+    alert("Ingresá una cantidad válida mayor a 0.");
+    return;
+  }
+  if (cant > state.stockMax) {
+    alert("Elegí otra cantidad: en este lote hay " + state.stockMax + " u. disponibles.");
+    return;
+  }
+
+  // Sumamos lo que ya esté en el carrito para ese mismo lote, para no pasarnos del stock
+  var yaEnCarrito = carritoVenta
+    .filter(it => it.tipo_imp === state.tipo && it.medida === state.medida && it.lote_sel === state.lote)
+    .reduce((a, it) => a + it.cantidad, 0);
+  if (yaEnCarrito + cant > state.stockMax) {
+    alert("Ya tenés " + yaEnCarrito + " u. de este lote en el pedido. El disponible es " + state.stockMax + " u.");
+    return;
+  }
+
+  carritoVenta.push({
+    tipo_imp: state.tipo,
+    medida: state.medida,
+    lote_sel: state.lote,
+    cantidad: cant
+  });
+
+  renderCarrito();
+
+  // Limpiamos solo la parte del ítem para cargar el siguiente
+  document.getElementById('cant-inp').value = '';
+  document.getElementById('med-sel').value = '';
+  document.getElementById('lote-sel').innerHTML = '<option value="">— Seleccioná —</option>';
+  document.getElementById('tipo-sel').value = '';
+  state.tipo = ''; state.medida = ''; state.lote = ''; state.stockMax = 0;
+  document.getElementById('pq-medida').classList.add('hidden');
+  document.getElementById('pq-lote').classList.add('hidden');
+  document.getElementById('pq-cantidad').classList.add('hidden');
+  document.getElementById('btn-add-item').classList.add('hidden');
+  document.getElementById('hint-stock').textContent = '';
+}
+
+function renderCarrito() {
+  var box = document.getElementById('cart-box');
+  var list = document.getElementById('cart-list');
+  if (carritoVenta.length === 0) {
+    box.classList.add('hidden');
+    list.innerHTML = '';
+    document.getElementById('btn-submit').disabled = true;
+    return;
+  }
+  box.classList.remove('hidden');
+  list.innerHTML = carritoVenta.map((it, idx) => `
+    <div class="cart-item">
+      <span class="cart-item-info"><b>${it.tipo_imp}</b> · ${it.medida} · ${it.lote_sel} · <b>${it.cantidad} u.</b></span>
+      <button class="cart-del" onclick="quitarItemVenta(${idx})">×</button>
+    </div>
+  `).join('');
+  document.getElementById('btn-submit').disabled = false;
+}
+
+function quitarItemVenta(idx) {
+  carritoVenta.splice(idx, 1);
+  renderCarrito();
 }
 
 function resetForm() {
@@ -442,6 +578,12 @@ function resetForm() {
 
 // CONEXIÓN REAL CON EL SERVIDOR GOOGLE APPS SCRIPT
 function submitForm() {
+  // MODO CARRITO (venta directa con varios ítems)
+  if (esVentaCarrito()) {
+    registrarVentaCarrito();
+    return;
+  }
+
   var cant = parseInt(document.getElementById('cant-inp').value) || 0;
   if (cant <= 0) {
     alert("Por favor ingresá una cantidad válida mayor a 0.");
@@ -523,6 +665,55 @@ function submitForm() {
       resetForm();
     } else {
       alert("Error en el servidor: " + (data ? data.error : "No hubo respuesta."));
+      document.getElementById('btn-submit').disabled = false;
+    }
+  });
+}
+
+// Registra todos los ítems del carrito en una sola llamada (venta múltiple)
+function registrarVentaCarrito() {
+  if (carritoVenta.length === 0) {
+    alert("Agregá al menos un ítem al pedido.");
+    return;
+  }
+
+  var profesional = document.getElementById('prof-inp').value.trim();
+  var nroRemito = document.getElementById('remito-inp').value.trim();
+  var nroPresupuesto = document.getElementById('presu-inp').value.trim();
+  var observacion = document.getElementById('obs-inp').value.trim();
+
+  if (!profesional || !nroRemito || !nroPresupuesto) {
+    alert("Completá Profesional/Clínica, Número de Remito y Número de Presupuesto antes de registrar la venta.");
+    return;
+  }
+
+  document.getElementById('btn-submit').disabled = true;
+  document.getElementById('loader').classList.remove('hidden');
+  document.getElementById('loader-text').textContent = "Registrando venta (" + carritoVenta.length + " ítems)...";
+
+  var parametros = {
+    accion: 'registrarVentaMultiple',
+    items_json: JSON.stringify(carritoVenta),
+    profesional: profesional,
+    nro_remito: nroRemito,
+    nro_presupuesto: nroPresupuesto,
+    observacion: observacion
+  };
+
+  jsonp(parametros, (err, data) => {
+    document.getElementById('loader').classList.add('hidden');
+    if (data && data.ok) {
+      alert("¡Venta registrada con éxito! " + carritoVenta.length + " ítems cargados en la planilla.");
+      resetForm();
+    } else {
+      var msg = data && data.mensaje ? data.mensaje : (data && data.error ? data.error : "No hubo respuesta.");
+      // Si el backend devolvió detalle por ítem, mostramos cuáles fallaron
+      if (data && data.detalle) {
+        var fallidos = data.detalle.filter(d => !d.ok)
+          .map(d => `• ${d.tipo_imp} ${d.medida} ${d.lote}: ${d.error}`).join("\n");
+        if (fallidos) msg += "\n\nÍtems con problema:\n" + fallidos;
+      }
+      alert("Atención: " + msg);
       document.getElementById('btn-submit').disabled = false;
     }
   });
