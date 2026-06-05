@@ -191,7 +191,7 @@
 </div>
 
 <script>
-var URL_API = 'https://script.google.com/macros/s/AKfycbzW5kjRLulel-rXrx7JjKcbYET3ubKBzUeqZ4ApT-HgVEoUxl8Wr0nksT9tZS3J6ceP/exec';
+var URL_API = 'https://script.google.com/macros/s/AKfycbwKM-YNvsKT43V662BPT_UB0PoC8JpfPL5oPCWcD7VKzwXO-2Rr9ysx4h4isGaCcsJk/exec';
 
 var datosFiltradosHoja = []; 
 var state = { mov: 'deposito', destino: '', subSalida: '', tipo: '', medida: '', lote: '', stockMax: 0 };
@@ -225,7 +225,21 @@ function jsonp(params, cb) {
 
 window.onload = function() {
   cargarOpcionesNormales();
+  precargarTodoElStock();
 };
+
+// Precarga todo el stock de todos los tipos en una sola llamada (acelera la navegación)
+var stockPrecargado = false;
+function precargarTodoElStock() {
+  jsonp({ accion: 'obtenerTodoElStock' }, (err, data) => {
+    if (data && data.ok && data.stock) {
+      Object.keys(data.stock).forEach(sigla => {
+        cacheStock[sigla] = data.stock[sigla];
+      });
+      stockPrecargado = true;
+    }
+  });
+}
 
 function cargarOpcionesNormales() {
   var sel = document.getElementById('tipo-sel');
