@@ -151,7 +151,7 @@
 </div>
 
 <script>
-var URL_API = 'https://script.google.com/macros/s/AKfycbw6nIov4_9-ILD6sc0EZFw_W2h1GuY8cKTcHcvLcel34a8OjBUdpnFcu3psCQ3AFHgq/exec';
+var URL_API = 'https://script.google.com/macros/s/AKfycbylmcADt0qX9_t2x2Vtz5nkIOQ9ykpP_Hnn0N2lRDJOGeedHnrkpDS52CtmSKZMfU_J/exec';
 
 var datosFiltradosHoja = []; 
 var state = { mov: 'deposito', destino: '', subSalida: '', tipo: '', medida: '', lote: '', stockMax: 0 };
@@ -221,6 +221,15 @@ function esVentaCarrito() {
   return state.mov === 'salida' && state.subSalida === 'venta';
 }
 
+function esApartadoCarrito() {
+  // Generar Nuevo Apartado usa carrito multi-ítem
+  return state.mov === 'apartado' && state.destino === 'apartado';
+}
+
+function esCarrito() {
+  return esVentaCarrito() || esApartadoCarrito();
+}
+
 function selTipoSalida(v) {
   state.subSalida = v;
   ['rb-sal-venta','rb-sal-contra','rb-sal-revi'].forEach(id => document.getElementById(id).classList.remove('on'));
@@ -276,7 +285,17 @@ function selDestinoApartado(v) {
       }
     });
   } else {
+    // Generar Nuevo Apartado: modo carrito (igual que venta, pero apartando)
     cargarOpcionesNormales();
+    carritoVenta = [];
+    renderCarrito();
+    document.getElementById('pq-profesional').classList.remove('hidden');
+    document.getElementById('pq-observacion').classList.remove('hidden');
+    document.getElementById('pq-remito').classList.add('hidden');
+    document.getElementById('pq-presupuesto').classList.add('hidden');
+    document.getElementById('hint-prof').classList.add('hidden');
+    document.getElementById('prof-inp').value = '';
+    document.getElementById('btn-submit').textContent = 'Registrar apartado';
   }
 }
 
@@ -304,7 +323,7 @@ function onTipo() {
   document.getElementById('pq-lote').classList.add('hidden');
   document.getElementById('pq-cantidad').classList.add('hidden');
   document.getElementById('summary').classList.add('hidden');
-  ocultarCamposExtra();
+  if (!esCarrito()) ocultarCamposExtra();
 
   if (state.mov === 'apartado' && (state.destino === 'deposito' || state.destino === 'salida')) {
     var itemsFiltrados = datosFiltradosHoja.filter(i => i.tipo === state.tipo);
@@ -400,12 +419,13 @@ function onLote() {
 
   document.getElementById('hint-stock').textContent = `Disponible en este lote: ${state.stockMax} u.`;
 
-  // MODO CARRITO (venta directa): mostramos cantidad + botón "Agregar al pedido"
-  if (esVentaCarrito()) {
+  // MODO CARRITO (venta o apartado): mostramos cantidad + botón "Agregar al pedido"
+  if (esCarrito()) {
     document.getElementById('pq-cantidad').classList.remove('hidden');
     document.getElementById('btn-add-item').classList.remove('hidden');
+    document.getElementById('btn-add-item').textContent = esApartadoCarrito() ? '+ Agregar al pedido apartado' : '+ Agregar al pedido';
     document.getElementById('summary').classList.add('hidden');
-    // el botón "Registrar venta" se habilita según haya ítems en el carrito
+    // el botón principal se habilita según haya ítems en el carrito
     document.getElementById('btn-submit').disabled = carritoVenta.length === 0;
     return;
   }
@@ -439,8 +459,8 @@ function esVenta() {
 
 // Muestra/oculta los campos extra según el tipo de movimiento y motivo
 function actualizarCamposExtra() {
-  // En modo carrito los datos de venta están fijos arriba; no los tocamos por ítem
-  if (esVentaCarrito()) return;
+  // En modo carrito los datos están fijos arriba; no los tocamos por ítem
+  if (esCarrito()) return;
 
   var showProf = false, showRem = false, showPres = false, showObs = false;
 
@@ -493,8 +513,8 @@ function ocultarCamposExtra() {
 
 function resetSelects() {
   ['pq-medida','pq-lote','pq-lote-nuevo','pq-cantidad','summary','loader'].forEach(id => document.getElementById(id).classList.add('hidden'));
-  // En modo carrito mantenemos visibles los datos de la venta y la lista
-  if (!esVentaCarrito()) {
+  // En modo carrito mantenemos visibles los datos y la lista
+  if (!esCarrito()) {
     ocultarCamposExtra();
     document.getElementById('btn-add-item').classList.add('hidden');
     document.getElementById('cart-box').classList.add('hidden');
@@ -584,6 +604,11 @@ function submitForm() {
   // MODO CARRITO (venta directa con varios ítems)
   if (esVentaCarrito()) {
     registrarVentaCarrito();
+    return;
+  }
+  // MODO CARRITO (generar nuevo apartado con varios ítems)
+  if (esApartadoCarrito()) {
+    registrarApartadoCarrito();
     return;
   }
 
@@ -721,6 +746,50 @@ function registrarVentaCarrito() {
     }
   });
 }
-</script>
+
+// Registra todos los ítems del carrito como apartados (uno por ítem)
+function registrarApartadoCarrito() {
+  if (carritoVenta.length === 0) {
+    alert("Agregá al menos un ítem al pedido apartado.");
+    return;
+  }
+
+  var profesional = document.getElementById('prof-inp').value.trim();
+  var observacion = document.getElementById('obs-inp').value.trim();
+
+  if (!profesional) {
+    alert("Indicá el Profesional / Clínica del apartado.");
+    return;
+  }
+
+  document.getElementById('btn-submit').disabled = true;
+  document.getElementById('loader').classList.remove('hidden');
+  document.getElementById('loader-text').textContent = "Registrando apartado (" + carritoVenta.length + " ítems)...";
+
+  var parametros = {
+    accion: 'registrarApartadoMultiple',
+    items_json: JSON.stringify(carritoVenta),
+    profesional: profesional,
+    observacion: observacion
+  };
+
+  jsonp(parametros, (err, data) => {
+    document.getElementById('loader').classList.add('hidden');
+    if (data && data.ok) {
+      alert("¡Apartado registrado con éxito! " + carritoVenta.length + " ítems reservados para " + profesional + ".");
+      resetForm();
+    } else {
+      var msg = data && data.mensaje ? data.mensaje : (data && data.error ? data.error : "No hubo respuesta.");
+      if (data && data.detalle) {
+        var fallidos = data.detalle.filter(d => !d.ok)
+          .map(d => `• ${d.tipo_imp} ${d.medida} ${d.lote}: ${d.error}`).join("\n");
+        if (fallidos) msg += "\n\nÍtems con problema:\n" + fallidos;
+      }
+      alert("Atención: " + msg);
+      document.getElementById('btn-submit').disabled = false;
+    }
+  });
+}
+
 </body>
 </html>
