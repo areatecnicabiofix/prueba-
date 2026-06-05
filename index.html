@@ -70,6 +70,27 @@
     </div>
   </div>
 
+  <!-- APARTADO -> VENTA: elegir profesional y ver su pedido -->
+  <div class="q hidden" id="pq-prof-venta">
+    <span class="label">Profesional / Clínica</span>
+    <select id="prof-venta-sel" onchange="onProfVenta()"><option value="">— Seleccioná —</option></select>
+  </div>
+
+  <div class="cart-box hidden" id="pedido-prof-box">
+    <div class="cart-title">Pedido apartado de este profesional</div>
+    <div id="pedido-prof-list"></div>
+  </div>
+
+  <div class="q hidden" id="pq-remito-venta">
+    <span class="label">Número de Remito <span class="req">*</span></span>
+    <input type="text" id="remito-venta-inp" placeholder="Ej: R-0001">
+  </div>
+
+  <div class="q hidden" id="pq-presu-venta">
+    <span class="label">Número de Presupuesto <span class="req">*</span></span>
+    <input type="text" id="presu-venta-inp" placeholder="Ej: P-0001">
+  </div>
+
   <div class="q hidden" id="pq-tipo-salida">
     <span class="label">¿Motivo de la Salida?</span>
     <div class="radio-row">
@@ -151,7 +172,7 @@
 </div>
 
 <script>
-var URL_API = 'https://script.google.com/macros/s/AKfycbylmcADt0qX9_t2x2Vtz5nkIOQ9ykpP_Hnn0N2lRDJOGeedHnrkpDS52CtmSKZMfU_J/exec';
+var URL_API = 'https://script.google.com/macros/s/AKfycbwdhsvDJFsCNrnTgo5AJkDQ-J0rMoEvr5Kejt9ccUjiNEJPS20kHHkTrpTFRy9a56F4/exec';
 
 var datosFiltradosHoja = []; 
 var state = { mov: 'deposito', destino: '', subSalida: '', tipo: '', medida: '', lote: '', stockMax: 0 };
@@ -205,6 +226,8 @@ function selMov(v) {
   document.getElementById('cart-box').classList.add('hidden');
   document.getElementById('btn-add-item').classList.add('hidden');
   document.getElementById('btn-submit').textContent = 'Registrar movimiento';
+  document.getElementById('pq-tipo').classList.remove('hidden');
+  if (typeof ocultarVentaProfesional === 'function') ocultarVentaProfesional();
   document.getElementById('rb-dep').classList.toggle('on', v==='deposito');
   document.getElementById('rb-sal').classList.toggle('on', v==='salida');
   document.getElementById('rb-apa').classList.toggle('on', v==='apartado');
@@ -214,6 +237,10 @@ function selMov(v) {
   ['rb-sal-venta','rb-sal-contra','rb-sal-revi'].forEach(id => document.getElementById(id).classList.remove('on'));
   ocultarCamposExtra();
   cargarOpcionesNormales();
+}
+
+function esVentaPorProfesional() {
+  return state.mov === 'apartado' && state.destino === 'salida';
 }
 
 function esVentaCarrito() {
@@ -264,17 +291,29 @@ function selTipoSalida(v) {
 
 function selDestinoApartado(v) {
   state.destino = v;
-  // En "Pasar a Salida" el único motivo posible es Venta (se fija automáticamente)
   state.subSalida = (v === 'salida') ? 'venta' : '';
   ['rb-apa-dep', 'rb-apa-sal', 'rb-apa-apa'].forEach(id => document.getElementById(id).classList.remove('on'));
   document.getElementById('rb-apa-' + v.slice(0,3)).classList.add('on');
-  // No mostramos el menú de motivos para apartado: la salida desde apartado es siempre Venta
   document.getElementById('pq-tipo-salida').classList.add('hidden');
   ['rb-sal-venta','rb-sal-contra','rb-sal-revi'].forEach(id => document.getElementById(id).classList.remove('on'));
 
+  // Ocultamos los bloques específicos de venta-por-profesional por defecto
+  ocultarVentaProfesional();
+
   resetSelects();
 
-  if (v === 'deposito' || v === 'salida') {
+  if (v === 'salida') {
+    // APARTADO -> VENTA: cargamos la lista de profesionales con apartados
+    document.getElementById('btn-submit').textContent = 'Registrar venta';
+    document.getElementById('loader').classList.remove('hidden');
+    document.getElementById('loader-text').textContent = "Buscando profesionales con apartados...";
+    jsonp({ accion: 'obtenerApartadosPorProfesional' }, (err, data) => {
+      document.getElementById('loader').classList.add('hidden');
+      apartadosPorProf = (data && data.ok) ? data.profesionales : [];
+      llenarSelectProfesionales();
+    });
+  } else if (v === 'deposito') {
+    document.getElementById('btn-submit').textContent = 'Registrar movimiento';
     document.getElementById('loader').classList.remove('hidden');
     document.getElementById('loader-text').textContent = "Consultando existencias en HOJA APARTADOS...";
     jsonp({ accion: 'obtenerSoloApartados' }, (err, data) => {
@@ -285,7 +324,8 @@ function selDestinoApartado(v) {
       }
     });
   } else {
-    // Generar Nuevo Apartado: modo carrito (igual que venta, pero apartando)
+    // Generar Nuevo Apartado: modo carrito
+    document.getElementById('btn-submit').textContent = 'Registrar apartado';
     cargarOpcionesNormales();
     carritoVenta = [];
     renderCarrito();
@@ -295,8 +335,60 @@ function selDestinoApartado(v) {
     document.getElementById('pq-presupuesto').classList.add('hidden');
     document.getElementById('hint-prof').classList.add('hidden');
     document.getElementById('prof-inp').value = '';
-    document.getElementById('btn-submit').textContent = 'Registrar apartado';
   }
+}
+
+// ===== APARTADO -> VENTA POR PROFESIONAL =====
+var apartadosPorProf = [];
+
+function ocultarVentaProfesional() {
+  ['pq-prof-venta','pedido-prof-box','pq-remito-venta','pq-presu-venta'].forEach(id => document.getElementById(id).classList.add('hidden'));
+}
+
+function llenarSelectProfesionales() {
+  var sel = document.getElementById('prof-venta-sel');
+  sel.innerHTML = '<option value="">— Seleccioná —</option>';
+  if (!apartadosPorProf.length) {
+    sel.innerHTML = '<option value="">Sin apartados activos</option>';
+  } else {
+    apartadosPorProf.forEach(p => {
+      var opt = document.createElement('option');
+      opt.value = p.profesional;
+      opt.textContent = p.profesional + ' (' + p.items.length + ' ítems)';
+      sel.appendChild(opt);
+    });
+  }
+  document.getElementById('pq-prof-venta').classList.remove('hidden');
+  // En este flujo no se usan los selectores de tipo/medida/lote
+  document.getElementById('pq-tipo').classList.add('hidden');
+}
+
+function onProfVenta() {
+  var prof = document.getElementById('prof-venta-sel').value;
+  state.profVenta = prof;
+  var box = document.getElementById('pedido-prof-box');
+  var list = document.getElementById('pedido-prof-list');
+
+  if (!prof) {
+    box.classList.add('hidden');
+    document.getElementById('pq-remito-venta').classList.add('hidden');
+    document.getElementById('pq-presu-venta').classList.add('hidden');
+    document.getElementById('btn-submit').disabled = true;
+    return;
+  }
+
+  var pedido = apartadosPorProf.find(p => p.profesional === prof);
+  if (!pedido) return;
+
+  list.innerHTML = pedido.items.map(it => `
+    <div class="cart-item">
+      <span class="cart-item-info"><b>${it.tipo}</b> · ${it.medida} · ${it.lote} · <b>${it.cantidad} u.</b></span>
+    </div>
+  `).join('');
+  box.classList.remove('hidden');
+  document.getElementById('pq-remito-venta').classList.remove('hidden');
+  document.getElementById('pq-presu-venta').classList.remove('hidden');
+  document.getElementById('btn-submit').disabled = false;
 }
 
 function actualizarSelectTipoApartados() {
@@ -611,6 +703,11 @@ function submitForm() {
     registrarApartadoCarrito();
     return;
   }
+  // APARTADO -> VENTA por profesional (cierra todo el pedido)
+  if (esVentaPorProfesional()) {
+    registrarVentaProfesional();
+    return;
+  }
 
   var cant = parseInt(document.getElementById('cant-inp').value) || 0;
   if (cant <= 0) {
@@ -786,6 +883,42 @@ function registrarApartadoCarrito() {
         if (fallidos) msg += "\n\nÍtems con problema:\n" + fallidos;
       }
       alert("Atención: " + msg);
+      document.getElementById('btn-submit').disabled = false;
+    }
+  });
+}
+
+// Cierra como venta todo el pedido apartado del profesional seleccionado
+function registrarVentaProfesional() {
+  var prof = state.profVenta;
+  if (!prof) {
+    alert("Elegí un profesional.");
+    return;
+  }
+  var nroRemito = document.getElementById('remito-venta-inp').value.trim();
+  var nroPresupuesto = document.getElementById('presu-venta-inp').value.trim();
+  if (!nroRemito || !nroPresupuesto) {
+    alert("Completá Número de Remito y Número de Presupuesto.");
+    return;
+  }
+
+  document.getElementById('btn-submit').disabled = true;
+  document.getElementById('loader').classList.remove('hidden');
+  document.getElementById('loader-text').textContent = "Registrando venta del apartado...";
+
+  jsonp({
+    accion: 'venderApartadosProfesional',
+    profesional: prof,
+    nro_remito: nroRemito,
+    nro_presupuesto: nroPresupuesto,
+    observacion: ''
+  }, (err, data) => {
+    document.getElementById('loader').classList.add('hidden');
+    if (data && data.ok) {
+      alert("¡Venta registrada! " + (data.detalle ? data.detalle.length : '') + " ítems de " + prof + ".");
+      resetForm();
+    } else {
+      alert("Atención: " + (data ? (data.mensaje || data.error) : "No hubo respuesta."));
       document.getElementById('btn-submit').disabled = false;
     }
   });
