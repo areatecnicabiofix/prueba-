@@ -43,6 +43,12 @@
     .cart-del{background:none;border:none;color:#dc2626;font-weight:700;font-size:16px;cursor:pointer;padding:0 4px}
     .btn-add{width:100%;padding:11px;border-radius:8px;background:#c2410c;color:#fff;font-size:13px;font-weight:600;border:none;cursor:pointer;margin-top:6px}
     .btn-add:disabled{background:#e7c4ad;cursor:not-allowed}
+    .edit-item{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#fff;border:1px solid #fde9d3;border-radius:8px;padding:8px 10px;margin-bottom:6px;flex-wrap:wrap}
+    .edit-item-info{font-size:12px;color:#374151;flex:1;min-width:140px}
+    .edit-item-info b{color:#111827}
+    .edit-qty{width:56px;padding:6px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;text-align:center}
+    .edit-apply{background:#0369a1;color:#fff;border:none;border-radius:6px;padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer}
+    .edit-del{background:none;border:none;color:#dc2626;font-weight:700;font-size:16px;cursor:pointer;padding:0 4px}
   </style>
 </head>
 <body>
@@ -89,6 +95,20 @@
   <div class="q hidden" id="pq-presu-venta">
     <span class="label">Número de Presupuesto <span class="req">*</span></span>
     <input type="text" id="presu-venta-inp" placeholder="Ej: P-0001">
+  </div>
+
+  <!-- GENERAR APARTADO: elegir profesional existente o nuevo -->
+  <div class="q hidden" id="pq-apa-modo">
+    <span class="label">Apartados existentes</span>
+    <select id="apa-prof-sel" onchange="onEditarApartadoProf()"><option value="">— Elegí un profesional para editar —</option></select>
+    <button class="btn-add" style="margin-top:8px" id="btn-nuevo-prof" onclick="iniciarApartadoNuevo()">+ Nuevo profesional / apartado</button>
+  </div>
+
+  <!-- GENERAR APARTADO: edición del pedido de un profesional existente -->
+  <div class="cart-box hidden" id="edit-apa-box">
+    <div class="cart-title">Pedido apartado de <span id="edit-apa-prof"></span></div>
+    <div id="edit-apa-list"></div>
+    <button class="btn-add" style="margin-top:8px" id="btn-add-edit" onclick="mostrarAgregarEnEdicion()">+ Agregar ítem a este apartado</button>
   </div>
 
   <div class="q hidden" id="pq-tipo-salida">
@@ -172,7 +192,7 @@
 </div>
 
 <script>
-var URL_API = 'https://script.google.com/macros/s/AKfycbwdhsvDJFsCNrnTgo5AJkDQ-J0rMoEvr5Kejt9ccUjiNEJPS20kHHkTrpTFRy9a56F4/exec';
+var URL_API = 'https://script.google.com/macros/s/AKfycbzW5kjRLulel-rXrx7JjKcbYET3ubKBzUeqZ4ApT-HgVEoUxl8Wr0nksT9tZS3J6ceP/exec';
 
 var datosFiltradosHoja = []; 
 var state = { mov: 'deposito', destino: '', subSalida: '', tipo: '', medida: '', lote: '', stockMax: 0 };
@@ -222,11 +242,16 @@ function selMov(v) {
   state.mov = v;
   state.destino = '';
   state.subSalida = '';
+  state.editProf = '';
+  state.agregandoEnEdicion = false;
   carritoVenta = [];
   document.getElementById('cart-box').classList.add('hidden');
   document.getElementById('btn-add-item').classList.add('hidden');
   document.getElementById('btn-submit').textContent = 'Registrar movimiento';
+  document.getElementById('btn-submit').classList.remove('hidden');
   document.getElementById('pq-tipo').classList.remove('hidden');
+  document.getElementById('pq-apa-modo').classList.add('hidden');
+  document.getElementById('edit-apa-box').classList.add('hidden');
   if (typeof ocultarVentaProfesional === 'function') ocultarVentaProfesional();
   document.getElementById('rb-dep').classList.toggle('on', v==='deposito');
   document.getElementById('rb-sal').classList.toggle('on', v==='salida');
@@ -299,6 +324,11 @@ function selDestinoApartado(v) {
 
   // Ocultamos los bloques específicos de venta-por-profesional por defecto
   ocultarVentaProfesional();
+  // Ocultamos los bloques de generar/editar apartado
+  document.getElementById('pq-apa-modo').classList.add('hidden');
+  document.getElementById('edit-apa-box').classList.add('hidden');
+  state.editProf = '';
+  state.agregandoEnEdicion = false;
 
   resetSelects();
 
@@ -324,18 +354,143 @@ function selDestinoApartado(v) {
       }
     });
   } else {
-    // Generar Nuevo Apartado: modo carrito
+    // Generar Nuevo Apartado: primero mostramos la lista de profesionales existentes + botón nuevo
     document.getElementById('btn-submit').textContent = 'Registrar apartado';
-    cargarOpcionesNormales();
-    carritoVenta = [];
-    renderCarrito();
-    document.getElementById('pq-profesional').classList.remove('hidden');
-    document.getElementById('pq-observacion').classList.remove('hidden');
-    document.getElementById('pq-remito').classList.add('hidden');
-    document.getElementById('pq-presupuesto').classList.add('hidden');
-    document.getElementById('hint-prof').classList.add('hidden');
-    document.getElementById('prof-inp').value = '';
+    document.getElementById('pq-tipo').classList.add('hidden');
+    document.getElementById('btn-submit').classList.add('hidden'); // se muestra al elegir "nuevo"
+    document.getElementById('loader').classList.remove('hidden');
+    document.getElementById('loader-text').textContent = "Buscando apartados existentes...";
+    jsonp({ accion: 'obtenerApartadosPorProfesional' }, (err, data) => {
+      document.getElementById('loader').classList.add('hidden');
+      apartadosPorProf = (data && data.ok) ? data.profesionales : [];
+      llenarSelectApaProf();
+      document.getElementById('pq-apa-modo').classList.remove('hidden');
+    });
   }
+}
+
+// ===== GENERAR APARTADO: lista de profesionales existentes =====
+function llenarSelectApaProf() {
+  var sel = document.getElementById('apa-prof-sel');
+  sel.innerHTML = '<option value="">— Elegí un profesional para editar —</option>';
+  apartadosPorProf.forEach(p => {
+    var opt = document.createElement('option');
+    opt.value = p.profesional;
+    opt.textContent = p.profesional + ' (' + p.items.length + ' ítems)';
+    sel.appendChild(opt);
+  });
+}
+
+// Inicia el carrito para un apartado nuevo (pide nombre)
+function iniciarApartadoNuevo() {
+  state.editProf = '';
+  document.getElementById('edit-apa-box').classList.add('hidden');
+  document.getElementById('apa-prof-sel').value = '';
+  document.getElementById('pq-tipo').classList.remove('hidden');
+  cargarOpcionesNormales();
+  carritoVenta = [];
+  renderCarrito();
+  document.getElementById('pq-profesional').classList.remove('hidden');
+  document.getElementById('pq-observacion').classList.remove('hidden');
+  document.getElementById('pq-remito').classList.add('hidden');
+  document.getElementById('pq-presupuesto').classList.add('hidden');
+  document.getElementById('hint-prof').classList.add('hidden');
+  document.getElementById('prof-inp').value = '';
+  document.getElementById('btn-submit').textContent = 'Registrar apartado';
+  document.getElementById('btn-submit').classList.remove('hidden');
+}
+
+// Al elegir un profesional existente: mostramos su pedido editable
+function onEditarApartadoProf() {
+  var prof = document.getElementById('apa-prof-sel').value;
+  state.editProf = prof;
+  // Ocultamos el carrito de "nuevo"
+  ocultarCamposExtra();
+  document.getElementById('cart-box').classList.add('hidden');
+  document.getElementById('btn-add-item').classList.add('hidden');
+  document.getElementById('pq-tipo').classList.add('hidden');
+  document.getElementById('pq-medida').classList.add('hidden');
+  document.getElementById('pq-lote').classList.add('hidden');
+  document.getElementById('pq-cantidad').classList.add('hidden');
+  carritoVenta = [];
+
+  if (!prof) {
+    document.getElementById('edit-apa-box').classList.add('hidden');
+    document.getElementById('btn-submit').classList.add('hidden');
+    return;
+  }
+  document.getElementById('btn-submit').classList.add('hidden'); // en edición se guarda al instante
+  renderEditApartado();
+}
+
+function renderEditApartado() {
+  var pedido = apartadosPorProf.find(p => p.profesional === state.editProf);
+  document.getElementById('edit-apa-prof').textContent = state.editProf;
+  var list = document.getElementById('edit-apa-list');
+  if (!pedido || !pedido.items.length) {
+    list.innerHTML = '<div style="font-size:12px;color:#64748b;padding:6px">Este profesional ya no tiene ítems apartados.</div>';
+  } else {
+    list.innerHTML = pedido.items.map((it, idx) => `
+      <div class="edit-item">
+        <span class="edit-item-info"><b>${it.tipo}</b> · ${it.medida} · ${it.lote}</span>
+        <input class="edit-qty" type="number" min="0" value="${it.cantidad}" id="eq_${idx}">
+        <button class="edit-apply" onclick="aplicarAjuste(${idx})">Aplicar</button>
+        <button class="edit-del" onclick="eliminarAjuste(${idx})">×</button>
+      </div>
+    `).join('');
+  }
+  document.getElementById('edit-apa-box').classList.remove('hidden');
+}
+
+function aplicarAjuste(idx) {
+  var pedido = apartadosPorProf.find(p => p.profesional === state.editProf);
+  var it = pedido.items[idx];
+  var nueva = parseInt(document.getElementById('eq_' + idx).value);
+  if (isNaN(nueva) || nueva < 0) { alert("Cantidad inválida."); return; }
+  if (nueva === it.cantidad) { alert("No cambiaste la cantidad."); return; }
+  enviarAjuste(it, nueva);
+}
+
+function eliminarAjuste(idx) {
+  var pedido = apartadosPorProf.find(p => p.profesional === state.editProf);
+  var it = pedido.items[idx];
+  if (!confirm("¿Eliminar " + it.tipo + " " + it.medida + " " + it.lote + " del apartado? Vuelve al stock.")) return;
+  enviarAjuste(it, 0);
+}
+
+function enviarAjuste(it, nueva) {
+  document.getElementById('loader').classList.remove('hidden');
+  document.getElementById('loader-text').textContent = "Aplicando ajuste...";
+  jsonp({
+    accion: 'ajustarApartado',
+    profesional: state.editProf,
+    tipo_imp: it.tipo,
+    medida: it.medida,
+    lote_sel: it.lote,
+    nueva_cantidad: nueva
+  }, (err, data) => {
+    document.getElementById('loader').classList.add('hidden');
+    if (data && data.ok) {
+      // Refrescamos la lista de apartados desde el servidor
+      jsonp({ accion: 'obtenerApartadosPorProfesional' }, (e2, d2) => {
+        apartadosPorProf = (d2 && d2.ok) ? d2.profesionales : [];
+        var sigue = apartadosPorProf.find(p => p.profesional === state.editProf);
+        llenarSelectApaProf();
+        if (sigue) { document.getElementById('apa-prof-sel').value = state.editProf; renderEditApartado(); }
+        else { document.getElementById('edit-apa-box').classList.add('hidden'); document.getElementById('apa-prof-sel').value = ''; }
+      });
+    } else {
+      alert("Atención: " + (data ? (data.error || data.mensaje) : "No hubo respuesta."));
+    }
+  });
+}
+
+// Permite agregar un ítem nuevo al apartado de un profesional existente (sin pedir nombre)
+function mostrarAgregarEnEdicion() {
+  state.agregandoEnEdicion = true;
+  document.getElementById('pq-tipo').classList.remove('hidden');
+  cargarOpcionesNormales();
+  document.getElementById('btn-submit').classList.add('hidden');
 }
 
 // ===== APARTADO -> VENTA POR PROFESIONAL =====
@@ -511,6 +666,16 @@ function onLote() {
 
   document.getElementById('hint-stock').textContent = `Disponible en este lote: ${state.stockMax} u.`;
 
+  // MODO AGREGAR EN EDICIÓN (apartado existente): cantidad + botón que aparta directo
+  if (state.agregandoEnEdicion) {
+    document.getElementById('pq-cantidad').classList.remove('hidden');
+    document.getElementById('btn-add-item').classList.remove('hidden');
+    document.getElementById('btn-add-item').textContent = '+ Apartar este ítem para ' + state.editProf;
+    document.getElementById('summary').classList.add('hidden');
+    document.getElementById('btn-submit').classList.add('hidden');
+    return;
+  }
+
   // MODO CARRITO (venta o apartado): mostramos cantidad + botón "Agregar al pedido"
   if (esCarrito()) {
     document.getElementById('pq-cantidad').classList.remove('hidden');
@@ -629,6 +794,28 @@ function agregarItemVenta() {
   }
   if (cant > state.stockMax) {
     alert("Elegí otra cantidad: en este lote hay " + state.stockMax + " u. disponibles.");
+    return;
+  }
+
+  // MODO AGREGAR EN EDICIÓN: aparta directo para el profesional (suma a lo que ya tenga de ese ítem)
+  if (state.agregandoEnEdicion) {
+    var pedido = apartadosPorProf.find(p => p.profesional === state.editProf);
+    var existente = pedido ? pedido.items.find(x => x.tipo === state.tipo && x.medida === state.medida && x.lote === state.lote) : null;
+    var base = existente ? existente.cantidad : 0;
+    enviarAjuste({ tipo: state.tipo, medida: state.medida, lote: state.lote }, base + cant);
+    // limpiamos selección de ítem y volvemos a la vista de edición
+    state.agregandoEnEdicion = false;
+    document.getElementById('cant-inp').value = '';
+    document.getElementById('med-sel').value = '';
+    document.getElementById('lote-sel').innerHTML = '<option value="">— Seleccioná —</option>';
+    document.getElementById('tipo-sel').value = '';
+    state.tipo = ''; state.medida = ''; state.lote = ''; state.stockMax = 0;
+    document.getElementById('pq-tipo').classList.add('hidden');
+    document.getElementById('pq-medida').classList.add('hidden');
+    document.getElementById('pq-lote').classList.add('hidden');
+    document.getElementById('pq-cantidad').classList.add('hidden');
+    document.getElementById('btn-add-item').classList.add('hidden');
+    document.getElementById('hint-stock').textContent = '';
     return;
   }
 
