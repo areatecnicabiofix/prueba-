@@ -70,7 +70,6 @@
   <div class="q hidden" id="pq-destino-apartado">
     <span class="label">¿Qué querés hacer con el Apartado?</span>
     <div class="radio-row">
-      <div class="ropt dep" id="rb-apa-dep" onclick="selDestinoApartado('deposito')">Devolver a Depósito</div>
       <div class="ropt sal" id="rb-apa-sal" onclick="selDestinoApartado('salida')">Pasar a Venta</div>
       <div class="ropt apa" id="rb-apa-apa" onclick="selDestinoApartado('apartado')">Generar Nuevo Apartado</div>
     </div>
@@ -317,7 +316,7 @@ function selTipoSalida(v) {
 function selDestinoApartado(v) {
   state.destino = v;
   state.subSalida = (v === 'salida') ? 'venta' : '';
-  ['rb-apa-dep', 'rb-apa-sal', 'rb-apa-apa'].forEach(id => document.getElementById(id).classList.remove('on'));
+  ['rb-apa-sal', 'rb-apa-apa'].forEach(id => { var el = document.getElementById(id); if (el) el.classList.remove('on'); });
   document.getElementById('rb-apa-' + v.slice(0,3)).classList.add('on');
   document.getElementById('pq-tipo-salida').classList.add('hidden');
   ['rb-sal-venta','rb-sal-contra','rb-sal-revi'].forEach(id => document.getElementById(id).classList.remove('on'));
