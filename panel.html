@@ -391,13 +391,207 @@
     });
   }
 
-  function renderInventory() {
-    document.getElementById('appContent').innerHTML = `
-      <article class="inventory-card">
-        <div><span class="pill neutral">Pendiente</span><h2 style="margin-top:14px">Inventario todavía no conectado</h2>
-        <p>Cuando tengas el archivo de stock, se vinculará aquí sin modificar los demás módulos.</p></div>
-      </article>`;
+const STOCK_TIPOS = [
+  { id: 'MP', nombre: 'Monopieza (MP)' },
+  { id: 'HI', nombre: 'Hexágono Interno Montado - sin tetón (HI)' },
+  { id: 'HISM', nombre: 'Hexágono Interno Sin Montar - con tetón (HISM)' },
+  { id: 'HE', nombre: 'Hexágono Externo (HE)' },
+  { id: 'CM', nombre: 'Cono Morse (CM)' },
+  { id: 'CMU', nombre: 'Compresivo Multiunit (CMU)' },
+  { id: 'CMU3', nombre: 'Compresivo Multiunit C3 (CMU3)' },
+  { id: 'MBT', nombre: 'Monopieza Basal Tratado (MBT)' },
+  { id: 'MBP', nombre: 'Monopieza Basal Pulido (MBP)' }
+];
+
+const inv = { mov: 'deposito', stock: {}, stockCargado: false, carrito: [], stockMax: 0 };
+
+function renderInventory() {
+  document.getElementById('appContent').innerHTML = `
+    <article class="panel">
+      <div class="panel-header"><h3>Movimiento de stock</h3></div>
+      <div class="form-grid">
+        <div class="field full">
+          <label>Tipo de movimiento</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button type="button" class="secondary-button inv-mov" data-mov="deposito">Depósito</button>
+            <button type="button" class="secondary-button inv-mov" data-mov="salida">Salida (venta)</button>
+            <button type="button" class="secondary-button inv-mov" data-mov="apartado">Apartado</button>
+          </div>
+        </div>
+        <div class="field"><label>Tipo de implante</label>
+          <select id="invTipo"><option value="">— Seleccioná —</option>${STOCK_TIPOS.map(t => `<option value="${t.id}">${html(t.nombre)}</option>`).join('')}</select>
+        </div>
+        <div class="field"><label>Medida</label><select id="invMedida"><option value="">— Elegí tipo primero —</option></select></div>
+        <div class="field"><label>Lote</label><select id="invLote"><option value="">—</option></select><small id="invStockHint"></small></div>
+        <div class="field"><label>Cantidad</label><input type="number" id="invCantidad" min="1"></div>
+        <div class="field full hidden" id="invLoteNuevoWrap">
+          <label>Nombre del nuevo lote</label><input type="text" id="invLoteNuevo" placeholder="Ej: Lot-MP-0185">
+        </div>
+        <button type="button" class="secondary-button hidden" id="invAddItem">＋ Agregar al pedido</button>
+        <div class="field full hidden" id="invCartWrap">
+          <p class="section-label">Ítems de la venta</p>
+          <div id="invCartList"></div>
+        </div>
+        <div class="field full hidden" id="invClienteWrap">
+          <p class="section-label">Cliente</p>
+          ${selectField('invClienteId', state.clients.map(c => ({value:c['Cliente ID'], label:c['Nombre completo']})), '', false, true, '— Elegí cliente o dejá vacío para cargar uno nuevo —')}
+          <div class="form-grid" style="padding:0;margin-top:8px" id="invClienteNuevoFields">
+            <div class="field"><label>Nombre</label><input id="invNombre"></div>
+            <div class="field"><label>Apellido</label><input id="invApellido"></div>
+            <div class="field"><label>CUIL</label><input id="invCuil"></div>
+            <div class="field"><label>Localidad</label><input id="invLocalidad"></div>
+            <div class="field full"><label>Email</label><input id="invEmail" type="email"></div>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="primary-button" id="invSubmit">Registrar movimiento</button>
+        </div>
+      </div>
+    </article>`;
+
+  invSetMov('deposito');
+  if (!inv.stockCargado) invCargarStock();
+  document.querySelectorAll('.inv-mov').forEach(b => b.onclick = () => invSetMov(b.dataset.mov));
+  document.getElementById('invTipo').onchange = invOnTipo;
+  document.getElementById('invMedida').onchange = invOnMedida;
+  document.getElementById('invLote').onchange = invOnLote;
+  document.getElementById('invAddItem').onclick = invAgregarItem;
+  document.getElementById('invSubmit').onclick = invSubmit;
+}
+
+function invSetMov(mov) {
+  inv.mov = mov;
+  inv.carrito = [];
+  document.querySelectorAll('.inv-mov').forEach(b => b.classList.toggle('primary-button', b.dataset.mov === mov));
+  document.getElementById('invClienteWrap').classList.toggle('hidden', mov !== 'salida');
+  document.getElementById('invAddItem').classList.toggle('hidden', mov !== 'salida');
+  document.getElementById('invCartWrap').classList.toggle('hidden', mov !== 'salida');
+  document.getElementById('invSubmit').textContent = mov === 'salida' ? 'Registrar venta y generar remito' : 'Registrar movimiento';
+  invRenderCarrito();
+}
+
+function invCargarStock() {
+  jsonp({ accion: 'obtenerTodoElStock' }, (err, data) => {
+    if (data && data.ok && data.stock) { inv.stock = data.stock; inv.stockCargado = true; }
+  });
+}
+
+function invOnTipo() {
+  const tipo = document.getElementById('invTipo').value;
+  const selMed = document.getElementById('invMedida');
+  selMed.innerHTML = '<option value="">— Seleccioná medida —</option>';
+  document.getElementById('invLote').innerHTML = '<option value="">—</option>';
+  document.getElementById('invLoteNuevoWrap').classList.add('hidden');
+  if (!tipo || !inv.stock[tipo]) return;
+  const medidas = [...new Set(inv.stock[tipo].map(i => i.medida))];
+  medidas.forEach(m => selMed.insertAdjacentHTML('beforeend', `<option value="${attr(m)}">${html(m)}</option>`));
+}
+
+function invOnMedida() {
+  const tipo = document.getElementById('invTipo').value;
+  const medida = document.getElementById('invMedida').value;
+  const selLote = document.getElementById('invLote');
+  selLote.innerHTML = '<option value="">— Seleccioná lote —</option>';
+  document.getElementById('invLoteNuevoWrap').classList.add('hidden');
+  (inv.stock[tipo] || []).filter(i => i.medida === medida).forEach(i => {
+    selLote.insertAdjacentHTML('beforeend', `<option value="${attr(i.lote)}">${html(i.lote)} (Disp: ${i.stock})</option>`);
+  });
+  if (inv.mov === 'deposito') selLote.insertAdjacentHTML('beforeend', `<option value="nuevo">＋ Agregar nuevo lote</option>`);
+}
+
+function invOnLote() {
+  const tipo = document.getElementById('invTipo').value;
+  const medida = document.getElementById('invMedida').value;
+  const lote = document.getElementById('invLote').value;
+  document.getElementById('invLoteNuevoWrap').classList.toggle('hidden', lote !== 'nuevo');
+  if (lote === 'nuevo') { inv.stockMax = 0; document.getElementById('invStockHint').textContent = ''; return; }
+  const item = (inv.stock[tipo] || []).find(i => i.medida === medida && i.lote === lote);
+  inv.stockMax = item ? item.stock : 0;
+  document.getElementById('invStockHint').textContent = item ? `Disponible: ${item.stock} u.` : '';
+}
+
+function invAgregarItem() {
+  const tipo = document.getElementById('invTipo').value;
+  const medida = document.getElementById('invMedida').value;
+  const lote = document.getElementById('invLote').value;
+  const cant = Number(document.getElementById('invCantidad').value) || 0;
+  if (!tipo || !medida || !lote || lote === 'nuevo') return showError(new Error('Elegí tipo, medida y lote.'));
+  if (cant <= 0 || cant > inv.stockMax) return showError(new Error('Cantidad inválida o mayor al stock disponible (' + inv.stockMax + ').'));
+  inv.carrito.push({ tipo_imp: tipo, medida: medida, lote_sel: lote, cantidad: cant });
+  invRenderCarrito();
+  document.getElementById('invCantidad').value = '';
+}
+
+function invRenderCarrito() {
+  document.getElementById('invCartList').innerHTML = inv.carrito.length
+    ? inv.carrito.map((it, idx) => `<div class="pill neutral" style="margin:3px 6px 3px 0;display:inline-flex">${html(it.tipo_imp)} · ${html(it.medida)} · ${html(it.lote_sel)} · ${it.cantidad}u <button type="button" style="border:none;background:none;color:#c0392b;font-weight:800;margin-left:6px;cursor:pointer" onclick="invQuitarItem(${idx})">×</button></div>`).join('')
+    : empty('Sin ítems todavía.');
+}
+
+function invQuitarItem(idx) { inv.carrito.splice(idx, 1); invRenderCarrito(); }
+
+function invSubmit() {
+  if (inv.mov === 'salida') return invSubmitVenta();
+
+  const tipo = document.getElementById('invTipo').value;
+  const medida = document.getElementById('invMedida').value;
+  const lote = document.getElementById('invLote').value;
+  const cant = Number(document.getElementById('invCantidad').value) || 0;
+  const loteNuevo = document.getElementById('invLoteNuevo').value.trim();
+  if (!tipo || !medida || !lote) return showError(new Error('Completá tipo, medida y lote.'));
+  if (cant <= 0) return showError(new Error('Ingresá una cantidad válida.'));
+  if (lote === 'nuevo' && !loteNuevo) return showError(new Error('Ingresá el nombre del nuevo lote.'));
+
+  document.getElementById('invSubmit').disabled = true;
+  jsonp({
+    accion: 'registrarMovimiento',
+    tipo_mov: inv.mov,
+    tipo_apartado: inv.mov === 'apartado' ? 'apartado' : '',
+    tipo_salida: '',
+    tipo_imp: tipo,
+    medida: medida,
+    lote_sel: lote,
+    lote_nombre: loteNuevo,
+    cantidad: cant,
+    profesional: '',
+    nro_remito: '',
+    nro_presupuesto: '',
+    observacion: 'Cargado desde Panel'
+  }, (err, data) => {
+    document.getElementById('invSubmit').disabled = false;
+    if (data && data.ok) { showToast('Movimiento registrado.'); inv.stockCargado = false; renderInventory(); }
+    else showError(new Error(data ? data.error : 'No hubo respuesta.'));
+  });
+}
+
+function invSubmitVenta() {
+  if (!inv.carrito.length) return showError(new Error('Agregá al menos un ítem.'));
+  const clientId = document.querySelector('select[name="invClienteId"]').value;
+  let payload = { items: inv.carrito };
+  if (clientId) {
+    payload.clientId = clientId;
+  } else {
+    const nombre = document.getElementById('invNombre').value.trim();
+    if (!nombre) return showError(new Error('Elegí un cliente existente o cargá los datos de uno nuevo.'));
+    payload.cliente = {
+      'Nombre': nombre,
+      'Apellido': document.getElementById('invApellido').value.trim(),
+      'CUIL': document.getElementById('invCuil').value.trim(),
+      'Localidad': document.getElementById('invLocalidad').value.trim(),
+      'Email': document.getElementById('invEmail').value.trim()
+    };
   }
+  document.getElementById('invSubmit').disabled = true;
+  server('registrarVentaStockConRemito', payload).then(function (result) {
+    document.getElementById('invSubmit').disabled = false;
+    showToast('Venta registrada. Remito N° ' + result.numeroRemito + '.');
+    inv.stockCargado = false;
+    renderInventory();
+  }).catch(function (err) {
+    document.getElementById('invSubmit').disabled = false;
+    showError(err);
+  });
+}
 
   function loadView(moduleKey) {
     document.getElementById('appContent').innerHTML = loading();
