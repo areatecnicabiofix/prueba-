@@ -302,7 +302,7 @@
     const isInventory = state.view === 'inventario';
     const meta = views[state.view];
     document.getElementById('pageTitle').textContent = isHome ? 'Buen día, Administración' : isInventory ? 'Inventario' : meta.title;
-    document.getElementById('pageSubtitle').textContent = isHome ? 'Resumen de hoy' : isInventory ?: 'Consulta y gestión de ' + meta.title.toLowerCase();
+    document.getElementById('pageSubtitle').textContent = isHome ? 'Resumen de hoy' : isInventory ? 'Movimientos de stock' : 'Consulta y gestión de ' + meta.title.toLowerCase();
     updateNewButton();
     if (isHome) renderDashboard();
     else if (isInventory) renderInventory();
@@ -441,6 +441,7 @@ function renderInventory() {
         <div class="field full hidden" id="invClienteWrap">
           <p class="section-label">Cliente</p>
           <div class="field full">
+          <div id="invApartadoBox" class="field full hidden" style="padding:10px;border:1px solid var(--line);border-radius:8px;background:#fbfcfc"></div>
             <label>Buscar cliente</label>
             <input type="text" id="invClienteBuscar" placeholder="Escribí nombre, CUIL o localidad…" autocomplete="off">
             <input type="hidden" id="invClienteId" value="">
@@ -478,6 +479,9 @@ function invSetMov(mov) {
   inv.mov = mov;
   inv.carrito = [];
   inv.stockMax = 0;
+  inv.apartadoActivo = null;
+inv.usandoApartado = false;
+document.getElementById('invApartadoBox').classList.add('hidden');
 
   document.querySelectorAll('.inv-mov').forEach(b => b.classList.toggle('primary-button', b.dataset.mov === mov));
 
@@ -601,7 +605,35 @@ function invClienteBuscarInput() {
     row.onclick = () => invClienteSeleccionar(row.dataset.cliente);
   });
 }
+function invBuscarApartadoCliente(clienteId) {
+  const box = document.getElementById('invApartadoBox');
+  box.innerHTML = '<p>Buscando apartados de este cliente…</p>';
+  box.classList.remove('hidden');
+  jsonp({ accion: 'obtenerApartadosPorProfesional' }, (err, data) => {
+    const grupo = (data && data.ok) ? data.profesionales.find(p => p.clienteId === clienteId) : null;
+    if (!grupo || !grupo.items.length) {
+      box.classList.add('hidden');
+      box.innerHTML = '';
+      inv.apartadoActivo = null;
+      return;
+    }
+    inv.apartadoActivo = grupo;
+    box.innerHTML = `
+      <div class="pill warning" style="margin-bottom:8px">Este cliente tiene un apartado activo</div>
+      <div>${grupo.items.map(it => `<div class="pill neutral" style="margin:2px 4px 2px 0;display:inline-flex">${html(it.tipo)} · ${html(it.medida)} · ${html(it.lote)} · ${it.cantidad}u</div>`).join('')}</div>
+      <button type="button" class="secondary-button" style="margin-top:8px" id="invUsarApartado">Cargar este apartado a la venta</button>`;
+    document.getElementById('invUsarApartado').onclick = invUsarApartado;
+  });
+}
 
+function invUsarApartado() {
+  if (!inv.apartadoActivo) return;
+  inv.carrito = inv.apartadoActivo.items.map(it => ({ tipo_imp: it.tipo, medida: it.medida, lote_sel: it.lote, cantidad: it.cantidad }));
+  inv.usandoApartado = true;
+  invRenderCarrito();
+  document.getElementById('invSubmit').textContent = 'Cerrar apartado y generar remito';
+  showToast('Apartado cargado — el stock no se vuelve a descontar.');
+}
 function invClienteSeleccionar(id) {
   const client = state.clients.find(c => c['Cliente ID'] === id);
   if (!client) return;
@@ -613,6 +645,7 @@ function invClienteSeleccionar(id) {
   document.getElementById('invCuil').value = client['CUIL'] || '';
   document.getElementById('invLocalidad').value = client['Localidad'] || '';
   document.getElementById('invEmail').value = client['Email'] || '';
+  if (inv.mov === 'salida') invBuscarApartadoCliente(id);
 }
 
 function invClienteLimpiarCampos() {
@@ -633,7 +666,22 @@ function invClienteClickAfuera(event) {
 function invSubmit() {
   if (inv.mov === 'deposito') return invSubmitDeposito();
   if (inv.mov === 'apartado') return invSubmitApartado();
+  if (inv.mov === 'salida' && inv.usandoApartado) return invSubmitVentaDesdeApartado();
   return invSubmitVenta();
+}
+
+function invSubmitVentaDesdeApartado() {
+  const clientId = document.getElementById('invClienteId').value;
+  document.getElementById('invSubmit').disabled = true;
+  server('venderApartadoConRemito', { clienteId: clientId }).then(function (result) {
+    document.getElementById('invSubmit').disabled = false;
+    showToast('Apartado vendido. Remito N° ' + result.numeroRemito + '.');
+    inv.stockCargado = false;
+    renderInventory();
+  }).catch(function (err) {
+    document.getElementById('invSubmit').disabled = false;
+    showError(err);
+  });
 }
 
 function invSubmitDeposito() {
@@ -734,7 +782,8 @@ function invSubmitApartado() {
   function renderTable(moduleKey, records) {
     const meta = views[moduleKey];
     const createBudgetButton = moduleKey === 'presupuestos'
-      : '';
+  ? '<button class="primary-button" id="createBudgetButton">＋ Generar presupuesto</button>'
+  : '';
     document.getElementById('appContent').innerHTML = `
       <div class="view-toolbar">
         <input class="search" id="searchInput" type="search" placeholder="Buscar en ${html(meta.title.toLowerCase())}…">
