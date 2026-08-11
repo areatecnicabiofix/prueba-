@@ -494,6 +494,16 @@ function invOnTipo() {
   medidas.forEach(m => selMed.insertAdjacentHTML('beforeend', `<option value="${attr(m)}">${html(m)}</option>`));
 }
 
+function invStockDisponible(tipo, medida, lote) {
+  const item = (inv.stock[tipo] || []).find(i => i.medida === medida && i.lote === lote);
+  const stockOriginal = item ? item.stock : 0;
+  const yaEnCarrito = inv.carrito
+    .filter(it => it.tipo_imp === tipo && it.medida === medida && it.lote_sel === lote)
+    .reduce((a, it) => a + it.cantidad, 0);
+  return stockOriginal - yaEnCarrito;
+}
+
+      
 function invOnMedida() {
   const tipo = document.getElementById('invTipo').value;
   const medida = document.getElementById('invMedida').value;
@@ -501,7 +511,9 @@ function invOnMedida() {
   selLote.innerHTML = '<option value="">— Seleccioná lote —</option>';
   document.getElementById('invLoteNuevoWrap').classList.add('hidden');
   (inv.stock[tipo] || []).filter(i => i.medida === medida).forEach(i => {
-    selLote.insertAdjacentHTML('beforeend', `<option value="${attr(i.lote)}">${html(i.lote)} (Disp: ${i.stock})</option>`);
+    const disp = invStockDisponible(tipo, medida, i.lote);
+    if (disp <= 0 && inv.mov === 'salida') return; // ya no queda nada disponible para vender de este lote
+    selLote.insertAdjacentHTML('beforeend', `<option value="${attr(i.lote)}">${html(i.lote)} (Disp: ${disp})</option>`);
   });
   if (inv.mov === 'deposito') selLote.insertAdjacentHTML('beforeend', `<option value="nuevo">＋ Agregar nuevo lote</option>`);
 }
@@ -512,9 +524,23 @@ function invOnLote() {
   const lote = document.getElementById('invLote').value;
   document.getElementById('invLoteNuevoWrap').classList.toggle('hidden', lote !== 'nuevo');
   if (lote === 'nuevo') { inv.stockMax = 0; document.getElementById('invStockHint').textContent = ''; return; }
-  const item = (inv.stock[tipo] || []).find(i => i.medida === medida && i.lote === lote);
-  inv.stockMax = item ? item.stock : 0;
-  document.getElementById('invStockHint').textContent = item ? `Disponible: ${item.stock} u.` : '';
+  inv.stockMax = invStockDisponible(tipo, medida, lote);
+  document.getElementById('invStockHint').textContent = `Disponible: ${inv.stockMax} u.`;
+}
+      
+function invAgregarItem() {
+  const tipo = document.getElementById('invTipo').value;
+  const medida = document.getElementById('invMedida').value;
+  const lote = document.getElementById('invLote').value;
+  const cant = Number(document.getElementById('invCantidad').value) || 0;
+  if (!tipo || !medida || !lote || lote === 'nuevo') return showError(new Error('Elegí tipo, medida y lote.'));
+  if (cant <= 0 || cant > inv.stockMax) return showError(new Error('Cantidad inválida o mayor al stock disponible (' + inv.stockMax + ').'));
+  inv.carrito.push({ tipo_imp: tipo, medida: medida, lote_sel: lote, cantidad: cant });
+  invRenderCarrito();
+  document.getElementById('invCantidad').value = '';
+  invOnMedida(); // refresca el desplegable de lotes con el stock ya descontado
+  document.getElementById('invLote').value = '';
+  document.getElementById('invStockHint').textContent = '';
 }
 
 function invClienteBuscarInput() {
