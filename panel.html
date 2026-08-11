@@ -302,7 +302,7 @@
     const isInventory = state.view === 'inventario';
     const meta = views[state.view];
     document.getElementById('pageTitle').textContent = isHome ? 'Buen día, Administración' : isInventory ? 'Inventario' : meta.title;
-    document.getElementById('pageSubtitle').textContent = isHome ? 'Resumen de hoy' : isInventory ? 'Conexión pendiente con el archivo de stock' : 'Consulta y gestión de ' + meta.title.toLowerCase();
+    document.getElementById('pageSubtitle').textContent = isHome ? 'Resumen de hoy' : isInventory ?: 'Consulta y gestión de ' + meta.title.toLowerCase();
     updateNewButton();
     if (isHome) renderDashboard();
     else if (isInventory) renderInventory();
@@ -322,7 +322,6 @@
       ventas: 'Ver presupuestos',
       cobros: 'Ver ventas',
       gastos: '＋ Registrar gasto',
-      inventario: 'Configurar después'
     };
     button.textContent = labels[state.view] || '＋ Nuevo';
     button.disabled = state.view === 'inventario';
@@ -735,7 +734,6 @@ function invSubmitApartado() {
   function renderTable(moduleKey, records) {
     const meta = views[moduleKey];
     const createBudgetButton = moduleKey === 'presupuestos'
-      ? '<button class="primary-button" id="createBudgetButton">＋ Generar presupuesto</button>'
       : '';
     document.getElementById('appContent').innerHTML = `
       <div class="view-toolbar">
