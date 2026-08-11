@@ -433,16 +433,21 @@ function renderInventory() {
           <div id="invCartList"></div>
         </div>
         <div class="field full hidden" id="invClienteWrap">
-          <p class="section-label">Cliente</p>
-          ${selectField('invClienteId', state.clients.map(c => ({value:c['Cliente ID'], label:c['Nombre completo']})), '', false, true, '— Elegí cliente o dejá vacío para cargar uno nuevo —')}
-          <div class="form-grid" style="padding:0;margin-top:8px" id="invClienteNuevoFields">
-            <div class="field"><label>Nombre</label><input id="invNombre"></div>
-            <div class="field"><label>Apellido</label><input id="invApellido"></div>
-            <div class="field"><label>CUIL</label><input id="invCuil"></div>
-            <div class="field"><label>Localidad</label><input id="invLocalidad"></div>
-            <div class="field full"><label>Email</label><input id="invEmail" type="email"></div>
-          </div>
-        </div>
+  <p class="section-label">Cliente</p>
+  <div class="field full">
+    <label>Buscar cliente</label>
+    <input type="text" id="invClienteBuscar" placeholder="Escribí nombre, CUIL o localidad…" autocomplete="off">
+    <input type="hidden" id="invClienteId" value="">
+    <div id="invClienteResultados" class="table-wrap hidden" style="max-height:230px;overflow:auto;margin-top:6px"></div>
+  </div>
+  <div class="form-grid" style="padding:0;margin-top:8px" id="invClienteNuevoFields">
+    <div class="field"><label>Nombre</label><input id="invNombre"></div>
+    <div class="field"><label>Apellido</label><input id="invApellido"></div>
+    <div class="field"><label>CUIL</label><input id="invCuil"></div>
+    <div class="field"><label>Localidad</label><input id="invLocalidad"></div>
+    <div class="field full"><label>Email</label><input id="invEmail" type="email"></div>
+ </div>
+</div>
         <div class="form-actions">
           <button type="button" class="primary-button" id="invSubmit">Registrar movimiento</button>
         </div>
@@ -457,6 +462,8 @@ function renderInventory() {
   document.getElementById('invLote').onchange = invOnLote;
   document.getElementById('invAddItem').onclick = invAgregarItem;
   document.getElementById('invSubmit').onclick = invSubmit;
+  document.getElementById('invClienteBuscar').oninput = invClienteBuscarInput;
+  document.addEventListener('click', invClienteClickAfuera);
 }
 
 function invSetMov(mov) {
@@ -510,6 +517,56 @@ function invOnLote() {
   document.getElementById('invStockHint').textContent = item ? `Disponible: ${item.stock} u.` : '';
 }
 
+function invClienteBuscarInput() {
+  document.getElementById('invClienteId').value = ''; // si vuelve a tipear, invalidamos la selección anterior
+  invClienteLimpiarCampos();
+  const q = normalize(document.getElementById('invClienteBuscar').value);
+  const box = document.getElementById('invClienteResultados');
+  if (!q) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+  const matches = state.clients.filter(c =>
+    normalize(c['Nombre completo']).includes(q) ||
+    normalize(c['CUIL']).includes(q) ||
+    normalize(c['Localidad']).includes(q)
+  ).slice(0, 8);
+  box.innerHTML = matches.length
+    ? matches.map(c => `<div class="task-row ghost-row" style="cursor:pointer" data-cliente="${attr(c['Cliente ID'])}">
+        <span><strong>${html(c['Nombre completo'])}</strong><small>${html(c['CUIL'] || '')} ${c['Localidad'] ? '· ' + html(c['Localidad']) : ''}</small></span>
+      </div>`).join('')
+    : `<div class="task-row"><span>Sin coincidencias — se va a cargar como cliente nuevo.</span></div>`;
+  box.classList.remove('hidden');
+  box.querySelectorAll('[data-cliente]').forEach(row => {
+    row.onclick = () => invClienteSeleccionar(row.dataset.cliente);
+  });
+}
+
+function invClienteSeleccionar(id) {
+  const client = state.clients.find(c => c['Cliente ID'] === id);
+  if (!client) return;
+  document.getElementById('invClienteId').value = id;
+  document.getElementById('invClienteBuscar').value = client['Nombre completo'] || '';
+  document.getElementById('invClienteResultados').classList.add('hidden');
+  document.getElementById('invNombre').value = client['Nombre'] || '';
+  document.getElementById('invApellido').value = client['Apellido'] || '';
+  document.getElementById('invCuil').value = client['CUIL'] || '';
+  document.getElementById('invLocalidad').value = client['Localidad'] || '';
+  document.getElementById('invEmail').value = client['Email'] || '';
+}
+
+function invClienteLimpiarCampos() {
+  ['invNombre', 'invApellido', 'invCuil', 'invLocalidad', 'invEmail'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+}
+
+function invClienteClickAfuera(event) {
+  const box = document.getElementById('invClienteResultados');
+  const input = document.getElementById('invClienteBuscar');
+  if (!box || box.classList.contains('hidden')) return;
+  if (event.target === input || box.contains(event.target)) return;
+  box.classList.add('hidden');
+}
+      
 function invAgregarItem() {
   const tipo = document.getElementById('invTipo').value;
   const medida = document.getElementById('invMedida').value;
@@ -566,7 +623,7 @@ function invSubmit() {
 
 function invSubmitVenta() {
   if (!inv.carrito.length) return showError(new Error('Agregá al menos un ítem.'));
-  const clientId = document.querySelector('select[name="invClienteId"]').value;
+  const clientId = document.getElementById('invClienteId').value;
   let payload = { items: inv.carrito };
   if (clientId) {
     payload.clientId = clientId;
