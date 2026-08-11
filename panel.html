@@ -422,32 +422,40 @@ function renderInventory() {
           <select id="invTipo"><option value="">— Seleccioná —</option>${STOCK_TIPOS.map(t => `<option value="${t.id}">${html(t.nombre)}</option>`).join('')}</select>
         </div>
         <div class="field"><label>Medida</label><select id="invMedida"><option value="">— Elegí tipo primero —</option></select></div>
-        <div class="field"><label>Lote</label><select id="invLote"><option value="">—</option></select><small id="invStockHint"></small></div>
-        <div class="field"><label>Cantidad</label><input type="number" id="invCantidad" min="1"></div>
-        <div class="field full hidden" id="invLoteNuevoWrap">
-          <label>Nombre del nuevo lote</label><input type="text" id="invLoteNuevo" placeholder="Ej: Lot-MP-0185">
+
+        <div class="field hidden" id="invLoteSelectWrap">
+          <label>Lote</label><select id="invLote"><option value="">—</option></select><small id="invStockHint"></small>
         </div>
-        <button type="button" class="secondary-button hidden" id="invAddItem">＋ Agregar al pedido</button>
+        <div class="field hidden" id="invLoteTextoWrap">
+          <label>Lote</label><input type="text" id="invLoteTexto" placeholder="Ej: Lot-MP-0185">
+          <small>Si ya existe ese lote, se suma la cantidad. Si no existe, se crea nuevo.</small>
+        </div>
+
+        <div class="field"><label>Cantidad</label><input type="number" id="invCantidad" min="1"></div>
+
+        <button type="button" class="secondary-button hidden" id="invAddItem">＋ Agregar</button>
         <div class="field full hidden" id="invCartWrap">
-          <p class="section-label">Ítems de la venta</p>
+          <p class="section-label" id="invCartLabel">Ítems</p>
           <div id="invCartList"></div>
         </div>
+
         <div class="field full hidden" id="invClienteWrap">
-  <p class="section-label">Cliente</p>
-  <div class="field full">
-    <label>Buscar cliente</label>
-    <input type="text" id="invClienteBuscar" placeholder="Escribí nombre, CUIL o localidad…" autocomplete="off">
-    <input type="hidden" id="invClienteId" value="">
-    <div id="invClienteResultados" class="table-wrap hidden" style="max-height:230px;overflow:auto;margin-top:6px"></div>
-  </div>
-  <div class="form-grid" style="padding:0;margin-top:8px" id="invClienteNuevoFields">
-    <div class="field"><label>Nombre</label><input id="invNombre"></div>
-    <div class="field"><label>Apellido</label><input id="invApellido"></div>
-    <div class="field"><label>CUIL</label><input id="invCuil"></div>
-    <div class="field"><label>Localidad</label><input id="invLocalidad"></div>
-    <div class="field full"><label>Email</label><input id="invEmail" type="email"></div>
- </div>
-</div>
+          <p class="section-label">Cliente</p>
+          <div class="field full">
+            <label>Buscar cliente</label>
+            <input type="text" id="invClienteBuscar" placeholder="Escribí nombre, CUIL o localidad…" autocomplete="off">
+            <input type="hidden" id="invClienteId" value="">
+            <div id="invClienteResultados" class="table-wrap hidden" style="max-height:230px;overflow:auto;margin-top:6px"></div>
+          </div>
+          <div class="form-grid" style="padding:0;margin-top:8px" id="invClienteNuevoFields">
+            <div class="field"><label>Nombre</label><input id="invNombre"></div>
+            <div class="field"><label>Apellido</label><input id="invApellido"></div>
+            <div class="field"><label>CUIL</label><input id="invCuil"></div>
+            <div class="field"><label>Localidad</label><input id="invLocalidad"></div>
+            <div class="field full"><label>Email</label><input id="invEmail" type="email"></div>
+          </div>
+        </div>
+
         <div class="form-actions">
           <button type="button" class="primary-button" id="invSubmit">Registrar movimiento</button>
         </div>
@@ -466,14 +474,38 @@ function renderInventory() {
   document.addEventListener('click', invClienteClickAfuera);
 }
 
+// Reinicia TODO el formulario al cambiar de modo, para que nada se traslade entre pestañas
 function invSetMov(mov) {
   inv.mov = mov;
   inv.carrito = [];
+  inv.stockMax = 0;
+
   document.querySelectorAll('.inv-mov').forEach(b => b.classList.toggle('primary-button', b.dataset.mov === mov));
-  document.getElementById('invClienteWrap').classList.toggle('hidden', mov !== 'salida');
-  document.getElementById('invAddItem').classList.toggle('hidden', mov !== 'salida');
-  document.getElementById('invCartWrap').classList.toggle('hidden', mov !== 'salida');
-  document.getElementById('invSubmit').textContent = mov === 'salida' ? 'Registrar venta y generar remito' : 'Registrar movimiento';
+
+  document.getElementById('invTipo').value = '';
+  document.getElementById('invMedida').innerHTML = '<option value="">— Elegí tipo primero —</option>';
+  document.getElementById('invLote').innerHTML = '<option value="">—</option>';
+  document.getElementById('invLoteTexto').value = '';
+  document.getElementById('invCantidad').value = '';
+  document.getElementById('invStockHint').textContent = '';
+
+  document.getElementById('invLoteSelectWrap').classList.toggle('hidden', mov === 'deposito');
+  document.getElementById('invLoteTextoWrap').classList.toggle('hidden', mov !== 'deposito');
+
+  const usaCarrito = (mov === 'salida' || mov === 'apartado');
+  document.getElementById('invAddItem').classList.toggle('hidden', !usaCarrito);
+  document.getElementById('invCartWrap').classList.toggle('hidden', !usaCarrito);
+  document.getElementById('invClienteWrap').classList.toggle('hidden', !usaCarrito);
+  document.getElementById('invCartLabel').textContent = mov === 'apartado' ? 'Ítems del apartado' : 'Ítems de la venta';
+
+  document.getElementById('invClienteBuscar').value = '';
+  document.getElementById('invClienteId').value = '';
+  document.getElementById('invClienteResultados').classList.add('hidden');
+  invClienteLimpiarCampos();
+
+  const labels = { deposito: 'Registrar movimiento', salida: 'Registrar venta y generar remito', apartado: 'Registrar apartado' };
+  document.getElementById('invSubmit').textContent = labels[mov];
+
   invRenderCarrito();
 }
 
@@ -488,7 +520,8 @@ function invOnTipo() {
   const selMed = document.getElementById('invMedida');
   selMed.innerHTML = '<option value="">— Seleccioná medida —</option>';
   document.getElementById('invLote').innerHTML = '<option value="">—</option>';
-  document.getElementById('invLoteNuevoWrap').classList.add('hidden');
+  document.getElementById('invLoteTexto').value = '';
+  document.getElementById('invStockHint').textContent = '';
   if (!tipo || !inv.stock[tipo]) return;
   const medidas = [...new Set(inv.stock[tipo].map(i => i.medida))];
   medidas.forEach(m => selMed.insertAdjacentHTML('beforeend', `<option value="${attr(m)}">${html(m)}</option>`));
@@ -503,48 +536,53 @@ function invStockDisponible(tipo, medida, lote) {
   return stockOriginal - yaEnCarrito;
 }
 
-      
+// Solo se usa en Salida/Apartado (Depósito usa el campo de texto libre, no este select)
 function invOnMedida() {
   const tipo = document.getElementById('invTipo').value;
   const medida = document.getElementById('invMedida').value;
   const selLote = document.getElementById('invLote');
   selLote.innerHTML = '<option value="">— Seleccioná lote —</option>';
-  document.getElementById('invLoteNuevoWrap').classList.add('hidden');
   (inv.stock[tipo] || []).filter(i => i.medida === medida).forEach(i => {
     const disp = invStockDisponible(tipo, medida, i.lote);
-    if (disp <= 0 && inv.mov === 'salida') return; // ya no queda nada disponible para vender de este lote
+    if (disp <= 0) return;
     selLote.insertAdjacentHTML('beforeend', `<option value="${attr(i.lote)}">${html(i.lote)} (Disp: ${disp})</option>`);
   });
-  if (inv.mov === 'deposito') selLote.insertAdjacentHTML('beforeend', `<option value="nuevo">＋ Agregar nuevo lote</option>`);
 }
 
 function invOnLote() {
   const tipo = document.getElementById('invTipo').value;
   const medida = document.getElementById('invMedida').value;
   const lote = document.getElementById('invLote').value;
-  document.getElementById('invLoteNuevoWrap').classList.toggle('hidden', lote !== 'nuevo');
-  if (lote === 'nuevo') { inv.stockMax = 0; document.getElementById('invStockHint').textContent = ''; return; }
+  if (!lote) { inv.stockMax = 0; document.getElementById('invStockHint').textContent = ''; return; }
   inv.stockMax = invStockDisponible(tipo, medida, lote);
   document.getElementById('invStockHint').textContent = `Disponible: ${inv.stockMax} u.`;
 }
 
-      function invAgregarItem() {
+function invAgregarItem() {
   const tipo = document.getElementById('invTipo').value;
   const medida = document.getElementById('invMedida').value;
   const lote = document.getElementById('invLote').value;
   const cant = Number(document.getElementById('invCantidad').value) || 0;
-  if (!tipo || !medida || !lote || lote === 'nuevo') return showError(new Error('Elegí tipo, medida y lote.'));
+  if (!tipo || !medida || !lote) return showError(new Error('Elegí tipo, medida y lote.'));
   if (cant <= 0 || cant > inv.stockMax) return showError(new Error('Cantidad inválida o mayor al stock disponible (' + inv.stockMax + ').'));
   inv.carrito.push({ tipo_imp: tipo, medida: medida, lote_sel: lote, cantidad: cant });
   invRenderCarrito();
   document.getElementById('invCantidad').value = '';
-  invOnMedida(); 
+  invOnMedida();
   document.getElementById('invLote').value = '';
   document.getElementById('invStockHint').textContent = '';
 }
 
+function invRenderCarrito() {
+  document.getElementById('invCartList').innerHTML = inv.carrito.length
+    ? inv.carrito.map((it, idx) => `<div class="pill neutral" style="margin:3px 6px 3px 0;display:inline-flex">${html(it.tipo_imp)} · ${html(it.medida)} · ${html(it.lote_sel)} · ${it.cantidad}u <button type="button" style="border:none;background:none;color:#c0392b;font-weight:800;margin-left:6px;cursor:pointer" onclick="invQuitarItem(${idx})">×</button></div>`).join('')
+    : empty('Sin ítems todavía.');
+}
+
+function invQuitarItem(idx) { inv.carrito.splice(idx, 1); invRenderCarrito(); invOnMedida(); }
+
 function invClienteBuscarInput() {
-  document.getElementById('invClienteId').value = ''; // si vuelve a tipear, invalidamos la selección anterior
+  document.getElementById('invClienteId').value = '';
   invClienteLimpiarCampos();
   const q = normalize(document.getElementById('invClienteBuscar').value);
   const box = document.getElementById('invClienteResultados');
@@ -592,42 +630,32 @@ function invClienteClickAfuera(event) {
   if (event.target === input || box.contains(event.target)) return;
   box.classList.add('hidden');
 }
-      
-
-function invRenderCarrito() {
-  document.getElementById('invCartList').innerHTML = inv.carrito.length
-    ? inv.carrito.map((it, idx) => `<div class="pill neutral" style="margin:3px 6px 3px 0;display:inline-flex">${html(it.tipo_imp)} · ${html(it.medida)} · ${html(it.lote_sel)} · ${it.cantidad}u <button type="button" style="border:none;background:none;color:#c0392b;font-weight:800;margin-left:6px;cursor:pointer" onclick="invQuitarItem(${idx})">×</button></div>`).join('')
-    : empty('Sin ítems todavía.');
-}
-
-function invQuitarItem(idx) { inv.carrito.splice(idx, 1); invRenderCarrito(); }
 
 function invSubmit() {
-  if (inv.mov === 'salida') return invSubmitVenta();
+  if (inv.mov === 'deposito') return invSubmitDeposito();
+  if (inv.mov === 'apartado') return invSubmitApartado();
+  return invSubmitVenta();
+}
 
+function invSubmitDeposito() {
   const tipo = document.getElementById('invTipo').value;
   const medida = document.getElementById('invMedida').value;
-  const lote = document.getElementById('invLote').value;
+  const loteTexto = document.getElementById('invLoteTexto').value.trim();
   const cant = Number(document.getElementById('invCantidad').value) || 0;
-  const loteNuevo = document.getElementById('invLoteNuevo').value.trim();
-  if (!tipo || !medida || !lote) return showError(new Error('Completá tipo, medida y lote.'));
+  if (!tipo || !medida) return showError(new Error('Completá tipo y medida.'));
+  if (!loteTexto) return showError(new Error('Escribí el número de lote.'));
   if (cant <= 0) return showError(new Error('Ingresá una cantidad válida.'));
-  if (lote === 'nuevo' && !loteNuevo) return showError(new Error('Ingresá el nombre del nuevo lote.'));
+
+  const existente = (inv.stock[tipo] || []).find(i => i.medida === medida && i.lote === loteTexto);
+  const loteSel = existente ? existente.lote : 'nuevo';
+  const loteNombre = existente ? '' : loteTexto;
 
   document.getElementById('invSubmit').disabled = true;
   jsonp({
     accion: 'registrarMovimiento',
-    tipo_mov: inv.mov,
-    tipo_apartado: inv.mov === 'apartado' ? 'apartado' : '',
-    tipo_salida: '',
-    tipo_imp: tipo,
-    medida: medida,
-    lote_sel: lote,
-    lote_nombre: loteNuevo,
-    cantidad: cant,
-    profesional: '',
-    nro_remito: '',
-    nro_presupuesto: '',
+    tipo_mov: 'deposito', tipo_apartado: '', tipo_salida: '',
+    tipo_imp: tipo, medida: medida, lote_sel: loteSel, lote_nombre: loteNombre,
+    cantidad: cant, profesional: '', nro_remito: '', nro_presupuesto: '',
     observacion: 'Cargado desde Panel'
   }, (err, data) => {
     document.getElementById('invSubmit').disabled = false;
@@ -662,6 +690,37 @@ function invSubmitVenta() {
   }).catch(function (err) {
     document.getElementById('invSubmit').disabled = false;
     showError(err);
+  });
+}
+
+function invSubmitApartado() {
+  if (!inv.carrito.length) return showError(new Error('Agregá al menos un ítem.'));
+  const clientId = document.getElementById('invClienteId').value;
+  const params = {
+    accion: 'registrarApartadoMultiple',
+    items_json: JSON.stringify(inv.carrito),
+    observacion: 'Cargado desde Panel'
+  };
+  if (clientId) {
+    params.clienteId = clientId;
+    const client = state.clients.find(c => c['Cliente ID'] === clientId);
+    params.profesional = client ? client['Nombre completo'] : '';
+  } else {
+    const nombre = document.getElementById('invNombre').value.trim();
+    if (!nombre) return showError(new Error('Elegí un cliente existente o cargá los datos de uno nuevo.'));
+    params.cliente_json = JSON.stringify({
+      'Nombre': nombre,
+      'Apellido': document.getElementById('invApellido').value.trim(),
+      'CUIL': document.getElementById('invCuil').value.trim(),
+      'Localidad': document.getElementById('invLocalidad').value.trim(),
+      'Email': document.getElementById('invEmail').value.trim()
+    });
+  }
+  document.getElementById('invSubmit').disabled = true;
+  jsonp(params, (err, data) => {
+    document.getElementById('invSubmit').disabled = false;
+    if (data && data.ok) { showToast('Apartado registrado.'); inv.stockCargado = false; renderInventory(); }
+    else showError(new Error(data ? (data.error || data.mensaje) : 'No hubo respuesta.'));
   });
 }
 
