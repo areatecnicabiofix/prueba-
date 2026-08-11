@@ -538,7 +538,7 @@ function invOnLote() {
   inv.carrito.push({ tipo_imp: tipo, medida: medida, lote_sel: lote, cantidad: cant });
   invRenderCarrito();
   document.getElementById('invCantidad').value = '';
-  invOnMedida(); // refresca el desplegable de lotes con el stock ya descontado
+  invOnMedida(); 
   document.getElementById('invLote').value = '';
   document.getElementById('invStockHint').textContent = '';
 }
