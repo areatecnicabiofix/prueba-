@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>Bio-Fix | Sistema Premium</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style type="text/tailwindcss">
+        .btn-choice { @apply w-full py-8 rounded-[32px] font-black uppercase text-xs tracking-widest shadow-lg transition-all active:scale-[0.97] flex flex-col items-center justify-center gap-3 border-2; }
+        .input-premium { @apply w-full p-5 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:border-blue-500 focus:bg-white font-bold text-slate-700 transition-all uppercase placeholder:normal-case; }
+    </style>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        .card-shadow { box-shadow: 0 4px 25px -5px rgba(0,0,0,0.05); }
+        .hidden { display: none; }
+        .input-premium { width: 100%; box-sizing: border-box; }
+        select.input-premium { width: 100%; box-sizing: border-box; max-width: 100%; }
+        * { box-sizing: border-box; }
+        button { touch-action: manipulation; }
+        input, textarea, select { font-size: 16px; }
+    </style>
+</head>
+<body class="min-h-screen pb-10">
+
+    <div class="max-w-xl mx-auto min-h-screen flex flex-col relative">
+        
+        <header class="bg-slate-900 text-white p-10 pt-14 rounded-b-[50px] shadow-2xl text-center relative overflow-hidden">
+            <div class="flex flex-col items-center gap-3 relative">
+                <div class="h-14 min-w-14 px-4 border-2 border-white rounded-2xl flex items-center justify-center font-black tracking-widest">BIO-FIX</div>
+                <p class="text-[11px] text-slate-300 font-black uppercase tracking-[0.35em] flex items-center gap-2">
+                    <span>Formulario de pedidos</span>
+                    <span class="text-blue-400 text-sm">📝</span>
+                </p>
+            </div>
+        </header>
+
+        <nav class="glass sticky top-4 mx-6 mt-[-25px] p-4 rounded-[24px] shadow-xl z-50 flex justify-between items-center border border-white/40">
+            <button id="btn-volver" onclick="goBack()" class="w-10 h-10 flex items-center justify-center bg-slate-100 rounded-xl text-slate-900 font-black hidden">←</button>
+            <div class="flex flex-col ml-2">
+                <span id="nav-title" class="text-[9px] font-black uppercase text-blue-500 tracking-tighter">Bio-Fix Portal</span>
+                <span id="nav-subtitle" class="text-sm font-black text-slate-900 uppercase">Bienvenido</span>
+            </div>
+            <button onclick="goToResumen()" class="bg-slate-900 text-white px-4 py-2 rounded-xl font-black text-xs">
+                PEDIDO ( <span id="cart-count">0</span> )
+            </button>
+        </nav>
+
+        <main class="p-6 mt-6 flex-grow">
+            
+            <section id="step-vendedor" class="space-y-6">
+    <div class="text-center mb-10">
+        <h2 class="font-black text-2xl text-slate-800">Seleccione vendedor</h2>
+        <p class="text-slate-400 text-sm font-medium">Elegí quién gestionará el pedido</p>
+    </div>
+
+    <div class="grid grid-cols-1 gap-5">
+        <button onclick="seleccionarVendedor('fabrica')" class="btn-choice bg-white border-slate-100 text-slate-900">
+            <span class="text-4xl">🏭</span>
+            <span>Fábrica</span>
+        </button>
+
+        <button onclick="seleccionarVendedor('vendedor1')" class="btn-choice bg-blue-600 border-blue-500 text-white">
+            <span class="text-4xl">👤</span>
+            <span>Vendedor 1</span>
+        </button>
+    </div>
+</section>
+
+<section id="step-choice" class="hidden space-y-6">
+    <div class="text-center mb-10">
+    <h2 class="font-black text-2xl text-slate-800">¿Ya realizó un pedido con Bio-Fix?</h2>
+    <p class="text-slate-400 text-sm font-medium">Seleccione una opción para continuar</p>
+</div>
+
+<div class="grid grid-cols-1 gap-5">
+    <button onclick="showSection('step-login-old')" class="btn-choice bg-white border-slate-100 text-slate-900">
+        <span class="text-4xl">👨‍⚕️</span>
+        <span>Ya Soy Cliente</span>
+    </button>
+
+    <button onclick="showSection('step-login-new')" class="btn-choice bg-blue-600 border-blue-500 text-white">
+        <span class="text-4xl">✨</span>
+        <span>Soy Cliente Nuevo</span>
+    </button>
+</div>
+</section>
+
+            <section id="step-login-old" class="hidden space-y-6">
+                <div class="bg-white p-8 rounded-[40px] card-shadow border border-slate-100">
+                    <h2 class="font-black text-slate-900 text-2xl mb-2">Hola de nuevo</h2>
+                    <input type="text" id="old_nom" placeholder="Nombre y Apellido" class="input-premium mb-4">
+                    <input type="text" id="old_dni" inputmode="numeric" placeholder="DNI / CUIL" class="input-premium">
+                </div>
+                <button onclick="validateStart('old')" class="w-full bg-slate-900 text-white py-6 rounded-[24px] font-black uppercase shadow-xl">Realizar pedido</button>
+            </section>
+
+            <section id="step-login-new" class="hidden space-y-6">
+                <div class="bg-white p-8 rounded-[40px] card-shadow border border-slate-100 space-y-3">
+                    <input type="text" id="new_nom" placeholder="Nombre y Apellido *" class="input-premium">
+                    <input type="text" id="new_cuil" inputmode="numeric" maxlength="13" placeholder="CUIL * Ej: 20-12345678-3" class="input-premium" oninput="formatearCuilInput(this)">
+                    <input type="text" id="new_mat" placeholder="Matrícula Profesional *" class="input-premium">
+                    <input type="text" id="new_loc" placeholder="Localidad *" class="input-premium">
+                    <input type="text" id="new_cp" inputmode="numeric" pattern="[0-9]*" placeholder="Código Postal *" class="input-premium">
+                    <select id="new_prov" class="input-premium">
+                        <option value="" selected disabled>Provincia *</option>
+                        <option>Buenos Aires</option>
+                        <option>Ciudad Autónoma de Buenos Aires</option>
+                        <option>Catamarca</option>
+                        <option>Chaco</option>
+                        <option>Chubut</option>
+                        <option>Córdoba</option>
+                        <option>Corrientes</option>
+                        <option>Entre Ríos</option>
+                        <option>Formosa</option>
+                        <option>Jujuy</option>
+                        <option>La Pampa</option>
+                        <option>La Rioja</option>
+                        <option>Mendoza</option>
+                        <option>Misiones</option>
+                        <option>Neuquén</option>
+                        <option>Río Negro</option>
+                        <option>Salta</option>
+                        <option>San Juan</option>
+                        <option>San Luis</option>
+                        <option>Santa Cruz</option>
+                        <option>Santa Fe</option>
+                        <option>Santiago del Estero</option>
+                        <option>Tierra del Fuego, Antártida e Islas del Atlántico Sur</option>
+                        <option>Tucumán</option>
+                    </select>
+                </div>
+                <button onclick="validateStart('new')" class="w-full bg-blue-600 text-white py-6 rounded-[24px] font-black uppercase shadow-xl">Realizar mi primer pedido</button>
+            </section>
+
+            <section id="step-menu" class="hidden space-y-4">
+                <h2 class="font-black text-slate-400 text-[10px] uppercase tracking-[0.2em] mb-4 ml-2">Seleccione una Categoría</h2>
+                <button onclick="openSub('sub-implantes')" class="btn-choice bg-white border-slate-100 text-slate-900 flex-row !py-6 !justify-start px-8">
+                    <span class="text-2xl">📦</span><span class="ml-4">Implantes</span>
+                </button>
+                <button onclick="openSub('sub-analogicos')" class="btn-choice bg-white border-slate-100 text-slate-900 flex-row !py-6 !justify-start px-8">
+                    <span class="text-2xl">🔩</span><span class="ml-4">Componentes Analógicos</span>
+                </button>
+                <button onclick="openSub('sub-digital')" class="btn-choice bg-white border-slate-100 text-slate-900 flex-row !py-6 !justify-start px-8">
+                    <span class="text-2xl">💻</span><span class="ml-4">Componentes Digitales</span>
+                </button>
+                <button onclick="openSub('sub-herramental')" class="btn-choice bg-white border-slate-100 text-slate-900 flex-row !py-6 !justify-start px-8">
+                    <span class="text-2xl">🧰</span><span class="ml-4">Herramental</span>
+                </button>
+            </section>
+
+            <section id="sub-implantes" class="hidden grid grid-cols-2 gap-4">
+                <button onclick="loadProducts('monopieza')" class="btn-choice bg-white !py-10">
+                    <span class="text-xs text-cyan-500 font-black">SISTEMA</span>
+                    <span class="text-lg">MP</span>
+                </button>
+                <button onclick="loadProducts('basales')" class="btn-choice bg-white !py-10">
+                    <span class="text-xs text-slate-500 font-black">SISTEMA</span>
+                    <span class="text-lg">BASAL</span>
+                </button>
+                <button onclick="loadProducts('compresivos')" class="btn-choice bg-white !py-10">
+                    <span class="text-xs text-fuchsia-500 font-black">SISTEMA</span>
+                    <span class="text-lg">CMU</span>
+                </button>
+                <button onclick="loadProducts('hi')" class="btn-choice bg-white !py-10">
+                    <span class="text-xs text-red-500 font-black">SISTEMA</span>
+                    <span class="text-lg">HI</span>
+                </button>
+                <button onclick="loadProducts('multiunit')" class="btn-choice bg-white border-amber-200 !py-10 col-span-2 flex flex-col items-center justify-center">
+                    <span class="text-xs text-amber-600 font-black tracking-widest">SISTEMA</span>
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-lg font-bold text-slate-800">MULTIUNIT</span>
+                        <span class="text-lg font-light text-slate-400">-</span>
+                        <span class="text-lg font-medium text-amber-600">Minipilares</span>
+                    </div>
+                </button>
+            </section>
+
+            <section id="sub-analogicos" class="hidden grid grid-cols-2 gap-4">
+                <button onclick="loadProducts(DB.analogicos.mp)" class="btn-choice bg-white !py-10">
+                    <span class="text-xs text-cyan-500 font-black">SISTEMA</span>
+                    <span class="text-lg">MP</span>
+                </button>
+                <button onclick="loadProducts(DB.analogicos.cmu)" class="btn-choice bg-white !py-10">
+                    <span class="text-xs text-fuchsia-500 font-black">SISTEMA</span>
+                    <span class="text-lg">CMU</span>
+                </button>
+                <button onclick="loadProducts(DB.analogicos.hi)" class="btn-choice bg-white !py-10">
+                    <span class="text-xs text-red-500 font-black">SISTEMA</span>
+                    <span class="text-lg">HI</span>
+                </button>
+                <button onclick="loadProducts(DB.analogicos.mu)" class="btn-choice bg-white !py-10">
+                    <span class="text-xs text-amber-600 font-black">SISTEMA</span>
+                    <span class="text-lg">MU</span>
+                </button>
+            </section>
+
+            <section id="sub-digital" class="hidden grid grid-cols-2 gap-4">
+                <button onclick="loadProducts(DB.digital.cmu)" class="btn-choice bg-white !py-10">
+                    <span class="text-xs text-fuchsia-500 font-black">SISTEMA</span>
+                    <span class="text-lg">CMU</span>
+                </button>
+                <button onclick="loadProducts(DB.digital.hi)" class="btn-choice bg-white !py-10">
+                    <span class="text-xs text-red-500 font-black">SISTEMA</span>
+                    <span class="text-lg">HI</span>
+                </button>
+                <button onclick="loadProducts(DB.digital.mu)" class="btn-choice bg-white !py-10 col-span-2">
+                    <span class="text-xs text-amber-600 font-black">SISTEMA</span>
+                    <span class="text-lg">MU</span>
+                </button>                    
+            </section>
+
+            <section id="sub-herramental" class="hidden grid grid-cols-2 gap-4">
+                <button onclick="loadProducts('herramental')" class="btn-choice bg-white !py-8">
+                    <span>HERRAMENTAL Completo</span>
+                </button>
+            </section>
+
+            <section id="step-lista" class="hidden space-y-3"></section>
+
+            <section id="step-resumen" class="hidden space-y-5">
+                <div id="cart-items" class="space-y-4"></div>
+                <textarea id="obs" class="w-full p-6 bg-white rounded-[32px] border border-slate-100 card-shadow font-bold text-sm outline-none" placeholder="Notas..."></textarea>
+                <div class="bg-white p-6 rounded-[32px] border border-slate-100 card-shadow space-y-4">
+
+    <p class="text-xs font-black uppercase text-slate-900">
+        Forma de entrega *
+    </p>
+
+    <label class="flex items-center gap-3 font-bold text-sm">
+        <input
+            type="radio"
+            name="entrega"
+            value="Domicilio"
+            onchange="toggleDireccionEntrega()">
+        Enviar a domicilio
+    </label>
+
+    <textarea
+        id="direccion_entrega"
+        class="hidden w-full p-4 bg-slate-50 rounded-2xl border border-slate-200"
+        placeholder="Ingrese la dirección completa..."></textarea>
+
+    <label class="flex items-center gap-3 font-bold text-sm">
+        <input
+            type="radio"
+            name="entrega"
+            value="Retiro por sucursal Via Cargo"
+            onchange="toggleDireccionEntrega()">
+        Retirar por sucursal de Via Cargo
+    </label>
+
+</div>
+                <div class="bg-amber-50 border border-amber-200 rounded-[28px] p-6 card-shadow flex gap-4 items-start">
+                    <div class="text-2xl">⚠️</div>
+                    <div>
+                        <p class="text-xs font-black uppercase tracking-wide text-amber-800">Confirmación de stock</p>
+                        <p class="text-sm font-bold text-slate-700 mt-2 leading-snug">
+                            La disponibilidad de los productos y el presupuesto final quedan sujetos a verificación de stock. El presupuesto formal será enviado luego de la confirmación.
+                        </p>
+                    </div>
+                </div>
+                <button onclick="sendWA()" class="w-full bg-green-600 text-white py-7 rounded-[32px] font-black uppercase shadow-xl flex items-center justify-center gap-3 mt-4">
+                    <span>Enviar Pedido por WhatsApp</span>
+                </button>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+    let vendedorSeleccionado = null;
+
+const VENDEDORES = {
+    fabrica: {
+        nombre: "Fábrica",
+        numero: "5491164336112"
+    },
+    vendedor1: {
+        nombre: "Vendedor 1",
+        numero: "5493518036875"
+    }
+};
+
+function seleccionarVendedor(vendedor) {
+    vendedorSeleccionado = VENDEDORES[vendedor];
+
+    if (!vendedorSeleccionado) {
+        alert("Seleccioná un vendedor válido.");
+        return;
+    }
+
+    showSection("step-choice");
+}
+const DB = {
+    monopieza: {
+        "Ø3.0": ["MP Ø3.0x6mm","MP Ø3.0x8mm","MP Ø3.0x10mm","MP Ø3.0x11.5mm","MP Ø3.0x13mm","MP Ø3.0x15mm","MP Ø3.0x18mm","MP Ø3.0x20mm"],
+        "Ø3.5": ["MP Ø3.5x6mm","MP Ø3.5x8mm","MP Ø3.5x10mm","MP Ø3.5x11.5mm","MP Ø3.5x13mm","MP Ø3.5x15mm","MP Ø3.5x18mm","MP Ø3.5x20mm"],
+        "Ø4.0": ["MP Ø4.0x6mm","MP Ø4.0x8mm","MP Ø4.0x10mm","MP Ø4.0x11.5mm","MP Ø4.0x13mm","MP Ø4.0x15mm","MP Ø4.0x18mm","MP Ø4.0x20mm"],
+        "Ø4.5": ["MP Ø4.5x6mm","MP Ø4.5x8mm","MP Ø4.5x10mm","MP Ø4.5x11.5mm","MP Ø4.5x13mm","MP Ø4.5x15mm","MP Ø4.5x18mm","MP Ø4.5x20mm"],
+        "Ø5.0": ["MP Ø5.0x6mm","MP Ø5.0x8mm","MP Ø5.0x10mm","MP Ø5.0x11.5mm","MP Ø5.0x13mm"],
+        "Ø5.5": ["MP Ø5.5x6mm","MP Ø5.5x8mm","MP Ø5.5x10mm","MP Ø5.5x11.5mm","MP Ø5.5x13mm"]
+    },
+    he: {
+        "Ø3.30 (Plat. 3.4)": ["HE Ø3.30x8.5mm","HE Ø3.30x10mm","HE Ø3.30x11.5mm","HE Ø3.30x13mm","HE Ø3.30x15mm"],
+        "Ø3.75 (Plat. 4.1)": ["HE Ø3.75x8mm","HE Ø3.75x10mm","HE Ø3.75x11.5mm","HE Ø3.75x13mm","HE Ø3.75x15mm"],
+        "Ø4.0 (Plat. 4.1)": ["HE Ø4.0x6mm","HE Ø4.0x8.5mm","HE Ø4.0x10mm","HE Ø4.0x11.5mm","HE Ø4.0x13mm","HE Ø4.0x15mm"],
+        "Ø5.0 (Plat. 5.1)": ["HE Ø5.0x6mm","HE Ø5.0x8.5mm","HE Ø5.0x10mm","HE Ø5.0x11.5mm","HE Ø5.0x13mm","HE Ø5.0x15mm"]
+    },
+    hi: {
+        "Ø3.30": ["HI Ø3.30x6.5mm","HI Ø3.30x8.0mm","HI Ø3.30x10mm","HI Ø3.30x11.5mm","HI Ø3.30x13mm","HI Ø3.30x16mm"],
+        "Ø3.75": ["HI Ø3.75x6.5mm","HI Ø3.75x8.0mm","HI Ø3.75x10mm","HI Ø3.75x11.5mm","HI Ø3.75x13mm","HI Ø3.75x16mm"],
+        "Ø4.20": ["HI Ø4.2x6.5mm","HI Ø4.2x8.0mm","HI Ø4.2x10mm","HI Ø4.2x11.5mm","HI Ø4.2x13mm","HI Ø4.2x16mm"],
+        "Ø5.00": ["HI Ø5.0x6.5mm","HI Ø5.0x8.0mm","HI Ø5.0x10mm","HI Ø5.0x11.5mm","HI Ø5.0x13mm","HI Ø5.0x16mm"]
+    },
+    cmhi: {
+        "Ø3.30": ["CMHI Ø3.30x8mm","CMHI Ø3.30x10mm","CMHI Ø3.30x11.5mm","CMHI Ø3.30x13mm","CMHI Ø3.30x16mm"],
+        "Ø3.75": ["CMHI Ø3.75x8mm","CMHI Ø3.75x10mm","CMHI Ø3.75x11.5mm","CMHI Ø3.75x13mm","CMHI Ø3.75x16mm"],
+        "Ø4.20": ["CMHI Ø4.20x8mm","CMHI Ø4.20x10mm","CMHI Ø4.20x11.5mm","CMHI Ø4.20x13mm","CMHI Ø4.20x16mm"],
+        "Ø5.00": ["CMHI Ø5.0x8mm","CMHI Ø5.0x10mm","CMHI Ø5.0x11.5mm","CMHI Ø5.0x13mm","CMHI Ø5.0x16mm"]
+    },
+    basales: {
+        "IB - PULIDO": {
+            "Ø3.5": ["IB Ø3.5x10mm","IB Ø3.5x12mm","IB Ø3.5x15mm","IB Ø3.5x18mm","IB Ø3.5x21mm","IB Ø3.5x23mm","IBT Ø3.5x24mm","IB Ø3.5x26mm","IB Ø3.5x28mm","IB Ø3.5x24 C14","IB Ø3.5x26 C16","IB Ø3.5x28 C18"],
+            "Ø4.5": ["IB Ø4.5x10mm","IB Ø4.5x12mm","IB Ø4.5x15mm","IB Ø4.5x18mm","IB Ø4.5x21mm","IB Ø4.5x23mm","IB Ø4.5x24mm","IB Ø4.5x26mm","IB Ø4.5x28mm","IB Ø4.5x24 C14","IB Ø4.5x26 C16","IB Ø4.5x28 C18"],
+            "Ø5.5": ["IB Ø5.5x9mm","IB Ø5.5x10mm","IB Ø5.5x12mm","IB Ø5.5x15mm","IB Ø5.5x18mm"],
+            "Ø6.5": ["IB Ø6.5x9mm","IB Ø6.5x10mm","IB Ø6.5x12mm","IB Ø6.5x15mm"],
+            "Ø8.5": ["IB Ø8.5x9mm","IB Ø8.5x10mm","IB Ø8.5x12mm","IB Ø8.5x15mm"]
+        },
+        "IBT - TRATADO": {
+            "Ø3.5": ["IBT Ø3.5x10mm","IBT Ø3.5x12mm","IBT Ø3.5x15mm","IBT Ø3.5x18mm","IBT Ø3.5x21mm","IBT Ø3.5x23mm","IBT Ø3.5x24mm","IBT Ø3.5x26mm","IBT Ø3.5x28mm","IBT Ø3.5x24 C14","IBT Ø3.5x26 C16","IBT Ø3.5x28 C18"],
+            "Ø4.5": ["IBT Ø4.5x10mm","IBT Ø4.5x12mm","IBT Ø4.5x15mm","IBT Ø4.5x18mm","IBT Ø4.5x21mm","IBT Ø4.5x23mm","IBT Ø4.5x24mm","IBT Ø4.5x26mm","IBT Ø4.5x28mm","IBT Ø4.5x24 C14","IBT Ø4.5x26 C16","IBT Ø4.5x28 C18"],
+            "Ø5.5": ["IBT Ø5.5x9mm","IBT Ø5.5x10mm","IBT Ø5.5x12mm","IBT Ø5.5x15mm","IBT Ø5.5x18mm"],
+            "Ø6.5": ["IBT Ø6.5x9mm","IBT Ø6.5x10mm","IBT Ø6.5x12mm","IBT Ø6.5x15mm"],
+            "Ø8.5": ["IBT Ø8.5x9mm","IBT Ø8.5x10mm","IBT Ø8.5x12mm","IBT Ø8.5x15mm"]
+        }
+    },
+    compresivos: {
+        "CMU": {
+            "Ø3.0": ["CMU Ø3.0x6mm","CMU Ø3.0x8mm","CMU Ø3.0x10mm","CMU Ø3.0x11.5mm","CMU Ø3.0x13mm","CMU Ø3.0x15mm","CMU Ø3.0x18mm","CMU Ø3.0x20mm"],
+            "Ø3.5": ["CMU Ø3.5x6mm","CMU Ø3.5x8mm","CMU Ø3.5x10mm","CMU Ø3.5x11.5mm","CMU Ø3.5x13mm","CMU Ø3.5x15mm","CMU Ø3.5x18mm","CMU Ø3.5x20mm"],
+            "Ø4.0": ["CMU Ø4.0x6mm","CMU Ø4.0x8mm","CMU Ø4.0x10mm","CMU Ø4.0x11.5mm","CMU Ø4.0x13mm","CMU Ø4.0x15mm","CMU Ø4.0x18mm","CMU Ø4.0x20mm"],
+            "Ø4.5": ["CMU Ø4.5x6mm","CMU Ø4.5x8mm","CMU Ø4.5x10mm","CMU Ø4.5x11.5mm","CMU Ø4.5x13mm","CMU Ø4.5x15mm","CMU Ø4.5x18mm","CMU Ø4.5x20mm"],
+            "Ø5.0": ["CMU Ø5.0x6mm","CMU Ø5.0x8mm","CMU Ø5.0x10mm","CMU Ø5.0x11.5mm","CMU Ø5.0x13mm"],
+            "Ø5.5": ["CMU Ø5.5x6mm","CMU Ø5.5x8mm","CMU Ø5.5x10mm","CMU Ø5.5x11.5mm","CMU Ø5.5x13mm"]
+        },
+        "C3MU": {
+            "Ø3.0": ["C3MU Ø3.0x6mm","C3MU Ø3.0x8mm","C3MU Ø3.0x10mm","C3MU Ø3.0x11.5mm","C3MU Ø3.0x13mm","C3MU Ø3.0x15mm","C3MU Ø3.0x18mm","C3MU Ø3.0x20mm"],
+            "Ø3.5": ["C3MU Ø3.5x6mm","C3MU Ø3.5x8mm","C3MU Ø3.5x10mm","C3MU Ø3.5x11.5mm","C3MU Ø3.5x13mm","C3MU Ø3.5x15mm","C3MU Ø3.5x18mm","C3MU Ø3.5x20mm"],
+            "Ø4.0": ["C3MU Ø4.0x6mm","C3MU Ø4.0x8mm","C3MU Ø4.0x10mm","C3MU Ø4.0x11.5mm","C3MU Ø4.0x13mm","C3MU Ø4.0x15mm","C3MU Ø4.0x18mm","C3MU Ø4.0x20mm"],
+            "Ø4.5": ["C3MU Ø4.5x6mm","C3MU Ø4.5x8mm","C3MU Ø4.5x10mm","C3MU Ø4.5x11.5mm","C3MU Ø4.5x13mm","C3MU Ø4.5x15mm","C3MU Ø4.5x18mm","C3MU Ø4.5x20mm"],
+            "Ø5.0": ["C3MU Ø5.0x6mm","C3MU Ø5.0x8mm","C3MU Ø5.0x10mm","C3MU Ø5.0x11.5mm","C3MU Ø5.0x13mm"],
+            "Ø5.5": ["C3MU Ø5.5x6mm","C3MU Ø5.5x8mm","C3MU Ø5.5x10mm","C3MU Ø5.5x11.5mm","C3MU Ø5.5x13mm"]
+        }
+    },
+    multiunit: {
+        "MINIPILAR CONO MORSE": ["Minipilar Altura 0,8 - Cono Morse","Minipilar Altura 1,5 - Cono Morse","Minipilar Altura 2,5 - Cono Morse","Minipilar Altura 3,5 - Cono Morse","Minipilar Altura 4,5 - Cono Morse"],
+        "MINIPILAR HEXÁGONO INTERNO": ["Minipilar Altura 1 - Hexágono Interno","Minipilar Altura 2 - Hexágono Interno","Minipilar Altura 3 - Hexágono Interno","Minipilar Altura 4 - Hexágono Interno"],
+        "MINIPILAR HEXÁGONO EXTERNO": ["Minipilar Altura 1 - Hexágono Externo","Minipilar Altura 2 - Hexágono Externo","Minipilar Altura 3 - Hexágono Externo","Minipilar Altura 4 - Hexágono Externo"]
+    },
+    analogicos: {
+  mp: {
+    "UCLAs": [
+      "UCLA rotacional para Implantes MonoPieza"
+    ],
+    "Análogos": [
+      "Analogo Plastico Rotacional de implante Monopieza"
+    ],
+    "Transfers": [
+      "Transfer plastico rotacional para implantes Monopieza"
+    ]
+  },
+
+  cmu: {
+    "Cicatrizales": [
+      "Cicatrizal Altura de 2mm - Compresivo Multi Unit",
+      "Cicatrizal Altura de 3mm - Compresivo Multi Unit",
+      "Cicatrizal Altura de 4mm - Compresivo Multi Unit"
+    ],
+    "Ball Attach": [
+      "Ball Attach Altura (h)2mm - Compresivo Multi Unit",
+      "Ball Attach Altura (h)3mm - Compresivo Multi Unit"
+    ],
+    "Pilar recto": "Pilar Recto Hombro 1 - Compresivo Multi Unit",
+    "Tornillo M2": "Tornillo M2 para implante Compresivo Multi Unit"
+  },
+
+  hi: {
+    "Cicatrizales": [
+      "Cicatrizal Altura 1mm -Hexágono Interno",
+      "Cicatrizal Altura 2mm -Hexágono Interno",
+      "Cicatrizal Altura 3mm -Hexágono Interno",
+      "Cicatrizal Altura 4mm -Hexágono Interno"
+    ],
+    "Ball Attach": [
+      "Ball attach y cazoleta con O'ring Altura 1 - Hexágono Interno",
+      "Ball attach y cazoleta con O'ring Altura 2 - Hexágono Interno",
+      "Ball attach y cazoleta con O'ring Altura 3 - Hexágono Interno",
+      "Ball attach y cazoleta con O'ring Altura 4 - Hexágono Interno"
+    ],
+    "Pilares": {
+      "Rectos": [
+        "Pilar recto y tornillo M1.8 Altura 1 - Hexágono Interno",
+        "Pilar recto y tornillo M1.8 Altura 2 - Hexágono Interno",
+        "Pilar recto y tornillo M1.8 Altura 3 - Hexágono Interno"
+      ],
+      "Angulados": [
+        "Pilar angulado 15°-Hexágono Interno",
+        "Pilar angulado 25°-Hexágono Interno"
+      ]
+    },
+    "Transfers": {
+      "Cubeta abierta": "Transfer cubeta abierta y tornillo - Hexágono Interno",
+      "Cubeta cerrada": "Transfer cubeta cerrada y tornillo - Hexágono Interno"
+    },
+    "UCLAs": {
+      "Rotacional": "Ucla calcinable rotacional y tornillo M1.8- Hexágono Interno",
+      "Anti-rotacional": "Ucla calcinable Anti-rotacional y tornillo M1.8- Hexágono Interno"
+    },
+    "Tornillos": {
+      "Fijación cuadrado": "Tornillo de fijación cuadrado M1,8",
+      "Fijación hexagonal": "Tornillo de fijación hexoganal M1,8"
+    }
+  },
+
+  he: {
+  "UCLAs": {
+    "Rotacionales": [
+      "Ucla calcinable rotacional - HE Plataforma Ø3.4",
+      "Ucla calcinable rotacional - HE Plataforma Ø4.1",
+      "Ucla calcinable rotacional - HE Plataforma Ø5.0"
+    ],
+    "Anti-rotacionales": [
+      "Ucla calcinable Anti-rotacional - HE Plataforma Ø3.4",
+      "Ucla calcinable Anti-rotacional - HE Plataforma Ø4.1",
+      "Ucla calcinable Anti-rotacional - HE Plataforma Ø5.0"
+    ]
+  },
+
+  "Análogos": [
+    "Análogo - HE Plataforma Ø3.4",
+    "Análogo - HE Plataforma Ø4.1",
+    "Análogo - HE Plataforma Ø5.0"
+  ],
+
+  "Transfers": {
+    "Cubeta cerrada": [
+      "Transfer cubeta cerrada - HE Plataforma Ø3.4",
+      "Transfer cubeta cerrada - HE Plataforma Ø4.1",
+      "Transfer cubeta cerrada - HE Plataforma Ø5.0"
+    ],
+    "Cubeta abierta": [
+      "Transfer cubeta abierta - HE Plataforma Ø3.4",
+      "Transfer cubeta abierta - HE Plataforma Ø4.1",
+      "Transfer cubeta abierta - HE Plataforma Ø5.0"
+    ]
+  },
+
+  "Ball Attach": {
+    "Plataforma Ø3.4": [
+      "Ball attach Altura 1 - HE Plataforma Ø3.4",
+      "Ball attach Altura 2 - HE Plataforma Ø3.4",
+      "Ball attach Altura 3 - HE Plataforma Ø3.4",
+      "Ball attach Altura 4 - HE Plataforma Ø3.4"
+    ],
+    "Plataforma Ø4.1": [
+      "Ball attach Altura 1 - HE Plataforma Ø4.1",
+      "Ball attach Altura 2 - HE Plataforma Ø4.1",
+      "Ball attach Altura 3 - HE Plataforma Ø4.1",
+      "Ball attach Altura 4 - HE Plataforma Ø4.1"
+    ],
+    "Plataforma Ø5.0": [
+      "Ball attach Altura 1 - HE Plataforma Ø5.0",
+      "Ball attach Altura 2 - HE Plataforma Ø5.0",
+      "Ball attach Altura 3 - HE Plataforma Ø5.0",
+      "Ball attach Altura 4 - HE Plataforma Ø5.0"
+    ]
+  },
+
+  "Cicatrizales": {
+    "Plataforma Ø3.4": [
+      "Cicatrizal Altura 1 - HE Plataforma Ø3.4",
+      "Cicatrizal Altura 2 - HE Plataforma Ø3.4",
+      "Cicatrizal Altura 3 - HE Plataforma Ø3.4"
+    ],
+    "Plataforma Ø4.1": [
+      "Cicatrizal Altura 1 - HE Plataforma Ø4.1",
+      "Cicatrizal Altura 2 - HE Plataforma Ø4.1",
+      "Cicatrizal Altura 3 - HE Plataforma Ø4.1"
+    ],
+    "Plataforma Ø5.0": [
+      "Cicatrizal Altura 1 - HE Plataforma Ø5.0",
+      "Cicatrizal Altura 2 - HE Plataforma Ø5.0",
+      "Cicatrizal Altura 3 - HE Plataforma Ø5.0"
+    ]
+  },
+
+  "Pilares": {
+    "Rectos": {
+      "Plataforma Ø3.4": [
+        "Pilar recto Altura 1 - HE Plataforma Ø3.4",
+        "Pilar recto Altura 2 - HE Plataforma Ø3.4",
+        "Pilar recto Altura 3 - HE Plataforma Ø3.4"
+      ],
+      "Plataforma Ø4.1": [
+        "Pilar recto Altura 1 - HE Plataforma Ø4.1",
+        "Pilar recto Altura 2 - HE Plataforma Ø4.1",
+        "Pilar recto Altura 3 - HE Plataforma Ø4.1"
+      ],
+      "Plataforma Ø5.0": [
+        "Pilar recto Altura 1 - HE Plataforma Ø5.0",
+        "Pilar recto Altura 2 - HE Plataforma Ø5.0",
+        "Pilar recto Altura 3 - HE Plataforma Ø5.0"
+      ]
+    },
+    "Angulados": [
+      "Pilar angulado 15° - HE Plataforma Ø4.1",
+      "Pilar angulado 25° - HE Plataforma Ø4.1"
+    ]
+  },
+
+  "Tornillos": [
+    "Tornillo cuadrado M2x0.4 - Hexágono Externo",
+    "Tornillo hexagonal M2x0.4 - Hexágono Externo"
+  ]
+},
+    cmhi: {
+  "Análogos": [
+    "Análogo de Implante Universal CMHI"
+  ],
+
+  "Análogos de Pilar": {
+    "Ø3.3": [
+      "Análogo de pilar estándar 3.3x4",
+      "Análogo de pilar estándar 3.3x6"
+    ],
+    "Ø4.5": [
+      "Análogo de pilar estándar 4.5x4",
+      "Análogo de pilar estándar 4.5x6"
+    ]
+  },
+
+  "Pilares Estándar": {
+    "Ø3.3": [
+      "Pilar estándar 3.3 x 2.5 x 4",
+      "Pilar estándar 3.3 x 3.5 x 4",
+      "Pilar estándar 3.3 x 2.5 x 6"
+    ],
+    "Ø4.5": [
+      "Pilar estándar 4.5 x 2.5 x 4",
+      "Pilar estándar 4.5 x 2.5 x 6"
+    ]
+  },
+
+  "Pilares c/tornillo pasante": {
+    "Ø3.3": [
+      "Pilar c/tornillo pasante 3.3 x 1.5 x 4",
+      "Pilar c/tornillo pasante 3.3 x 2.5 x 4",
+      "Pilar c/tornillo pasante 3.3 x 3.5 x 4",
+      "Pilar c/tornillo pasante 3.3 x 1.5 x 6",
+      "Pilar c/tornillo pasante 3.3 x 2.5 x 6"
+    ],
+    "Ø4.5": [
+      "Pilar c/tornillo pasante 4.5 x 1.5 x 4",
+      "Pilar c/tornillo pasante 4.5 x 2.5 x 4",
+      "Pilar c/tornillo pasante 4.5 x 3.5 x 4",
+      "Pilar c/tornillo pasante 4.5 x 1.5 x 6",
+      "Pilar c/tornillo pasante 4.5 x 2.5 x 6",
+      "Pilar c/tornillo pasante 4.5 x 3.5 x 6"
+    ]
+  },
+
+  "Cicatrizales": {
+    "Ø3.3": [
+      "Pilar de cicatrización CM 3.3 x 1.5",
+      "Pilar de cicatrización CM 3.3 x 2.5",
+      "Pilar de cicatrización CM 3.3 x 3.5"
+    ],
+    "Ø4.5": [
+      "Pilar de cicatrización CM 4.5 x 1.5",
+      "Pilar de cicatrización CM 4.5 x 2.5",
+      "Pilar de cicatrización CM 4.5 x 3.5"
+    ]
+  },
+
+  "Ball Attach": [
+    "Ball attach c/cazoleta y o’ring CM - Altura 1.5",
+    "Ball attach c/cazoleta y o’ring CM - Altura 2.5",
+    "Ball attach c/cazoleta y o’ring CM - Altura 3.5"
+  ],
+
+  "Transfers": [
+    "Transfer cubeta abierta CM"
+  ]
+ },       
+
+   mu: {
+    "Pilares": {
+      "Rotacional": [
+        "Pilar para Minipilar Rotacional y microtornillo"
+      ],
+      "Anti-rotacional": [
+        "Pilar para Minipilar Anti-rotacional y microtornillo"
+      ]
+    },
+    "UCLAs": [
+      "Ucla calcinable para Minipilar rotacional"
+    ],
+    "Cicatrizales": [
+      "Cicatrizal para Minipilar"
+    ],
+    "Transfers": {
+      "Cubeta Abierta": [
+        "Transfer para minipilar Cubeta Abierta"
+      ],
+      "Cubeta Cerrada": [
+        "Transfer para minipilar Cubeta Cerrada"
+      ]
+    },
+    "Tornillos": [
+      "Micro tornillo"
+    ]
+  }
+
+},      
+digital: {
+
+  hi: {
+    "Ti Bases": {
+      "Rotacional": [
+        "Ti Base Rotacional y tornillo M1.8 - Hexágono Interno"
+      ],
+      "Anti-Rotacional": [
+        "Ti Base Anti-Rotacional y tornillo M1.8  - Hexágono Interno"
+      ]
+    },
+    "Análogo digital": [
+      "Análogo digital - Hexágono Interno"
+    ],
+    "Cuerpo de escaneo": [
+      "Cuerpo de escaneo y tornillo M1.8 - Hexágono Interno"
+    ]
+  },
+
+  cmu: {
+    "Cuerpo de escaneo": [
+      "Cuerpo de escaneo y tornillo M2 P/Implante Compresivo Multi Unit"
+    ],
+    "Ti Base": [
+      "Ti Base y tornillo M2 - Compresivo Multi Unit"
+    ]
+  },
+
+  mu: {
+    "MU": [
+      "Analogo Digital - MU",
+      "Ti-Base y microtornillo - MU",
+      "Cuerpo de Escaneo - MU"
+    ]
+  }
+
+},
+herramental: {
+
+  "Fresas": {
+    "Convencionales": [
+      "Fresa Lanza Corta Ø2,0",
+      "Fresa Lanza Larga Ø2,0"
+    ],
+    "Guiadas": [
+      "Fresa Lanza Guiada Corta Ø2,0",
+      "Fresa Lanza Guiada Larga Ø2,0"
+    ],
+    "Helicoidales": [
+      "Fresa Helicoidal Ø5,3",
+      "Fresa Helicoidal Ø5,0",
+      "Fresa Helicoidal Ø4,6",
+      "Fresa Helicoidal Ø4,3",
+      "Fresa Helicoidal Ø4,0",
+      "Fresa Helicoidal Ø3,6",
+      "Fresa Helicoidal Ø3,2",
+      "Fresa Helicoidal Ø2,8",
+      "Fresa Helicoidal Ø2,5",
+      "Fresa Helicoidal Ø2,0"
+    ]
+  },
+
+  "Kit´s Expansores": {
+    "General": [
+      "Kit 3 Expansores de Hueso",
+      "Kit 3 Expansores de Hueso Sistema Monopieza"
+    ]
+  },
+
+  "Instrumental colocación": [
+    "Torquímetro Dinamométrico",
+    "Mango Rígido (punta 4x4) para expansor óseo",
+    "Extractor de raíz residual",
+    "Mango para angulación de pilar MP",
+    "Driver Retráctil"
+  ],
+
+  "Puntas Driver Retráctil": [
+    "Punta Driver Monopieza corta",
+    "Punta Driver Monopieza Larga"
+  ],
+
+  "Destornilladores": {
+    "Cuadrado": [
+      "Destornillador cuadrado 0.050\" Standar",
+      "Destornillador cuadrado 0.050\" Corto",
+      "Destornillador cuadrado 0.050\" Largo",
+      "Destornillador cuadrado 0.050\" Extra Largo"
+    ],
+    "Hexagonal": [
+      "Destornillador Hexagonal 0.048\" Standar",
+      "Destornillador Hexagonal 0.048\" Corto",
+      "Destornillador Hexagonal 0.048\" Largo",
+      "Destornillador Hexagonal 0.048\" Extra Largo"
+    ]
+  },
+
+  "Complementos de fresado": {
+    "Prolongador 4x4": [
+      "Prolongador 4x4 corto Ø6",
+      "Prolongador 4x4 Largo Ø6"
+    ],
+    "Prolongador de fresa": [
+      "Prolongador de fresa"
+    ],
+    "Punch": [
+      "Punch 0.050\" corto",
+      "Punch 0.050\" Standar",
+      "Punch 0.050\" largo"
+    ],
+    "Llave conectora MP para contra ángulo": [
+      "Llave conectora MP para contra angulo Larga",
+      "Llave conectora MP para contra angulo Corta"
+    ]
+  },
+
+  "Llaves conectoras": {
+    "Monopieza": [
+      "Llave conectora Monopieza para Torquímetro Corta",
+      "Llave conectora Monopieza para Torquímetro Larga"
+    ],
+    "CMU": [
+      "Llave CMU para Torquímetro corta",
+      "Llave CMU para Torquímetro Larga"
+    ]
+  },
+
+  "Llave Digital para Minipilar": [
+    "Llave Digital para Minipilar"
+  ],
+
+  "Anillas para guía quirúrgica": {
+    "Sistema Monopieza": [
+      "Anilla Para guía Quirúrgica Ø5,5-Ø2,1",
+      "Anilla para guía Quirúrgica Ø4,1-Ø3,0"
+    ],
+    "Sistema Bifásico": [
+      "Anilla Para guía Quirúrgica Ø5,5-Ø4,2"
+    ]
+  },
+
+  "Protocolo Guiado Bio-Fix": [
+    "Anilla Para Pin",
+    "Fresa lanza Ø1,3",
+    "Pin de Fijación"
+  ]
+}
+};
+
+// ========== ESTADO ==========
+let cart = {};
+let stack = ["step-vendedor"];
+let clientData = {};
+let submissionToken = "PED-WEB-" + Date.now() + "-" + Math.random().toString(36).slice(2, 10);
+
+// ========== CONEXIÓN CON ESTE MISMO PROYECTO DE APPS SCRIPT ==========
+function jsonpCall(params, cb) {
+  var accion = params.accion;
+  var args = [];
+
+  if (accion === 'buscarCliente') {
+    args = [params.cuil];
+    accion = 'buscarClientePedidoWeb';
+  } else if (accion === 'registrarPedido') {
+    args = [params];
+    accion = 'registrarPedidoWeb';
+  } else {
+    if (cb) cb({ ok: false, error: 'Acción no válida.' });
+    return;
+  }
+
+  var cbName = 'jscbPed_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+  var script = document.createElement('script');
+
+  window[cbName] = function (data) {
+    delete window[cbName];
+    document.body.removeChild(script);
+    if (cb) cb(data);
+  };
+  script.onerror = function () {
+    delete window[cbName];
+    document.body.removeChild(script);
+    if (cb) cb({ ok: false, error: 'No se pudo conectar con el servidor.' });
+  };
+
+  var qs = '?callback=' + cbName
+    + '&accion=' + encodeURIComponent(accion)
+    + '&args=' + encodeURIComponent(JSON.stringify(args));
+
+  script.src = URL_API + qs;
+  document.body.appendChild(script);
+}
+
+function separarNombre(completo) {
+    const partes = (completo || '').trim().split(/\s+/);
+    if (partes.length === 0 || partes[0] === '') return { nombre: '', apellido: '' };
+    if (partes.length === 1) return { nombre: partes[0], apellido: '' };
+    return { nombre: partes[0], apellido: partes.slice(1).join(' ') };
+}
+
+    function extraerDni(cuil) {
+    const limpio = String(cuil || "").replace(/\D/g, "");
+
+    if (limpio.length === 11) {
+        return limpio.substring(2, 10);
+    }
+
+    return limpio;
+}
+
+    function formatearCuilInput(input) {
+    let numeros = input.value.replace(/\D/g, "").slice(0, 11);
+
+    if (numeros.length > 10) {
+        input.value = numeros.slice(0, 2) + "-" +
+                      numeros.slice(2, 10) + "-" +
+                      numeros.slice(10);
+    } else if (numeros.length > 2) {
+        input.value = numeros.slice(0, 2) + "-" +
+                      numeros.slice(2);
+    } else {
+        input.value = numeros;
+    }
+}
+
+// ========== UI NAV ==========
+function showSection(id, push = true) {
+    document.querySelectorAll("section").forEach(s => s.classList.add("hidden"));
+    document.getElementById(id).classList.remove("hidden");
+    if (push) stack.push(id);
+    document.getElementById("btn-volver").classList.toggle("hidden", stack.length <= 1);
+    updateLabels(id);
+    if (push) window.scrollTo(0, 0);
+}
+
+function updateLabels(id) {
+    const subs = {
+        "step-vendedor": "Vendedor", "step-choice": "Inicio", "step-login-old": "Identificación", "step-login-new": "Identificación",
+        "step-menu": "Menú", "sub-implantes": "Implantes", "sub-analogicos": "Analógicos",
+        "sub-digital": "Digitales", "sub-herramental": "Herramental", "step-lista": "Catálogo", "step-resumen": "Resumen"
+    };
+    document.getElementById("nav-subtitle").innerText = subs[id] || "Bio-Fix";
+}
+
+function goBack() {
+    if (stack.length <= 1) return;
+    stack.pop();
+    showSection(stack[stack.length - 1], false);
+}
+
+function openSub(id) { showSection(id); }
+
+// ========== AUTENTICACIÓN ==========
+function validateStart(type) {
+    const n = type === "old" ? document.getElementById("old_nom").value : document.getElementById("new_nom").value;
+    const d = type === "old" ? document.getElementById("old_dni").value : document.getElementById("new_cuil").value;
+
+    if (!n || !d) return alert("Por favor complete los campos obligatorios.");
+
+    const np = separarNombre(n);
+
+    if (type === "old") {
+        jsonpCall({
+            accion: "buscarCliente",
+            cuil: d
+        }, function(res) {
+
+            if (!res || !res.ok) {
+                alert("No se pudo validar el cliente. Intentá nuevamente.");
+                return;
+            }
+
+            if (!res.encontrado) {
+    alert("No encontramos tus datos registrados. Por favor completá tus datos como cliente nuevo.");
+
+    showSection("step-login-new");
+
+    document.getElementById("new_nom").value = "";
+    document.getElementById("new_cuil").value = "";
+    document.getElementById("new_mat").value = "";
+    document.getElementById("new_loc").value = "";
+    document.getElementById("new_cp").value = "";
+    document.getElementById("new_prov").selectedIndex = 0;
+
+    return;
+}
+
+           if (!res.completo) {
+    alert("Encontramos tu registro, pero faltan datos obligatorios. Completalos para continuar.");
+
+    showSection("step-login-new");
+
+    document.getElementById("new_nom").value = "";
+    document.getElementById("new_cuil").value = "";
+    document.getElementById("new_mat").value = "";
+    document.getElementById("new_loc").value = "";
+    document.getElementById("new_cp").value = "";
+    document.getElementById("new_prov").selectedIndex = 0;
+
+    return;
+}
+
+            clientData = {
+                nombreSolo: res.cliente.nombre,
+                apellidoSolo: res.cliente.apellido,
+                id: res.cliente.cuil,
+                matricula: res.cliente.matricula,
+                loc: res.cliente.localidad,
+                cp: res.cliente.cp,
+                prov: res.cliente.provincia,
+                tipo: "REGISTRADO"
+            };
+
+            showSection("step-menu");
+        });
+
+        return;
+    }
+
+    const matricula = document.getElementById("new_mat").value;
+    const localidad = document.getElementById("new_loc").value;
+    const provincia = document.getElementById("new_prov").value;
+    const cp = document.getElementById("new_cp").value;
+
+    if (!matricula || !localidad || !provincia || !cp) {
+        alert("Para continuar, completá todos los datos obligatorios.");
+        return;
+    }
+
+    clientData = {
+        nombreSolo: np.nombre,
+        apellidoSolo: np.apellido,
+        id: d,
+        tipo: "NUEVO",
+        matricula: matricula,
+        loc: localidad,
+        prov: provincia,
+        cp: cp
+    };
+
+    showSection("step-menu");
+}
+// ========== MOTOR DEL CATÁLOGO Y INTERFAZ ==========
+function loadProducts(dataOrKey) {
+    const currentLevel = (typeof dataOrKey === "string") ? DB[dataOrKey] : dataOrKey;
+
+    const container = document.getElementById("step-lista");
+    container.innerHTML = "";
+
+    if (!currentLevel) {
+        container.innerHTML = "<p class='text-center p-10 text-slate-400'>Sin datos</p>";
+        showSection("step-lista");
+        return;
+    }
+
+    Object.keys(currentLevel).forEach(key => {
+        const panelId = uid("panel");
+
+        container.innerHTML += `
+            <div class="bg-white rounded-[28px] border border-slate-100 card-shadow mb-4 overflow-hidden">
+                <button type="button"
+                    class="w-full px-8 py-6 flex items-center justify-between font-black uppercase text-[11px] text-slate-800"
+                    onclick="togglePanel('${panelId}', this)">
+                    <span>${key}</span>
+                    <span class="text-blue-500 font-black" data-chevron>▾</span>
+                </button>
+
+                <div id="${panelId}" class="hidden px-4 pb-4">
+                    ${renderNode(currentLevel[key])}
+                </div>
+            </div>
+        `;
+    });
+
+    showSection("step-lista");
+}
+    function uid(prefix = "x") {
+    return `${prefix}_${Math.random().toString(16).slice(2)}_${Date.now()}`;
+}
+
+function renderNode(val) {
+    if (typeof val === "string") {
+        return renderItem(val);
+    }
+
+    if (Array.isArray(val)) {
+        return val.map(p => renderItem(p)).join("");
+    }
+
+    if (val && typeof val === "object") {
+        return Object.keys(val).map(subKey => {
+            const innerId = uid("inner");
+
+            return `
+                <div class="mt-3">
+                    <button type="button"
+                        class="w-full px-3 py-3 flex items-center justify-between font-black uppercase text-[10px] text-slate-700 rounded-2xl bg-slate-50 border border-slate-100"
+                        onclick="togglePanel('${innerId}', this)">
+                        <span>${subKey}</span>
+                        <span class="text-blue-500 font-black" data-chevron>▾</span>
+                    </button>
+
+                    <div id="${innerId}" class="hidden mt-3">
+                        ${renderNode(val[subKey])}
+                    </div>
+                </div>
+            `;
+        }).join("");
+    }
+
+    return "";
+}
+
+function renderItem(prod) {
+    const currentQty = cart[prod] || 0;
+    const safeProd = JSON.stringify(prod);
+
+    return `
+        <div class="flex justify-between items-center p-4 bg-white rounded-2xl card-shadow border border-slate-100 mb-3">
+            <span class="text-xs font-bold text-slate-800 uppercase max-w-[65%]">${prod}</span>
+
+            <div class="flex items-center gap-2 bg-slate-100 p-1 rounded-xl">
+                <button type="button"
+                    onclick='updateQty(${safeProd}, -1)'
+                    class="w-8 h-8 font-black bg-white rounded-lg shadow-sm text-slate-800">
+                    -
+                </button>
+
+                <input
+                    id="qty-${btoa(prod).replace(/=/g,'')}"
+                    type="number"
+                    min="0"
+                    value="${currentQty}"
+                    inputmode="numeric"
+                    class="w-14 h-8 text-center font-black text-xs border rounded-lg bg-white"
+                    onchange='setQty(${safeProd}, this.value)'
+                >
+
+                <button type="button"
+                    onclick='updateQty(${safeProd}, 1)'
+                    class="w-8 h-8 font-black bg-white rounded-lg shadow-sm text-slate-800">
+                    +
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function togglePanel(panelId, btnEl) {
+    const panel = document.getElementById(panelId);
+    if (!panel) return;
+
+    const chev = btnEl.querySelector("[data-chevron]");
+
+    if (panel.classList.contains("hidden")) {
+        panel.classList.remove("hidden");
+        if (chev) chev.textContent = "▴";
+    } else {
+        panel.classList.add("hidden");
+        if (chev) chev.textContent = "▾";
+    }
+}
+
+function updateQty(prod, change) {
+
+    if (!cart[prod]) cart[prod] = 0;
+
+    cart[prod] += change;
+
+    if (cart[prod] < 0) cart[prod] = 0;
+
+    const elementId = "qty-" + btoa(prod).replace(/=/g,'');
+
+    const el = document.getElementById(elementId);
+
+    if(el) el.value = cart[prod];
+
+    let totalItems = 0;
+
+    Object.keys(cart).forEach(k => totalItems += cart[k]);
+
+    document.getElementById("cart-count").innerText = totalItems;
+}
+    function setQty(prod, value){
+
+    let cantidad = parseInt(value);
+
+    if(isNaN(cantidad) || cantidad < 0)
+        cantidad = 0;
+
+    cart[prod] = cantidad;
+
+    let totalItems = 0;
+
+    Object.keys(cart).forEach(k => totalItems += cart[k]);
+
+    document.getElementById("cart-count").innerText = totalItems;
+}
+
+// ========== RENDER DEL RESUMEN ==========
+function goToResumen() {
+    const container = document.getElementById("cart-items");
+    container.innerHTML = "";
+    let vacio = true;
+
+    Object.keys(cart).forEach(prod => {
+        if (cart[prod] > 0) {
+            vacio = false;
+            container.innerHTML += `
+                <div class="flex justify-between items-center p-5 bg-white rounded-[25px] card-shadow border border-slate-100">
+                    <div>
+                        <p class="text-[10px] font-black text-blue-500 uppercase">CANT: ${cart[prod]}</p>
+                        <p class="text-xs font-black text-slate-800 uppercase mt-1">${prod}</p>
+                    </div>
+                    <button onclick="updateQty('${prod}', -${cart[prod]}); goToResumen();" class="text-red-500 font-bold text-lg px-2">×</button>
+                </div>`;
+        }
+    });
+
+    if (vacio) {
+        container.innerHTML = `<p class="text-center font-bold text-slate-400 py-10">Tu carrito está vacío.</p>`;
+    }
+    showSection("step-resumen");
+}
+
+// ========== TRANSACCION FINAL (PLANILLA + WHATSAPP) ==========
+
+    function toggleDireccionEntrega() {
+
+    const entrega = document.querySelector('input[name="entrega"]:checked')?.value;
+
+    const direccion = document.getElementById("direccion_entrega");
+
+    if (entrega === "Domicilio") {
+
+        direccion.classList.remove("hidden");
+
+    } else {
+
+        direccion.classList.add("hidden");
+
+        direccion.value = "";
+
+    }
+
+}
+
+function sendWA() {
+
+    if (!vendedorSeleccionado) {
+        alert("Primero seleccioná el vendedor.");
+        showSection("step-vendedor");
+        return;
+    }
+
+    let textoPedido = "";
+
+    Object.keys(cart).forEach(prod => {
+        if (cart[prod] > 0) {
+            textoPedido += `(Cant: ${cart[prod]}) ${prod} | `;
+        }
+    });
+
+    if (!textoPedido) {
+        alert("No seleccionaste ningún producto aún.");
+        return;
+    }
+
+    const nombreCompleto = `${clientData.nombreSolo || ""} ${clientData.apellidoSolo || ""}`.trim();
+    const npFinal = separarNombre(nombreCompleto);
+
+    const nombreFinal = npFinal.nombre || "";
+    const apellidoFinal = npFinal.apellido || "";
+    const cuilFinal = clientData.id || "";
+    const matriculaFinal = clientData.matricula || "";
+    const localidadFinal = clientData.loc || "";
+    const cpFinal = clientData.cp || "";
+    const provinciaFinal = clientData.prov || "";
+
+    if (
+        !nombreFinal ||
+        !cuilFinal ||
+        !matriculaFinal ||
+        !localidadFinal ||
+        !cpFinal ||
+        !provinciaFinal
+    ) {
+        alert("Faltan datos del cliente. Volvé al formulario y tocá REALIZAR MI PRIMER PEDIDO.");
+        showSection("step-login-new");
+        return;
+    }
+
+    const observaciones = document.getElementById("obs").value || "";
+
+    const entregaSeleccionada = document.querySelector('input[name="entrega"]:checked');
+
+if (!entregaSeleccionada) {
+
+    alert("Seleccioná la forma de entrega.");
+
+    return;
+
+}
+
+const formaEntrega = entregaSeleccionada.value;
+
+const direccionEntrega = document.getElementById("direccion_entrega").value.trim();
+
+if (formaEntrega === "Domicilio" && direccionEntrega === "") {
+
+    alert("Ingresá la dirección de entrega.");
+
+    return;
+
+}
+
+    const mensajeWA = `Hola Bio-Fix, adjunto el resumen de mi pedido:
+
+Profesional: ${nombreFinal} ${apellidoFinal}
+ID/CUIL: ${cuilFinal}
+
+Detalle:
+${textoPedido.replace(/ \| /g, '\n')}
+Forma de entrega: ${formaEntrega}
+${formaEntrega === "Domicilio" ? "Dirección: " + direccionEntrega : ""}
+
+Notas: ${observaciones}
+
+Pedido gestionado por ${vendedorSeleccionado.nombre}.`;
+
+    const parametrosPedido = {
+        accion: "registrarPedido",
+        tipo: clientData.tipo || "NUEVO",
+        nombre: nombreFinal,
+        apellido: apellidoFinal,
+        cuil: cuilFinal,
+        dni: extraerDni(cuilFinal),
+        matricula: matriculaFinal,
+        localidad: localidadFinal,
+        cp: cpFinal,
+        provincia: provinciaFinal,
+        pedido: mensajeWA,
+        observaciones: observaciones,
+        formaEntrega: formaEntrega,
+        direccionEntrega: direccionEntrega,
+        vendedor: vendedorSeleccionado.nombre,
+        token: submissionToken,
+        items: Object.keys(cart)
+            .filter(prod => cart[prod] > 0)
+            .map(prod => ({ producto: prod, cantidad: cart[prod] }))
+    };
+
+    jsonpCall(parametrosPedido, function(respuesta) {
+        if (respuesta && respuesta.ok) {
+            const urlWA = `https://wa.me/${vendedorSeleccionado.numero}?text=${encodeURIComponent(mensajeWA)}`;
+            window.location.href = urlWA;
+        } else {
+            alert(respuesta?.error || "Hubo un error al registrar el pedido en la planilla de Google.");
+            console.error("Error devuelto por Apps Script:", respuesta);
+        }
+    });
+}
+</script>
+</body>
+</html>
