@@ -189,9 +189,8 @@
   <button class="btn" id="btn-submit" onclick="submitForm()" disabled>Registrar movimiento</button>
   <button style="background:none;border:none;color:#64748b;font-size:12px;cursor:pointer;width:100%;margin-top:10px" onclick="resetForm()">Limpiar formulario</button>
 </div>
-
+<script src="js/api.js"></script>
 <script>
-var URL_API = 'https://script.google.com/macros/s/AKfycbwKM-YNvsKT43V662BPT_UB0PoC8JpfPL5oPCWcD7VKzwXO-2Rr9ysx4h4isGaCcsJk/exec';
 
 var datosFiltradosHoja = []; 
 var state = { mov: 'deposito', destino: '', subSalida: '', tipo: '', medida: '', lote: '', stockMax: 0 };
@@ -204,8 +203,8 @@ var carritoVenta = [];
 
 var IMPLANTES_BASE = [
   { id: "MP", nombre: "Monopieza (MP)" },
-  { id: "HI", nombre: "Hexágono Interno (HI)" },
-  { id: "HI", nombre: "Hexágono Interno con Teton (HI)" },
+  { id: "HI", nombre: "Hexágono Interno Montado - sin tetón (HI)" },
+  { id: "HISM", nombre: "Hexágono Interno Sin Montar - con tetón (HISM)" },
   { id: "HE", nombre: "Hexágono Externo (HE)" },
   { id: "CM", nombre: "Cono Morse (CM)" },
   { id: "CMU", nombre: "Compresivo Multiunit (CMU)" },
@@ -213,16 +212,6 @@ var IMPLANTES_BASE = [
   { id: "MBT", nombre: "Monopieza Basal Tratado (MBT)" },
   { id: "MBP", nombre: "Monopieza Basal Pulido (MBP)" }
 ];
-
-function jsonp(params, cb) {
-  var cbName = 'jscb_' + Date.now() + '_' + Math.floor(Math.random()*1000);
-  var s = document.createElement('script');
-  window[cbName] = function(d){ delete window[cbName]; document.body.removeChild(s); cb(null, d); };
-  var qs = '?callback=' + cbName;
-  Object.keys(params).forEach(k => qs += `&${k}=${encodeURIComponent(params[k])}`);
-  s.src = URL_API + qs;
-  document.body.appendChild(s);
-}
 
 window.onload = function() {
   cargarOpcionesNormales();
