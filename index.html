@@ -463,7 +463,7 @@ function invSetMov(mov) {
   inv.apartadoActivo = null;
 inv.usandoApartado = false;
 document.getElementById('invApartadoBox').classList.add('hidden');
-  const labels = { deposito: 'Registrar movimiento', salida: 'Registrar venta y generar remito', apartado: 'Registrar apartado' };
+  const labels = { deposito: 'Registrar movimiento', salida: 'Generar Remito', apartado: 'Registrar apartado y presupuestar' };
   document.getElementById('invSubmit').textContent = labels[mov];
   invRenderCarrito();
 }
