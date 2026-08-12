@@ -312,18 +312,15 @@
   function updateNewButton() {
     const button = document.getElementById('newButton');
     const labels = {
-      inicio: '＋ Nuevo pedido',
       clientes: '＋ Nuevo cliente',
       productosPresupuesto: '＋ Producto de presupuesto',
       productos: '＋ Nuevo producto',
-      pedidos: '＋ Pedido manual',
       presupuestos: '＋ Generar presupuesto',
       remitos: 'Ver pedidos',
       ventas: 'Ver presupuestos',
       cobros: 'Ver ventas',
       gastos: '＋ Registrar gasto',
     };
-    button.textContent = labels[state.view] || '＋ Nuevo';
     button.disabled = state.view === 'inventario';
   }
 
@@ -783,15 +780,14 @@ function invSubmitApartado() {
 
   function renderTable(moduleKey, records) {
     const meta = views[moduleKey];
-    const createBudgetButton = moduleKey === 'presupuestos'
-  ? '<button class="primary-button" id="createBudgetButton">＋ Generar presupuesto</button>'
-  : '';
+    const createBudgetButton = moduleKey === 'presupuestos' ? '<button class="primary-button" id="createBudgetButton">＋ Generar presupuesto</button>' : '';
     document.getElementById('appContent').innerHTML = `
-      <div class="view-toolbar">
-        <input class="search" id="searchInput" type="search" placeholder="Buscar en ${html(meta.title.toLowerCase())}…">
-        ${createBudgetButton}
-        <span class="pill neutral">${records.length} registro${records.length === 1 ? '' : 's'}</span>
-      </div>
+  <div class="view-toolbar">
+    <input class="search" id="searchInput" type="search" placeholder="Buscar en ${html(meta.title.toLowerCase())} …">
+    ${createBudgetButton}
+    <span class="pill neutral">${records.length} registro${records.length === 1 ? '' : 's'}</span>
+  </div>
+  <div id="tableContent">${tableHtml(moduleKey, records)}</div>`;
       <div id="tableContent">${tableHtml(moduleKey, records)}</div>`;
     if (moduleKey === 'presupuestos') {
       document.getElementById('createBudgetButton').onclick = openManualBudgetForm;
