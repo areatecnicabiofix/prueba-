@@ -284,17 +284,18 @@
       clientes: '＋ Nuevo cliente',
       productos: '＋ Nuevo producto',
       pedidos: '＋ Pedido manual',
-      presupuestos: '＋ Generar presupuesto',
       remitos: 'Ver pedidos',
       ventas: 'Ver presupuestos',
       cobros: 'Ver ventas',
       gastos: '＋ Registrar gasto',
     };
-    // El botón rojo de arriba se saca en Inicio: el único acceso a "Nuevo
+    // El botón rojo de arriba se saca en: Inicio (el único acceso a "Nuevo
     // pedido" queda en la tile de Accesos rápidos, que redirige a
-    // Inventario › Apartado.
-    button.classList.toggle('hidden', state.view === 'inicio');
-    button.disabled = state.view === 'inventario';
+    // Inventario › Apartado), Inventario (tiene sus propios botones de
+    // movimiento) y Presupuestos (ya tiene su propio botón "＋ Generar
+    // presupuesto" en la barra de la tabla — no hace falta duplicarlo).
+    const oculto = ['inicio', 'inventario', 'presupuestos'].includes(state.view);
+    button.classList.toggle('hidden', oculto);
     button.textContent = labels[state.view] || '＋ Nuevo';
   }
   function handleNew() {
@@ -408,7 +409,6 @@ function renderInventory() {
             <input type="hidden" id="invClienteId" value="">
 <div id="invClienteResultados" class="table-wrap hidden" style="max-height:230px;overflow:auto;margin-top:6px"></div>
 </div>
-<div id="invApartadoBox" class="field full hidden" style="padding:10px;border:1px solid var(--line);border-radius:8px;background:#fbfcfc"></div>
           <div class="form-grid" style="padding:0;margin-top:8px" id="invClienteNuevoFields">
             <div class="field"><label>Nombre</label><input id="invNombre"></div>
             <div class="field"><label>Apellido</label><input id="invApellido"></div>
@@ -438,7 +438,11 @@ function invSetMov(mov) {
   inv.mov = mov;
   inv.carrito = [];
   inv.stockMax = 0;
-  document.querySelectorAll('.inv-mov').forEach(b => b.classList.toggle('primary-button', b.dataset.mov === mov));
+  document.querySelectorAll('.inv-mov').forEach(function (b) {
+    const activo = b.dataset.mov === mov;
+    b.classList.toggle('primary-button', activo);
+    b.classList.toggle('secondary-button', !activo);
+  });
   document.getElementById('invTipo').value = '';
   document.getElementById('invMedida').innerHTML = '<option value="">— Elegí tipo primero —</option>';
   document.getElementById('invLote').innerHTML = '<option value="">—</option>';
