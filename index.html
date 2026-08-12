@@ -467,6 +467,28 @@ document.getElementById('invApartadoBox').classList.add('hidden');
   document.getElementById('invSubmit').textContent = labels[mov];
   invRenderCarrito();
 }
+// Llamada JSONP directa al doGet del archivo de Stock (acciones que NO
+// están registradas en FUNCIONES_PANEL, así que no se puede usar server()).
+function jsonp(params, cb) {
+  var cbName = 'jscbInv_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+  var script = document.createElement('script');
+  window[cbName] = function (data) {
+    delete window[cbName];
+    document.body.removeChild(script);
+    cb(null, data);
+  };
+  script.onerror = function () {
+    delete window[cbName];
+    document.body.removeChild(script);
+    cb(new Error('No se pudo conectar con el servidor.'), null);
+  };
+  var qs = '?callback=' + cbName;
+  Object.keys(params).forEach(function (k) {
+    qs += '&' + k + '=' + encodeURIComponent(params[k]);
+  });
+  script.src = URL_API + qs;
+  document.body.appendChild(script);
+}
 function invCargarStock() {
   jsonp({ accion: 'obtenerTodoElStock' }, (err, data) => {
     if (data && data.ok && data.stock) { inv.stock = data.stock; inv.stockCargado = true; }
