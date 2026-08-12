@@ -1,6 +1,6 @@
 // Conexión compartida con el Web App único de Apps Script
 // (stock + Panel + Pedidos, todo detrás del mismo doGet)
-var URL_API = 'https://script.google.com/macros/s/AKfycbyMSXoHwHn3NrdDDZrUpGtBTGMGh-t_fRwsLcycpl2xEOnwdbPXZdh962vsI-ypFLpt/exec';
+var URL_API = 'https://script.google.com/macros/s/AKfycbzq4bBO__zxoclUCrp46-nGrxj_tjD8IGeqmXHaQQEVTP1gM28nM1vLeB763VG1wkWb/exec';
 
 function jsonp(params, cb) {
   var cbName = 'jscb_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
