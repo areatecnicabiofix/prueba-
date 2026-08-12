@@ -200,7 +200,7 @@
     </div>
     <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
     <script>
-  var URL_API = 'https://script.google.com/macros/s/AKfycbwIOiCoAKm5FNSXvyJxY92RxqeVaYJO4iIRR_A7h7PHKQYxPnDndXjg5zrmh2YjV73u/exec';
+  var URL_API = 'https://script.google.com/macros/s/AKfycbw2UvrrwG6vokg5X58KyggaPPELyiqjAd-iy5e4Nkt64ICRNCcJyKFAPgRG6hFzye_a/exec';
   const state = {
     view: 'inicio',
     bootstrap: null,
@@ -463,7 +463,7 @@ function invSetMov(mov) {
   inv.apartadoActivo = null;
 inv.usandoApartado = false;
 document.getElementById('invApartadoBox').classList.add('hidden');
-  const labels = { deposito: 'Registrar movimiento', salida: 'Generar Remito', apartado: 'Registrar apartado y presupuestar' };
+  const labels = { deposito: 'Registrar movimiento', salida: 'Registrar venta y generar remito', apartado: 'Registrar apartado' };
   document.getElementById('invSubmit').textContent = labels[mov];
   invRenderCarrito();
 }
@@ -591,6 +591,23 @@ function invBuscarApartadoCliente(clienteId) {
   const box = document.getElementById('invApartadoBox');
   box.innerHTML = '<p>Buscando apartados de este cliente…</p>';
   box.classList.remove('hidden');
+  // Primero: ¿este cliente ya tiene un presupuesto generado para su
+  // apartado (o ya remitido)? Si es así, no repetimos el circuito —
+  // vamos directo a emitir el remito con esos datos.
+  server('getPedidoPresupuestadoPorCliente', clienteId).then(function (pedido) {
+    if (pedido) {
+      inv.apartadoActivo = null;
+      inv.usandoApartado = false;
+      box.innerHTML = `
+        <div class="pill warning" style="margin-bottom:8px">Este cliente ya tiene un presupuesto generado${pedido.numero ? ' (N° ' + html(pedido.numero) + ')' : ''}${pedido.total ? ' por ' + money(pedido.total) : ''}</div>
+        <button type="button" class="secondary-button" id="invIrARemito">${pedido.estado === 'Remitido' ? 'Ver pedido / remito' : 'Ir a emitir el remito'}</button>`;
+      document.getElementById('invIrARemito').onclick = () => openOrderById(pedido.orderId);
+      return;
+    }
+    invBuscarApartadoCrudo(clienteId, box);
+  }).catch(function () { invBuscarApartadoCrudo(clienteId, box); });
+}
+function invBuscarApartadoCrudo(clienteId, box) {
   jsonp({ accion: 'obtenerApartadosPorProfesional' }, (err, data) => {
     const grupo = (data && data.ok) ? data.profesionales.find(p => p.clienteId === clienteId) : null;
     if (!grupo || !grupo.items.length) {
@@ -604,8 +621,12 @@ function invBuscarApartadoCliente(clienteId) {
     box.innerHTML = `
       <div class="pill warning" style="margin-bottom:8px">Este cliente tiene un apartado activo</div>
       <div>${grupo.items.map(it => `<div class="pill neutral" style="margin:2px 4px 2px 0;display:inline-flex">${html(it.tipo)} · ${html(it.medida)} · ${html(it.lote)} · ${it.cantidad}u</div>`).join('')}</div>
-      <button type="button" class="secondary-button" style="margin-top:8px" id="invUsarApartado">Cargar este apartado a la venta</button>`;
+      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" class="secondary-button" id="invUsarApartado">Cargar este apartado a la venta</button>
+        <button type="button" class="ghost-button" id="invGenerarPresupuesto">Generar presupuesto para este apartado</button>
+      </div>`;
     document.getElementById('invUsarApartado').onclick = invUsarApartado;
+    document.getElementById('invGenerarPresupuesto').onclick = () => openBudgetFromApartadoPicker(clienteId);
   });
 }
 function invUsarApartado() {
@@ -726,9 +747,30 @@ function invSubmitApartado() {
   document.getElementById('invSubmit').disabled = true;
   jsonp(params, (err, data) => {
     document.getElementById('invSubmit').disabled = false;
-    if (data && data.ok) { showToast('Apartado registrado.'); inv.stockCargado = false; renderInventory(); }
+    if (data && data.ok) {
+      showToast('Apartado registrado.');
+      inv.stockCargado = false;
+      renderInventory();
+      if (clientId) ofrecerPresupuestoApartado(clientId);
+    }
     else showError(new Error(data ? (data.error || data.mensaje) : 'No hubo respuesta.'));
   });
+}
+// Después de registrar un apartado, ofrece ir directo a generar el
+// presupuesto (el Pedido ya quedó armado solo, vía sincronizarPedidoDesdeApartado_).
+function ofrecerPresupuestoApartado(clienteId) {
+  openModal('Apartado registrado', `
+    <div class="form-grid">
+      <div class="field full"><p>¿Querés generar el presupuesto de este apartado ahora?</p></div>
+      <div class="form-actions">
+        <button type="button" class="secondary-button" onclick="closeModal()">Más tarde</button>
+        <button type="button" class="primary-button" id="irAPresupuestoApartado">Generar presupuesto</button>
+      </div>
+    </div>`);
+  document.getElementById('irAPresupuestoApartado').onclick = function () {
+    closeModal();
+    openBudgetFromApartadoPicker(clienteId);
+  };
 }
   function loadView(moduleKey) {
     document.getElementById('appContent').innerHTML = loading();
@@ -953,7 +995,7 @@ function invSubmitApartado() {
   // total final en vivo. Si no hay pedidos de apartado, o el presupuesto es
   // para otro producto (no implantes), hay un link al formulario libre de
   // siempre.
-  function openBudgetFromApartadoPicker() {
+  function openBudgetFromApartadoPicker(preselectClienteId) {
     openModal('Nuevo presupuesto', loading());
     server('getPedidosApartadoPendientes').then(function (pedidos) {
       if (!pedidos.length) {
@@ -981,6 +1023,13 @@ function invSubmitApartado() {
       document.getElementById('apartadoOrderSelect').onchange = function () {
         renderApartadoBudgetBody(pedidos.find(p => p.orderId === this.value));
       };
+      if (preselectClienteId) {
+        const preseleccionado = pedidos.find(p => p.clienteId === preselectClienteId);
+        if (preseleccionado) {
+          document.getElementById('apartadoOrderSelect').value = preseleccionado.orderId;
+          renderApartadoBudgetBody(preseleccionado);
+        }
+      }
       document.getElementById('apartadoBudgetForm').onsubmit = function (event) {
         event.preventDefault();
         const orderId = document.getElementById('apartadoOrderSelect').value;
