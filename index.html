@@ -168,7 +168,6 @@
       <button class="nav-item" data-view="ventas">Ventas</button>
       <button class="nav-item" data-view="cobros">Cobros</button>
       <button class="nav-item" data-view="gastos">Gastos</button>
-      <button class="nav-item" data-view="productosPresupuesto">Productos presupuesto</button>
       <button class="nav-item" data-view="productos">Productos pedidos/remitos</button>
       <button class="nav-item" data-view="inventario">Inventario</button>
     </nav>
@@ -206,15 +205,13 @@
     view: 'inicio',
     bootstrap: null,
     products: [],
-    budgetProducts: [],
     clients: [],
     records: {},
     currentOrder: null
   };
   const views = {
     clientes: { title: 'Clientes', singular: 'cliente', columns: ['Cliente ID', 'Nombre completo', 'CUIL', 'Matrícula profesional', 'Localidad', 'Provincia', 'Estado'] },
-    productosPresupuesto: { title: 'Productos para presupuestos', singular: 'producto general', columns: ['Producto', 'Precio', 'Activo'] },
-    productos: { title: 'Productos para pedidos y remitos', singular: 'producto detallado', columns: ['Producto', 'Categoría', 'Sistema', 'Activo'] },
+    productos: { title: 'Productos para pedidos y remitos', singular: 'producto detallado', columns: ['Producto', 'Categoría', 'Sistema', 'Precio', 'Activo'] },
     pedidos: { title: 'Pedidos', singular: 'pedido', columns: ['Pedido ID', 'Fecha y hora', 'Cliente', 'Vendedor', 'Cantidad total', 'Forma de entrega', 'Estado'] },
     presupuestos: { title: 'Presupuestos', singular: 'presupuesto', columns: ['Número', 'Fecha', 'Pedido ID', 'Cliente', 'Total', 'Saldo pendiente', 'Estado'] },
     remitos: { title: 'Remitos', singular: 'remito', columns: ['Número', 'Fecha', 'Pedido ID', 'Cliente', 'Transporte', 'Seguimiento', 'Estado', 'Revisión'] },
@@ -241,13 +238,11 @@
     Promise.all([
       server('getAdminBootstrap'),
       server('getActiveProducts'),
-      server('getBudgetProducts'),
       server('listAdmin', 'clientes')
     ]).then(function (results) {
       state.bootstrap = results[0];
       state.products = results[1];
-      state.budgetProducts = results[2];
-      state.clients = results[3];
+      state.clients = results[2];
       document.getElementById('today').textContent = state.bootstrap.today;
       renderCurrent();
     }).catch(showError);
@@ -256,13 +251,11 @@
     return Promise.all([
       server('getAdminBootstrap'),
       server('getActiveProducts'),
-      server('getBudgetProducts'),
       server('listAdmin', 'clientes')
     ]).then(function (results) {
       state.bootstrap = results[0];
       state.products = results[1];
-      state.budgetProducts = results[2];
-      state.clients = results[3];
+      state.clients = results[2];
       renderCurrent();
     });
   }
@@ -289,7 +282,6 @@
     const button = document.getElementById('newButton');
     const labels = {
       clientes: '＋ Nuevo cliente',
-      productosPresupuesto: '＋ Producto de presupuesto',
       productos: '＋ Nuevo producto',
       pedidos: '＋ Pedido manual',
       presupuestos: '＋ Generar presupuesto',
@@ -307,7 +299,6 @@
   }
   function handleNew() {
     if (state.view === 'clientes') return openClientForm();
-    if (state.view === 'productosPresupuesto') return openBudgetProductForm();
     if (state.view === 'productos') return openProductForm();
     if (state.view === 'gastos') return openExpenseForm();
     if (state.view === 'presupuestos') return openBudgetFromApartadoPicker();
@@ -753,7 +744,6 @@ function invSubmitApartado() {
   }
   function rowActions(moduleKey, r) {
     if (moduleKey === 'clientes') return `<div class="row-actions"><button class="ghost-button" data-edit-client="${attr(r['Cliente ID'])}">Editar</button></div>`;
-    if (moduleKey === 'productosPresupuesto') return `<div class="row-actions"><button class="ghost-button" data-edit-budget-product="${attr(r['Producto presupuesto ID'])}">Editar</button></div>`;
     if (moduleKey === 'productos') return `<div class="row-actions"><button class="ghost-button" data-edit-product="${attr(r['Producto ID'])}">Editar</button></div>`;
     if (moduleKey === 'pedidos') return `<div class="row-actions"><button class="ghost-button" data-open-order="${attr(r['Pedido ID'])}">Abrir</button><button class="ghost-button" data-edit-order="${attr(r['Pedido ID'])}">Editar</button></div>`;
     if (moduleKey === 'presupuestos') return `<div class="row-actions"><button class="ghost-button" data-edit-budget="${attr(r['Presupuesto ID'])}">Editar</button><button class="primary-button" data-print-budget="${attr(r['Presupuesto ID'])}">Generar PDF</button><button class="ghost-button" data-sale="${attr(r['Presupuesto ID'])}">Crear venta</button></div>`;
@@ -764,7 +754,6 @@ function invSubmitApartado() {
   }
   function bindRows(moduleKey) {
     document.querySelectorAll('[data-edit-client]').forEach(b => b.onclick = () => openClientForm(findRecord('clientes', 'Cliente ID', b.dataset.editClient)));
-    document.querySelectorAll('[data-edit-budget-product]').forEach(b => b.onclick = () => openBudgetProductForm(findRecord('productosPresupuesto', 'Producto presupuesto ID', b.dataset.editBudgetProduct)));
     document.querySelectorAll('[data-edit-product]').forEach(b => b.onclick = () => openProductForm(findRecord('productos', 'Producto ID', b.dataset.editProduct)));
     document.querySelectorAll('[data-open-order]').forEach(b => b.onclick = () => openOrderById(b.dataset.openOrder));
     document.querySelectorAll('[data-edit-order]').forEach(b => b.onclick = () => openEditOrder(findRecord('pedidos', 'Pedido ID', b.dataset.editOrder)));
@@ -808,27 +797,13 @@ function invSubmitApartado() {
         ${field('Producto', record['Producto'], true, true)}
         ${selectField('Categoría', ['IMPLANTE', 'PROTESICO', 'DIGITAL', 'HERRAMENTAL', 'OTROS'], record['Categoría'])}
         ${field('Sistema', record['Sistema'])}
+        ${field('Precio', record['Precio'], false, false, 'number', 'Precio en pesos argentinos')}
         ${selectField('Activo', ['Sí', 'No'], record['Activo'] || 'Sí')}
         ${actions()}
       </form>`);
     document.getElementById('productForm').onsubmit = function (event) {
       event.preventDefault();
       submit('saveProduct', formObject(event.target));
-    };
-  }
-  function openBudgetProductForm(record) {
-    record = record || {};
-    openModal(record['Producto presupuesto ID'] ? 'Editar producto de presupuesto' : 'Nuevo producto de presupuesto', `
-      <form class="form-grid" id="budgetProductForm">
-        ${hidden('Producto presupuesto ID', record['Producto presupuesto ID'])}
-        ${field('Producto', record['Producto'], true, true, 'text', 'Nombre general')}
-        ${field('Precio', record['Precio'], false, false, 'number', 'Precio en pesos argentinos')}
-        ${selectField('Activo', ['Sí', 'No'], record['Activo'] || 'Sí')}
-        ${actions()}
-      </form>`);
-    document.getElementById('budgetProductForm').onsubmit = function (event) {
-      event.preventDefault();
-      submit('saveBudgetProduct', formObject(event.target), 'Producto de presupuesto guardado.');
     };
   }
   function openExpenseForm() {
@@ -1262,7 +1237,7 @@ function invSubmitApartado() {
     const sourceId = source['Producto ID'] || source.productId || '';
     const sourceCode = source['Código'] || source.codigo || '';
     const sourceName = source['Producto'] || source.producto || '';
-    const catalog = type === 'budget' ? state.budgetProducts : state.products;
+    const catalog = state.products;
     const matchedProduct = catalog.find(function (p) {
       return (sourceId && p.id === sourceId)
         || (sourceCode && normalize(p.codigo) === normalize(sourceCode))
@@ -1290,7 +1265,7 @@ function invSubmitApartado() {
     toggleCustomProduct();
     if (type === 'budget') {
       const setPrice = function () {
-        const p = state.budgetProducts.find(x => x.id === select.value);
+        const p = state.products.find(x => x.id === select.value);
         if (p) row.querySelector('.line-price').value = p.precio;
       };
       select.addEventListener('change', setPrice);
@@ -1301,7 +1276,7 @@ function invSubmitApartado() {
   function collectLines(containerId, type) {
     return Array.from(document.querySelectorAll('#' + containerId + ' .line-item')).map(function (row) {
       const selectedValue = row.querySelector('.line-product').value;
-      const catalog = type === 'budget' ? state.budgetProducts : state.products;
+      const catalog = state.products;
       const product = catalog.find(p => p.id === selectedValue) || {};
       const manualName = row.querySelector('.line-custom-product').value.trim();
       return {
