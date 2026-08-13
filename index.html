@@ -201,7 +201,7 @@
     </div>
     <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
     <script>
-  var URL_API = 'https://script.google.com/macros/s/AKfycbyaa5Bw2mHTjB4YXj69S0SkLa0gs_bOLnIIow1ADxueEZUHiuuKhobtBED0Lm1zbLg/exec';
+  var URL_API = 'https://script.google.com/macros/s/AKfycbwKkm35V8KgHuUzcBGbJ7HC-v4A0eHNjPBQZ3hr1_Gv5-Ah1jC4uv9dUy9rf0055NyV/exec';
   const state = {
     view: 'inicio',
     bootstrap: null,
@@ -216,7 +216,7 @@
     pedidos: { title: 'Pedidos', singular: 'pedido', columns: ['Pedido ID', 'Fecha y hora', 'Cliente', 'Vendedor', 'Cantidad total', 'Forma de entrega', 'Estado'] },
     presupuestos: { title: 'Presupuestos', singular: 'presupuesto', columns: ['Presupuesto ID', 'Fecha', 'Pedido ID', 'Cliente', 'Total', 'Saldo pendiente', 'Estado'] },
     remitos: { title: 'Remitos', singular: 'remito', columns: ['Remito ID', 'Fecha', 'Pedido ID', 'Cliente', 'Transporte', 'Seguimiento', 'Estado', 'Origen', 'Revisión'] },
-    ventas: { title: 'Ventas', singular: 'venta', columns: ['Venta ID', 'Fecha', 'Cliente', 'Total', 'Cobrado', 'Saldo', 'Vencimiento', 'Estado'] },
+    ventas: { title: 'Ventas', singular: 'venta', columns: ['Venta ID', 'Fecha', 'Cliente', 'Total', 'Cobrado', 'Saldo', 'Estado'] },
     cobros: { title: 'Cobros', singular: 'cobro', columns: ['Cobro ID', 'Fecha', 'Venta ID', 'Cliente', 'Importe', 'Medio de pago', 'Comprobante'] },
     gastos: { title: 'Gastos', singular: 'gasto', columns: ['Gasto ID', 'Fecha', 'Categoría', 'Proveedor', 'Concepto', 'Medio de pago', 'Importe'] }
   };
@@ -501,14 +501,55 @@ function invRenderApartadosPendientes() {
       const cliente = state.clients.find(c => c['Cliente ID'] === g.clienteId);
       const nombre = cliente ? cliente['Nombre completo'] : (g.profesional || g.clienteId || 'Cliente');
       const resumen = g.items.map(it => `${it.tipo} ${it.medida} · ${it.cantidad}u`).join(', ');
+      // Cada ítem tiene su propia "✕" para eliminarlo puntualmente (la
+      // cantidad vuelve al depósito) sin tocar el resto del apartado del
+      // cliente — para el caso de "esto al final no se va a vender".
+      const itemsDetalle = g.items.map(function (it) {
+        return `<div class="task-row ghost-row" style="padding:6px 10px 6px 22px;font-size:12px">
+          <span style="color:var(--muted)">${html(it.tipo)} · ${html(it.medida)} · Lote ${html(it.lote)} · ${it.cantidad}u</span>
+          <button type="button" class="ghost-button" style="padding:2px 10px;font-size:11px"
+            data-del-apartado-cliente="${attr(g.clienteId || '')}" data-del-apartado-prof="${attr(g.profesional || '')}"
+            data-del-apartado-tipo="${attr(it.tipo)}" data-del-apartado-medida="${attr(it.medida)}" data-del-apartado-lote="${attr(it.lote)}"
+          >✕ Eliminar</button>
+        </div>`;
+      }).join('');
       return `<div class="task-row ghost-row" style="cursor:pointer" data-apartado-cliente="${attr(g.clienteId || '')}">
         <span><strong>${html(nombre)}</strong><small>${html(resumen)}</small></span>
         <span class="pill warning">${g.items.length} ítem${g.items.length === 1 ? '' : 's'}</span>
-      </div>`;
+      </div>${itemsDetalle}`;
     }).join('');
     box.querySelectorAll('[data-apartado-cliente]').forEach(function (row) {
       row.onclick = () => invSeleccionarApartadoPendiente(row.dataset.apartadoCliente);
     });
+    box.querySelectorAll('[data-del-apartado-cliente]').forEach(function (btn) {
+      btn.onclick = function (event) {
+        event.stopPropagation();
+        invEliminarItemApartado(btn.dataset);
+      };
+    });
+  });
+}
+// Elimina (a 0) un ítem apartado puntual: la cantidad vuelve al depósito
+// (mismo mecanismo de ajustarApartado que ya usa el sistema al bajar una
+// cantidad), para cuando esas unidades al final no se van a vender.
+function invEliminarItemApartado(ds) {
+  const detalle = ds.delApartadoTipo + ' ' + ds.delApartadoMedida + ' · Lote ' + ds.delApartadoLote;
+  if (!window.confirm('¿Eliminar este ítem apartado (' + detalle + ')? La cantidad vuelve al depósito.')) return;
+  jsonp({
+    accion: 'ajustarApartado',
+    profesional: ds.delApartadoProf || '',
+    clienteId: ds.delApartadoCliente || '',
+    tipo_imp: ds.delApartadoTipo,
+    medida: ds.delApartadoMedida,
+    lote_sel: ds.delApartadoLote,
+    nueva_cantidad: 0
+  }, (err, data) => {
+    if (err || !(data && data.ok)) {
+      return showError(new Error(data ? (data.error || data.mensaje) : (err ? err.message : 'No se pudo eliminar el ítem.')));
+    }
+    showToast('Ítem eliminado del apartado — la cantidad volvió al depósito.');
+    inv.stockCargado = false;
+    invRenderApartadosPendientes();
   });
 }
 function invSeleccionarApartadoPendiente(clienteId) {
@@ -543,15 +584,18 @@ function jsonp(params, cb) {
   var done = false;
   // Si el Web App no contesta (deployment viejo, sin conexión, error de
   // permisos que devuelve HTML en vez del callback JS), antes esto se
-  // quedaba esperando para siempre sin avisar nada. Ahora, a los 25s,
-  // se corta y se avisa el error en vez de dejar todo colgado en blanco.
+  // quedaba esperando para siempre sin avisar nada. Se corta a los 55s y se
+  // avisa el error en vez de dejar todo colgado en blanco (subido de 25s a
+  // 55s: operaciones que tocan hojas grandes — como emitir remito, que
+  // ahora además cierra el apartado — pueden tardar más de 25s en Apps
+  // Script sin que sea un error real).
   var timeoutId = setTimeout(function () {
     if (done) return;
     done = true;
     delete window[cbName];
     if (script.parentNode) script.parentNode.removeChild(script);
     cb(new Error('El servidor no respondió a tiempo. Verificá que el Web App de Apps Script esté desplegado con la última versión del código.'), null);
-  }, 25000);
+  }, 55000);
   window[cbName] = function (data) {
     if (done) return;
     done = true;
@@ -946,7 +990,10 @@ function invSubmitApartado() {
     if (moduleKey === 'clientes') return `<div class="row-actions"><button class="ghost-button" data-edit-client="${attr(r['Cliente ID'])}">Editar</button></div>`;
     if (moduleKey === 'productos') return `<div class="row-actions"><button class="ghost-button" data-edit-product="${attr(r['Producto ID'])}">Editar</button></div>`;
     if (moduleKey === 'pedidos') return `<div class="row-actions"><button class="ghost-button" data-open-order="${attr(r['Pedido ID'])}">Abrir</button><button class="ghost-button" data-edit-order="${attr(r['Pedido ID'])}">Editar</button></div>`;
-    if (moduleKey === 'presupuestos') return `<div class="row-actions"><button class="ghost-button" data-edit-budget="${attr(r['Presupuesto ID'])}">Editar</button><button class="primary-button" data-print-budget="${attr(r['Presupuesto ID'])}">Generar PDF</button><button class="ghost-button" data-sale="${attr(r['Presupuesto ID'])}">Crear venta</button></div>`;
+    // Ya no hay botón para crear la venta directo desde acá: la venta se
+    // genera sola al marcar el remito como vendido (Remitos > "Marcar
+    // vendido") — no puede haber venta sin remito emitido antes.
+    if (moduleKey === 'presupuestos') return `<div class="row-actions"><button class="ghost-button" data-edit-budget="${attr(r['Presupuesto ID'])}">Editar</button><button class="primary-button" data-print-budget="${attr(r['Presupuesto ID'])}">Generar PDF</button></div>`;
     if (moduleKey === 'remitos') return `<div class="row-actions"><button class="ghost-button" data-edit-remit="${attr(r['Remito ID'])}">Editar</button><button class="ghost-button" data-print-remit="${attr(r['Remito ID'])}">Imprimir</button>${r['Estado'] === 'Entregado' ? '<span class="pill success">Vendido</span>' : `<button class="primary-button" data-sold-remit="${attr(r['Remito ID'])}">Marcar vendido</button>`}</div>`;
     if (moduleKey === 'ventas') return `<div class="row-actions">${toNumber(r['Saldo']) > 0 ? `<button class="ghost-button" data-payment="${attr(r['Venta ID'])}">Registrar cobro</button>` : '<span class="pill success">Saldado</span>'}</div>`;
     if (moduleKey === 'gastos') return '<span class="pill neutral">Registrado</span>';
@@ -962,7 +1009,6 @@ function invSubmitApartado() {
     document.querySelectorAll('[data-print-budget]').forEach(b => b.onclick = () => printDocument('presupuesto', b.dataset.printBudget));
     document.querySelectorAll('[data-print-remit]').forEach(b => b.onclick = () => printDocument('remito', b.dataset.printRemit));
     document.querySelectorAll('[data-sold-remit]').forEach(b => b.onclick = () => confirmRemitSold(b.dataset.soldRemit));
-    document.querySelectorAll('[data-sale]').forEach(b => b.onclick = () => openSaleForm(b.dataset.sale));
     document.querySelectorAll('[data-payment]').forEach(b => b.onclick = () => openPaymentForm(findRecord('ventas', 'Venta ID', b.dataset.payment)));
   }
   function openClientForm(record) {
@@ -1425,20 +1471,6 @@ function invSubmitApartado() {
       };
     }).catch(showError);
   }
-  function openSaleForm(budgetId) {
-    openModal('Crear venta', `<form class="form-grid" id="saleForm">
-      ${field('date', todayIso(), true, false, 'date', 'Fecha')}
-      ${field('dueDate', '', false, false, 'date', 'Vencimiento')}
-      ${selectField('paymentTerms', ['Contado', 'Transferencia', 'Cuenta corriente', 'A convenir'], 'A convenir', false, false, 'Condición de pago')}
-      ${textareaField('notes', '', false, 'Observaciones')}
-      ${actions('Crear venta')}
-    </form>`);
-    document.getElementById('saleForm').onsubmit = function (event) {
-      event.preventDefault();
-      const raw = formObject(event.target);
-      submit('createSaleFromBudget', Object.assign({ budgetId: budgetId }, raw), 'Venta creada.');
-    };
-  }
   function openPaymentForm(sale) {
     openModal('Registrar cobro · ' + sale['Venta ID'], `<form class="form-grid" id="paymentForm">
       <div class="field full"><label>Cliente</label><strong>${html(sale['Cliente'])}</strong><span>Saldo pendiente: ${money(sale['Saldo'])}</span></div>
@@ -1784,7 +1816,7 @@ function invSubmitApartado() {
       delete window[cbName];
       if (script.parentNode) script.parentNode.removeChild(script);
       reject(new Error('El servidor no respondió a tiempo (' + name + '). Verificá que el Web App de Apps Script esté desplegado con la última versión del código.'));
-    }, 25000);
+    }, 55000);
     window[cbName] = function (data) {
       if (done) return;
       done = true;
