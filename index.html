@@ -201,7 +201,7 @@
     </div>
     <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
     <script>
-  var URL_API = 'https://script.google.com/macros/s/AKfycbz1lx9PsuLcBbt0eLvTObujM5yVoXPXFJm_y9dWfw5UN3mjKxyxwwZX5HctnHVJWgSo/exec';
+  var URL_API = 'https://script.google.com/macros/s/AKfycbwWV2NoZ1PVN6AwAsy43QouBPep3b3ZnAnNdifYggQtGN7NNrkYJRqk9TwTFHPRxUZr/exec';
   const state = {
     view: 'inicio',
     bootstrap: null,
@@ -214,8 +214,8 @@
     clientes: { title: 'Clientes', singular: 'cliente', columns: ['Cliente ID', 'Nombre completo', 'CUIL', 'Matrícula profesional', 'Localidad', 'Provincia', 'Estado'] },
     productos: { title: 'Productos para pedidos y remitos', singular: 'producto detallado', columns: ['Producto', 'Categoría', 'Sistema', 'Precio', 'Activo'] },
     pedidos: { title: 'Pedidos', singular: 'pedido', columns: ['Pedido ID', 'Fecha y hora', 'Cliente', 'Vendedor', 'Cantidad total', 'Forma de entrega', 'Estado'] },
-    presupuestos: { title: 'Presupuestos', singular: 'presupuesto', columns: ['Número', 'Fecha', 'Pedido ID', 'Cliente', 'Total', 'Saldo pendiente', 'Estado'] },
-    remitos: { title: 'Remitos', singular: 'remito', columns: ['Número', 'Fecha', 'Pedido ID', 'Cliente', 'Transporte', 'Seguimiento', 'Estado', 'Revisión'] },
+    presupuestos: { title: 'Presupuestos', singular: 'presupuesto', columns: ['Presupuesto ID', 'Fecha', 'Pedido ID', 'Cliente', 'Total', 'Saldo pendiente', 'Estado'] },
+    remitos: { title: 'Remitos', singular: 'remito', columns: ['Remito ID', 'Fecha', 'Pedido ID', 'Cliente', 'Transporte', 'Seguimiento', 'Estado', 'Origen', 'Revisión'] },
     ventas: { title: 'Ventas', singular: 'venta', columns: ['Venta ID', 'Fecha', 'Cliente', 'Total', 'Cobrado', 'Saldo', 'Vencimiento', 'Estado'] },
     cobros: { title: 'Cobros', singular: 'cobro', columns: ['Cobro ID', 'Fecha', 'Venta ID', 'Cliente', 'Importe', 'Medio de pago', 'Comprobante'] },
     gastos: { title: 'Gastos', singular: 'gasto', columns: ['Gasto ID', 'Fecha', 'Categoría', 'Proveedor', 'Concepto', 'Medio de pago', 'Importe'] }
@@ -660,7 +660,7 @@ function invSubmitVentaDesdeApartado() {
   document.getElementById('invSubmit').disabled = true;
   server('venderApartadoConRemito', { clienteId: clientId }).then(function (result) {
     document.getElementById('invSubmit').disabled = false;
-    showToast('Apartado vendido. Remito N° ' + result.numeroRemito + '.');
+    showToast('Apartado vendido. Remito ' + result.numeroRemito + '.');
     inv.stockCargado = false;
     renderInventory();
   }).catch(function (err) {
@@ -711,7 +711,7 @@ function invSubmitVenta() {
   document.getElementById('invSubmit').disabled = true;
   server('registrarVentaStockConRemito', payload).then(function (result) {
     document.getElementById('invSubmit').disabled = false;
-    showToast('Venta registrada. Remito N° ' + result.numeroRemito + '.');
+    showToast('Venta registrada. Remito ' + result.numeroRemito + '.');
     inv.stockCargado = false;
     renderInventory();
   }).catch(function (err) {
@@ -830,7 +830,7 @@ function invSubmitApartado() {
     if (moduleKey === 'pedidos') return `<div class="row-actions"><button class="ghost-button" data-open-order="${attr(r['Pedido ID'])}">Abrir</button><button class="ghost-button" data-edit-order="${attr(r['Pedido ID'])}">Editar</button></div>`;
     if (moduleKey === 'presupuestos') return `<div class="row-actions"><button class="ghost-button" data-edit-budget="${attr(r['Presupuesto ID'])}">Editar</button><button class="primary-button" data-print-budget="${attr(r['Presupuesto ID'])}">Generar PDF</button><button class="ghost-button" data-sale="${attr(r['Presupuesto ID'])}">Crear venta</button></div>`;
     if (moduleKey === 'remitos') return `<div class="row-actions"><button class="ghost-button" data-edit-remit="${attr(r['Remito ID'])}">Editar</button><button class="ghost-button" data-print-remit="${attr(r['Remito ID'])}">Imprimir</button>${r['Estado'] === 'Entregado' ? '<span class="pill success">Vendido</span>' : `<button class="primary-button" data-sold-remit="${attr(r['Remito ID'])}">Marcar vendido</button>`}</div>`;
-    if (moduleKey === 'ventas') return `<div class="row-actions">${toNumber(r['Saldo']) > 0 ? `<button class="ghost-button" data-payment="${attr(r['Venta ID'])}">Registrar cobro</button>` : '<span class="pill success">Cobrada</span>'}</div>`;
+    if (moduleKey === 'ventas') return `<div class="row-actions">${toNumber(r['Saldo']) > 0 ? `<button class="ghost-button" data-payment="${attr(r['Venta ID'])}">Registrar cobro</button>` : '<span class="pill success">Saldado</span>'}</div>`;
     if (moduleKey === 'gastos') return '<span class="pill neutral">Registrado</span>';
     return '';
   }
@@ -874,8 +874,8 @@ function invSubmitApartado() {
       <form class="form-grid" id="productForm">
         ${hidden('Producto ID', record['Producto ID'])}
         ${field('Producto', record['Producto'], true, true)}
-        ${selectField('Categoría', ['IMPLANTE', 'PROTESICO', 'DIGITAL', 'HERRAMENTAL', 'OTROS'], record['Categoría'])}
-        ${field('Sistema', record['Sistema'])}
+        ${selectField('Categoría', ['IMPLANTE', 'PROTESICO', 'INSTRUMENTAL', 'DIGITAL'], record['Categoría'])}
+        ${selectField('Sistema', ['MP', 'HI', 'HE', 'CMU', 'CMU3', 'CMHI', 'IB', 'IBT', 'MU'], record['Sistema'])}
         ${field('Precio', record['Precio'], false, false, 'number', 'Precio en pesos argentinos')}
         ${selectField('Activo', ['Sí', 'No'], record['Activo'] || 'Sí')}
         ${actions()}
@@ -907,7 +907,7 @@ function invSubmitApartado() {
       <p class="section-label">Cliente</p>
       ${selectField('clientId', state.clients.map(c => ({value:c['Cliente ID'], label:c['Nombre completo']})), '', true, true, 'Seleccionar cliente…')}
       ${field('vendedor', 'Administración')}
-      ${selectField('formaEntrega', ['Envío a domicilio', 'Retiro por sucursal Via Cargo', 'Retiro en fábrica'], '')}
+      ${selectField('formaEntrega', ['Retiro por sucursal Via Cargo', 'Retiro en Fábrica'], '')}
       ${field('direccionEntrega', '', false, true)}
       ${textareaField('observaciones', '')}
       <p class="section-label">Productos</p>
@@ -916,6 +916,7 @@ function invSubmitApartado() {
       ${actions()}
     </form>`);
     addLine('manualItems', 'order');
+    wireDeliveryAddressAutoFill_('manualOrderForm', 'formaEntrega', 'direccionEntrega');
     document.getElementById('addManualItem').onclick = () => addLine('manualItems', 'order');
     document.getElementById('manualOrderForm').onsubmit = function (event) {
       event.preventDefault();
@@ -938,9 +939,9 @@ function invSubmitApartado() {
       <p class="section-label">Cliente y entrega</p>
       ${selectField('clientId', state.clients.map(c => ({value:c['Cliente ID'], label:c['Nombre completo']})), order['Cliente ID'], true, true, 'Cliente')}
       ${field('vendedor', order['Vendedor'], false, false, 'text', 'Vendedor')}
-      ${selectField('formaEntrega', ['Envío a domicilio', 'Retiro por sucursal Via Cargo', 'Retiro en fábrica'], order['Forma de entrega'], false, false, 'Forma de entrega')}
+      ${selectField('formaEntrega', ['Retiro por sucursal Via Cargo', 'Retiro en Fábrica'], order['Forma de entrega'], false, false, 'Forma de entrega')}
       ${field('direccionEntrega', order['Dirección de entrega'], false, true, 'text', 'Dirección de entrega')}
-      ${selectField('estado', ['Recibido', 'En revisión', 'Presupuestado', 'Remitido', 'Vendido', 'Cancelado'], order['Estado'], true, false, 'Estado')}
+      ${selectField('estado', ['Recibido', 'En revisión', 'Apartado', 'Presupuestado', 'Remitido', 'Vendido', 'Cancelado'], order['Estado'], true, false, 'Estado')}
       ${textareaField('observaciones', order['Observaciones'], true, 'Observaciones')}
       <p class="section-label">Productos</p>
       <div class="line-items" id="editOrderItems"></div>
@@ -948,6 +949,7 @@ function invSubmitApartado() {
       ${actions('Guardar cambios')}
     </form>`);
     (order.items || []).forEach(i => addLine('editOrderItems', 'order', i));
+    wireDeliveryAddressAutoFill_('editOrderForm', 'formaEntrega', 'direccionEntrega');
     document.getElementById('addEditOrderItem').onclick = () => addLine('editOrderItems', 'order');
     document.getElementById('editOrderForm').onsubmit = function (event) {
       event.preventDefault();
@@ -983,8 +985,8 @@ function invSubmitApartado() {
         <div class="field"><label>Estado</label><span class="pill ${pillClass(order['Estado'])}">${html(order['Estado'])}</span></div>
         <div class="field full"><label>Entrega</label><span>${html(order['Forma de entrega'])} ${order['Dirección de entrega'] ? '· ' + html(order['Dirección de entrega']) : ''}</span></div>
         <div class="field full"><label>Productos</label>
-          <div class="table-wrap"><table><thead><tr><th>Producto</th><th>Cantidad</th><th>Lote</th></tr></thead><tbody>
-            ${(order.items || []).map(i => `<tr><td>${html(i['Producto'])}</td><td>${html(i['Cantidad'])}</td><td>${html(i['Lote'] || '—')}</td></tr>`).join('')}
+          <div class="table-wrap"><table><thead><tr><th>Producto</th><th>Cantidad</th></tr></thead><tbody>
+            ${(order.items || []).map(i => `<tr><td>${html(i['Producto'])}</td><td>${html(i['Cantidad'])}</td></tr>`).join('')}
           </tbody></table></div>
         </div>
         ${puedeEmitirRemito ? '' : '<div class="field full"><p style="color:var(--muted);font-size:12px">Para emitir el remito, primero generá el presupuesto de este pedido.</p></div>'}
@@ -1138,7 +1140,7 @@ function invSubmitApartado() {
   }
   function openEditBudget(budget) {
     if (!budget) return showError(new Error('Presupuesto no encontrado.'));
-    openModal('Editar presupuesto ' + (budget['Número'] || budget['Presupuesto ID']), `<form class="form-grid" id="editBudgetForm">
+    openModal('Editar presupuesto ' + budget['Presupuesto ID'], `<form class="form-grid" id="editBudgetForm">
       ${selectField('clientId', state.clients.map(c => ({value:c['Cliente ID'], label:c['Nombre completo']})), budget['Cliente ID'], true, true, 'Cliente')}
       ${field('date', inputDate(budget['Fecha']), true, false, 'date', 'Fecha')}
       ${field('validUntil', inputDate(budget['Válido hasta']), true, false, 'date', 'Válido hasta')}
@@ -1183,8 +1185,8 @@ function invSubmitApartado() {
     openModal('Emitir remito · Pedido ' + order['Pedido ID'], `<form class="form-grid" id="emitirRemitoForm">
       <div class="field"><label>Cliente</label><strong>${html(order['Cliente'])}</strong></div>
       <div class="field"><label>Fecha</label><strong>${html(todayIso())}</strong></div>
-      ${selectField('delivery', ['Envío a domicilio', 'Retiro por sucursal Via Cargo', 'Retiro en fábrica'], '', true, false, 'Tipo de entrega')}
-      ${textareaField('notes', '', true, 'Aclaración (opcional)')}
+      ${selectField('delivery', ['Retiro por sucursal Via Cargo', 'Retiro en Fábrica'], '', true, false, 'Tipo de entrega')}
+      ${textareaField('notes', resumenItemsTexto_(items), true, 'Aclaración (opcional)')}
       <p class="section-label">Productos · autocompletado desde el pedido</p>
       <div class="table-wrap field full"><table><thead><tr><th>Producto</th><th>Cantidad</th><th>Lote</th></tr></thead><tbody>
         ${items.map(i => `<tr><td>${html(i.producto)}</td><td>${html(i.quantity)}</td><td>${html(i.lot || '—')}</td></tr>`).join('')}
@@ -1204,7 +1206,7 @@ function invSubmitApartado() {
           // createRemitFromOrder trae "Forma de entrega" del Pedido; acá la
           // pisamos con lo que se completó a mano al emitir el remito.
           return server('updateRemit', {
-            remitId: created.id, date: todayIso(), delivery: raw.delivery, address: '',
+            remitId: created.id, date: todayIso(), delivery: raw.delivery, address: suggestedAddressForDelivery_(raw.delivery),
             transport: '', tracking: '', notes: raw.notes, items: items
           }).then(function () { return created; });
         })
@@ -1213,7 +1215,7 @@ function invSubmitApartado() {
         })
         .then(function (result) {
           closeModal();
-          showToast('Remito N° ' + result.created.number + ' emitido y guardado en Drive.');
+          showToast('Remito ' + result.created.id + ' emitido y guardado en Drive.');
           if (result.pdf && result.pdf.url) window.open(result.pdf.url, '_blank');
           refresh();
         })
@@ -1226,12 +1228,13 @@ function invSubmitApartado() {
   }
   function openEditRemit(remit) {
     if (!remit) return showError(new Error('Remito no encontrado.'));
-    openModal('Editar remito ' + (remit['Número'] || remit['Remito ID']), `<form class="form-grid" id="editRemitForm">
+    openModal('Editar remito ' + remit['Remito ID'], `<form class="form-grid" id="editRemitForm">
       ${field('date', inputDate(remit['Fecha']), true, false, 'date', 'Fecha')}
-      ${selectField('delivery', ['Envío a domicilio', 'Retiro por sucursal Via Cargo', 'Retiro en fábrica'], remit['Forma de entrega'], false, false, 'Forma de entrega')}
+      ${selectField('delivery', ['Retiro por sucursal Via Cargo', 'Retiro en Fábrica'], remit['Forma de entrega'], false, false, 'Forma de entrega')}
       ${field('address', remit['Dirección de entrega'], false, true, 'text', 'Dirección de entrega')}
       ${field('transport', remit['Transporte'], false, false, 'text', 'Transporte')}
       ${field('tracking', remit['Seguimiento'], false, false, 'text', 'Seguimiento / N° Via Cargo')}
+      ${selectField('origen', ['Formulario', 'Histórico'], remit['Origen'] || 'Formulario', false, false, 'Origen')}
       ${textareaField('notes', remit['Observaciones'], false, 'Observaciones')}
       <p class="section-label">Productos y lotes</p>
       <div class="line-items" id="editRemitItems"></div>
@@ -1239,6 +1242,7 @@ function invSubmitApartado() {
       ${actions('Guardar remito')}
     </form>`);
     (remit.items || []).forEach(i => addLine('editRemitItems', 'remit', i));
+    wireDeliveryAddressAutoFill_('editRemitForm', 'delivery', 'address');
     document.getElementById('addEditRemitItem').onclick = () => addLine('editRemitItems', 'remit');
     document.getElementById('editRemitForm').onsubmit = function (event) {
       event.preventDefault();
@@ -1250,6 +1254,7 @@ function invSubmitApartado() {
         address: raw.address,
         transport: raw.transport,
         tracking: raw.tracking,
+        origen: raw.origen,
         notes: raw.notes,
         items: collectLines('editRemitItems', 'remit')
       }, 'Remito actualizado.');
@@ -1264,13 +1269,13 @@ function invSubmitApartado() {
       });
       document.getElementById('modalContent').innerHTML = `
         <form class="form-grid" id="soldRemitForm">
-          <div class="field"><label>Remito</label><strong>${html(remit['Número'] || remitId)}</strong></div>
+          <div class="field"><label>Remito</label><strong>${html(remitId)}</strong></div>
           <div class="field"><label>Cliente</label><strong>${html(remit['Cliente'] || '')}</strong></div>
           ${selectField('budgetId', clientBudgets.map(b => ({
             value: b['Presupuesto ID'],
-            label: 'Presupuesto ' + (b['Número'] || b['Presupuesto ID']) + ' · ' + money(b['Total'])
+            label: 'Presupuesto ' + b['Presupuesto ID'] + ' · ' + money(b['Total'])
           })), '', true, true, 'Presupuesto aceptado')}
-          <div class="field full"><p>Esta acción marcará el remito como <strong>Entregado</strong>, el pedido como <strong>Vendido</strong> y la venta asociada como <strong>Cobrada</strong>.</p></div>
+          <div class="field full"><p>Esta acción marcará el remito como <strong>Entregado</strong>, el pedido como <strong>Vendido</strong> y la venta asociada como <strong>Saldado</strong>.</p></div>
           ${clientBudgets.length ? actions('Confirmar vendido') : '<div class="field full"><p class="helper">Este cliente todavía no tiene un presupuesto con importe.</p></div>'}
         </form>`;
       if (!clientBudgets.length) return;
@@ -1314,6 +1319,29 @@ function invSubmitApartado() {
       event.preventDefault();
       submit('savePayment', Object.assign({ saleId: sale['Venta ID'] }, formObject(event.target)), 'Cobro registrado.');
     };
+  }
+  // Sugiere la Dirección de entrega según la Forma de entrega elegida
+  // (Via Cargo -> sucursal, Fábrica -> San Pedro 4929).
+  const DELIVERY_ADDRESS_SUGGESTIONS = { 'Retiro por sucursal Via Cargo': 'Sucursal Via Cargo', 'Retiro en Fábrica': 'San Pedro 4929' };
+  function suggestedAddressForDelivery_(delivery) { return DELIVERY_ADDRESS_SUGGESTIONS[delivery] || ''; }
+  // No pisa lo que el usuario ya haya escrito a mano, solo completa/actualiza al cambiar.
+  function wireDeliveryAddressAutoFill_(formId, deliveryName, addressName) {
+    const form = document.getElementById(formId);
+    if (!form) return;
+    const select = form.querySelector('[name="' + deliveryName + '"]');
+    const address = form.querySelector('[name="' + addressName + '"]');
+    if (!select || !address) return;
+    select.addEventListener('change', function () {
+      const suggestion = suggestedAddressForDelivery_(select.value);
+      if (suggestion) address.value = suggestion;
+    });
+  }
+  // Resumen "2x Producto, 1x Otro producto" para prefiles de Observaciones.
+  function resumenItemsTexto_(items) {
+    return (items || [])
+      .filter(function (i) { return i.producto; })
+      .map(function (i) { return i.quantity + 'x ' + i.producto; })
+      .join(', ');
   }
   function addLine(containerId, type, source) {
     source = source || {};
@@ -1424,7 +1452,7 @@ function invSubmitApartado() {
       ? Math.max(0, toNumber(h['Subtotal']) - toNumber(h['Descuento importe']))
       : 0;
     const title = isBudget ? 'PRESUPUESTO' : 'REMITO';
-    const number = h['Número'] || h[isBudget ? 'Presupuesto ID' : 'Remito ID'];
+    const number = h[isBudget ? 'Presupuesto ID' : 'Remito ID'];
     const rows = data.items.map(function (i) {
       return `<tr><td>${html(i['Producto'])}</td><td>${html(i['Cantidad'])}</td>${isBudget ? `<td>${money(i['Precio unitario'])}</td><td>${money(i['Total'])}</td>` : `<td>${html(i['Lote'] || '')}</td>`}</tr>`;
     }).join('');
@@ -1476,8 +1504,8 @@ function invSubmitApartado() {
   }
   function pillClass(value) {
     const v = normalize(value);
-    if (['recibido','en revision','borrador','enviado','preparado','despachado','pendiente de pago'].includes(v) || v.includes('revisar')) return 'warning';
-    if (['aprobado','remitido','entregado','vendido','cobrada','activo','si'].includes(v)) return 'success';
+    if (['recibido','en revision','borrador','enviado','preparado','despachado','apartado','pendiente','pendiente de pago'].includes(v) || v.includes('revisar')) return 'warning';
+    if (['aprobado','remitido','entregado','vendido','saldado','cobrada','activo','si'].includes(v)) return 'success';
     return 'neutral';
   }
   function money(value) { return new Intl.NumberFormat('es-AR', {style:'currency',currency:'ARS',maximumFractionDigits:2}).format(toNumber(value)); }
