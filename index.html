@@ -201,7 +201,7 @@
     </div>
     <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
     <script>
-  var URL_API = 'https://script.google.com/macros/s/AKfycbwUteggFNzFOHnalQy984viyoAS4W-YtSpznc7MPWXtMKvSk6nefa-rDNfG_3MDOk89/exec';
+  var URL_API = 'https://script.google.com/macros/s/AKfycbwyHcHv5LAscTRE0tznhwDHbM0fNSQ4N9cadX3_rl9oOCzLfkebcXxLi5VRfFjNMq_9/exec';
   const state = {
     view: 'inicio',
     bootstrap: null,
@@ -836,23 +836,19 @@ function invSubmitApartado() {
     });
   }
 
-  const popup = window.open('', '_blank', 'width=980,height=760');
   document.getElementById('invSubmit').disabled = true;
 
   jsonp(params, (err, data) => {
     // Todo el manejo de la respuesta va en try/catch: si algo inesperado
-    // tira una excepción acá, antes se perdía en silencio y la ventana de
-    // impresión quedaba abierta en blanco para siempre. Ahora se cierra y
-    // se avisa el error.
+    // tira una excepción acá, antes se perdía en silencio. Ahora se avisa
+    // el error directamente, sin ventana de impresión de por medio.
     try {
       if (err) {
         document.getElementById('invSubmit').disabled = false;
-        if (popup) popup.close();
         return showError(err);
       }
       if (!(data && data.ok)) {
         document.getElementById('invSubmit').disabled = false;
-        if (popup) popup.close();
         return showError(new Error(data ? (data.error || data.mensaje) : 'No hubo respuesta.'));
       }
 
@@ -861,22 +857,22 @@ function invSubmitApartado() {
 
       const orderId = data.orderId;
       if (!orderId) {
-        if (popup) popup.close();
         renderInventory();
         return;
       }
 
+      // El presupuesto se genera solo, pero NO se imprime en el momento:
+      // el usuario lo revisa/ajusta (por ejemplo aplica un descuento) desde
+      // Presupuestos y recién ahí imprime/genera el PDF cuando ya está todo
+      // ok — ese PDF es el que queda guardado en Drive junto con el remito
+      // y el comprobante de esa misma venta.
       server('crearPresupuestoDesdeApartado', { orderId: orderId })
-        .then(function (resultado) {
-          return imprimirPresupuestoEnPopup_(popup, resultado.id);
-        })
         .then(function () {
-          showToast('Presupuesto generado e impreso. Podés editarlo o reimprimirlo cuando quieras desde Presupuestos.');
+          showToast('Presupuesto generado. Revisalo, aplicá descuentos si hace falta e imprimilo desde Presupuestos cuando esté listo.');
           renderInventory();
           refresh();
         })
         .catch(function (err2) {
-          if (popup) popup.close();
           showToast('El apartado se registró, pero no se pudo generar el presupuesto automáticamente: ' +
             (err2 && err2.message ? err2.message : err2) + '. Podés generarlo manualmente desde Presupuestos.', true);
           renderInventory();
@@ -884,7 +880,6 @@ function invSubmitApartado() {
         });
     } catch (ex) {
       document.getElementById('invSubmit').disabled = false;
-      if (popup) popup.close();
       showError(ex);
     }
   });
@@ -1189,7 +1184,6 @@ function invSubmitApartado() {
           items: items,
           discountType: raw.discountType,
           discountValue: raw.discountValue,
-          conditions: raw.conditions,
           notes: raw.notes
         }, 'Presupuesto generado.');
       };
@@ -1213,7 +1207,6 @@ function invSubmitApartado() {
       </div>
       ${selectField('discountType', ['Porcentaje', 'Importe'], 'Porcentaje', false, false, 'Tipo de descuento')}
       ${field('discountValue', 0, false, false, 'number', 'Descuento')}
-      ${textareaField('conditions', '', false, 'Condiciones')}
       ${textareaField('notes', '', false, 'Observaciones')}
       <div class="field full"><label>Total final</label><strong id="apartadoBudgetTotal" style="font-size:20px">${money(0)}</strong></div>
       ${actions('Generar presupuesto')}`;
@@ -1237,13 +1230,11 @@ function invSubmitApartado() {
     openModal('Nuevo presupuesto', `<form class="form-grid" id="budgetForm">
       ${selectField('clientId', state.clients.map(c => ({value:c['Cliente ID'], label:c['Nombre completo']})), '', true, true, 'Cliente')}
       ${field('date', todayIso(), true, false, 'date', 'Fecha')}
-      ${field('validUntil', addDays(todayIso(), 10), true, false, 'date', 'Válido hasta')}
       <p class="section-label">Productos y precios</p>
       <div class="line-items" id="budgetItems"></div>
       <button type="button" class="secondary-button" id="addBudgetItem">＋ Agregar producto</button>
       ${selectField('discountType', ['Porcentaje', 'Importe'], 'Porcentaje', false, false, 'Tipo de descuento')}
       ${field('discountValue', 0, false, false, 'number', 'Descuento')}
-      ${textareaField('conditions', '', false, 'Condiciones')}
       ${textareaField('notes', '', false, 'Observaciones')}
       ${actions('Generar presupuesto')}
     </form>`);
@@ -1255,10 +1246,8 @@ function invSubmitApartado() {
       submit('createManualBudget', {
         clientId: raw.clientId,
         date: raw.date,
-        validUntil: raw.validUntil,
         discountType: raw.discountType,
         discountValue: raw.discountValue,
-        conditions: raw.conditions,
         notes: raw.notes,
         items: collectLines('budgetItems', 'budget')
       }, 'Presupuesto generado.');
@@ -1269,13 +1258,11 @@ function invSubmitApartado() {
     openModal('Editar presupuesto ' + budget['Presupuesto ID'], `<form class="form-grid" id="editBudgetForm">
       ${selectField('clientId', state.clients.map(c => ({value:c['Cliente ID'], label:c['Nombre completo']})), budget['Cliente ID'], true, true, 'Cliente')}
       ${field('date', inputDate(budget['Fecha']), true, false, 'date', 'Fecha')}
-      ${field('validUntil', inputDate(budget['Válido hasta']), true, false, 'date', 'Válido hasta')}
       <p class="section-label">Productos y precios</p>
       <div class="line-items" id="editBudgetItems"></div>
       <button type="button" class="secondary-button" id="addEditBudgetItem">＋ Agregar producto</button>
       ${selectField('discountType', ['Porcentaje', 'Importe'], budget['Descuento tipo'] || 'Porcentaje', false, false, 'Tipo de descuento')}
       ${field('discountValue', toNumber(budget['Descuento valor']), false, false, 'number', 'Descuento')}
-      ${textareaField('conditions', budget['Condiciones'], false, 'Condiciones')}
       ${textareaField('notes', budget['Observaciones'], false, 'Observaciones')}
       <div class="form-actions">
         <button type="button" class="ghost-button" id="printEditBudget">Imprimir</button>
@@ -1293,10 +1280,8 @@ function invSubmitApartado() {
         budgetId: budget['Presupuesto ID'],
         clientId: raw.clientId,
         date: raw.date,
-        validUntil: raw.validUntil,
         discountType: raw.discountType,
         discountValue: raw.discountValue,
-        conditions: raw.conditions,
         notes: raw.notes,
         items: collectLines('editBudgetItems', 'budget')
       }, 'Presupuesto actualizado.');
@@ -1693,11 +1678,11 @@ function invSubmitApartado() {
       .totals{width:330px;margin:24px 0 0 auto}.totals p{display:flex;justify-content:space-between;margin:0;padding:8px;border:1px solid #9bb6bf;border-top:0}.totals p:first-child{border-top:1px solid #9bb6bf}.grand{font-weight:bold;font-size:16px;background:#edf4f6}
       .notes{margin-top:26px;min-height:75px}.print{position:fixed;right:20px;top:20px}@media print{.print{display:none}body{padding:16px}}</style></head><body>
       <button class="print" onclick="window.print()">${isBudget ? 'Guardar presupuesto en PDF' : 'Imprimir remito'}</button>
-      <header><div><span class="label">${html(s.Empresa || 'Bio-Fix')}</span><h1>${title} N.º ${html(number)}</h1></div><div class="company"><strong>${html(s['Razón social'] || 'Grado Cuatro S.R.L.')}</strong><br>${html(s['Dirección'] || '')}<br>${html(s['Localidad'] || '')}</div></header>
+      <header><div>${s['Logo URL'] ? `<img src="${attr(s['Logo URL'])}" alt="Bio-Fix" style="max-height:48px;max-width:220px;display:block;margin-bottom:6px">` : `<span class="label" style="font-size:20px;font-weight:bold;color:#245d6b">${html(s.Empresa || 'Bio-Fix')}</span>`}<h1>${title} N.º ${html(number)}</h1></div><div class="company"><strong>${html(s['Razón social'] || 'Grado Cuatro S.R.L.')}</strong><br>${html(s['Dirección'] || '')}<br>${html(s['Localidad'] || '')}</div></header>
       <section class="info"><div class="box"><span class="label">Información del cliente</span><p><strong>${html(h['Cliente'])}</strong></p>${isBudget && c['Empresa'] ? `<p>${html(c['Empresa'])}</p>` : ''}<p>CUIL: ${html(c['CUIL'] || '')}</p><p>${html(c['Localidad'] || '')} · ${html(c['Provincia'] || '')}</p>${isBudget ? `<p>${html(c['Teléfono'] || '')} ${c['Teléfono'] && c['Email'] ? '·' : ''} ${html(c['Email'] || '')}</p>` : ''}</div>
       <div class="box"><span class="label">${isBudget ? 'Enviar a' : 'Entrega'}</span><p><strong>${html(h['Dirección de entrega'] || '')}</strong></p><p>${html(c['Localidad'] || '')} ${html(c['Código postal'] || '')}</p><p>${html(c['Provincia'] || '')}</p>${isBudget ? `<p>${html(c['Teléfono'] || '')} ${c['Teléfono'] && c['Email'] ? '·' : ''} ${html(c['Email'] || '')}</p>` : ''}</div>
-      <div class="box"><span class="label">Fecha</span><p><strong>${html(h['Fecha'])}</strong></p>${isBudget ? `<p>Válido hasta: ${html(h['Válido hasta'])}</p>` : `<p>Pedido: ${html(h['Pedido ID'] || '')}</p>`}</div>
-      <div class="box"><span class="label">${isBudget ? 'Condiciones' : 'Transporte / seguimiento'}</span><p>${isBudget ? html(h['Condiciones'] || 'A convenir') : html(h['Transporte'] || '')}</p>${isBudget ? '' : `<p>${html(h['Seguimiento'] || '')}</p>`}</div></section>
+      <div class="box"><span class="label">Fecha</span><p><strong>${html(h['Fecha'])}</strong></p>${isBudget ? '' : `<p>Pedido: ${html(h['Pedido ID'] || '')}</p>`}</div>
+      ${isBudget ? '' : `<div class="box"><span class="label">Transporte / seguimiento</span><p>${html(h['Transporte'] || '')}</p><p>${html(h['Seguimiento'] || '')}</p></div>`}</section>
       <table><thead><tr><th>Descripción</th><th>Cantidad</th>${isBudget ? '<th>Precio unitario</th><th>Total</th>' : '<th>Lote</th>'}</tr></thead><tbody>${rows}</tbody></table>
       ${isBudget ? `<div class="totals"><p><span>Subtotal</span><strong>${money(h['Subtotal'])}</strong></p><p><span>Descuento</span><strong>${money(h['Descuento importe'])}</strong></p><p><span>Subtotal menos descuento</span><strong>${money(subtotalAfterDiscount)}</strong></p>${pendingBalance > 0 ? `<p><span>Saldo pendiente${h['Saldo pendiente ref'] ? ' (Ppto. N.º ' + html(h['Saldo pendiente ref']) + ')' : ''}</span><strong>${money(pendingBalance)}</strong></p>` : ''}<p class="grand"><span>Total</span><strong>${money(h['Total'])}</strong></p></div><p style="text-align:right;color:#5f7076;font-size:11px">Importes expresados en pesos argentinos (ARS).</p>` : ''}
       <div class="box notes"><span class="label">Observaciones / notas</span><p>${html(h['Observaciones'] || '')}</p></div>
