@@ -201,7 +201,7 @@
     </div>
     <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
     <script>
-  var URL_API = 'https://script.google.com/macros/s/AKfycbwGkE1NMB3CsSGmA8D_oNRZG2nFjT5JteN1lVy5vhvzY9CS6DJZBStjiFW9Z0wCunFQ/exec';
+  var URL_API = 'https://script.google.com/macros/s/AKfycbz1lx9PsuLcBbt0eLvTObujM5yVoXPXFJm_y9dWfw5UN3mjKxyxwwZX5HctnHVJWgSo/exec';
   const state = {
     view: 'inicio',
     bootstrap: null,
@@ -415,7 +415,6 @@ function renderInventory() {
             <div class="field"><label>Apellido</label><input id="invApellido"></div>
             <div class="field"><label>CUIL</label><input id="invCuil"></div>
             <div class="field"><label>Localidad</label><input id="invLocalidad"></div>
-            <div class="field full"><label>Email</label><input id="invEmail" type="email"></div>
           </div>
         </div>
         <div class="form-actions">
@@ -585,7 +584,6 @@ function invClienteSeleccionar(id) {
   document.getElementById('invApellido').value = client['Apellido'] || '';
   document.getElementById('invCuil').value = client['CUIL'] || '';
   document.getElementById('invLocalidad').value = client['Localidad'] || '';
-  document.getElementById('invEmail').value = client['Email'] || '';
   if (inv.mov === 'salida') invBuscarApartadoCliente(id);
 }
 function invBuscarApartadoCliente(clienteId) {
@@ -639,7 +637,7 @@ function invUsarApartado() {
   showToast('Apartado cargado — el stock no se vuelve a descontar.');
 }
 function invClienteLimpiarCampos() {
-  ['invNombre', 'invApellido', 'invCuil', 'invLocalidad', 'invEmail'].forEach(id => {
+  ['invNombre', 'invApellido', 'invCuil', 'invLocalidad'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
@@ -707,8 +705,7 @@ function invSubmitVenta() {
       'Nombre': nombre,
       'Apellido': document.getElementById('invApellido').value.trim(),
       'CUIL': document.getElementById('invCuil').value.trim(),
-      'Localidad': document.getElementById('invLocalidad').value.trim(),
-      'Email': document.getElementById('invEmail').value.trim()
+      'Localidad': document.getElementById('invLocalidad').value.trim()
     };
   }
   document.getElementById('invSubmit').disabled = true;
@@ -749,8 +746,7 @@ function invSubmitApartado() {
       'Nombre': nombre,
       'Apellido': document.getElementById('invApellido').value.trim(),
       'CUIL': document.getElementById('invCuil').value.trim(),
-      'Localidad': document.getElementById('invLocalidad').value.trim(),
-      'Email': document.getElementById('invEmail').value.trim()
+      'Localidad': document.getElementById('invLocalidad').value.trim()
     });
   }
 
@@ -864,9 +860,6 @@ function invSubmitApartado() {
         ${field('Localidad', record['Localidad'])}
         ${field('Código postal', record['Código postal'])}
         ${selectField('Provincia', provinces(), record['Provincia'])}
-        ${field('Dirección', record['Dirección'], false, true)}
-        ${field('Teléfono', record['Teléfono'])}
-        ${field('Email', record['Email'], false, false, 'email')}
         ${selectField('Estado', ['Activo', 'Inactivo'], record['Estado'] || 'Activo')}
         ${actions()}
       </form>`);
@@ -1444,7 +1437,7 @@ function invSubmitApartado() {
       <button class="print" onclick="window.print()">${isBudget ? 'Guardar presupuesto en PDF' : 'Imprimir remito'}</button>
       <header><div><span class="label">${html(s.Empresa || 'Bio-Fix')}</span><h1>${title} N.º ${html(number)}</h1></div><div class="company"><strong>${html(s['Razón social'] || 'Grado Cuatro S.R.L.')}</strong><br>${html(s['Dirección'] || '')}<br>${html(s['Localidad'] || '')}</div></header>
       <section class="info"><div class="box"><span class="label">Información del cliente</span><p><strong>${html(h['Cliente'])}</strong></p><p>CUIL: ${html(c['CUIL'] || '')}</p><p>${html(c['Localidad'] || '')} · ${html(c['Provincia'] || '')}</p></div>
-      <div class="box"><span class="label">${isBudget ? 'Enviar a' : 'Entrega'}</span><p><strong>${html(h['Dirección de entrega'] || c['Dirección'] || '')}</strong></p><p>${html(c['Localidad'] || '')} ${html(c['Código postal'] || '')}</p><p>${html(c['Provincia'] || '')}</p></div>
+      <div class="box"><span class="label">${isBudget ? 'Enviar a' : 'Entrega'}</span><p><strong>${html(h['Dirección de entrega'] || '')}</strong></p><p>${html(c['Localidad'] || '')} ${html(c['Código postal'] || '')}</p><p>${html(c['Provincia'] || '')}</p></div>
       <div class="box"><span class="label">Fecha</span><p><strong>${html(h['Fecha'])}</strong></p>${isBudget ? `<p>Válido hasta: ${html(h['Válido hasta'])}</p>` : `<p>Pedido: ${html(h['Pedido ID'] || '')}</p>`}</div>
       <div class="box"><span class="label">${isBudget ? 'Condiciones' : 'Transporte / seguimiento'}</span><p>${isBudget ? html(h['Condiciones'] || 'A convenir') : html(h['Transporte'] || '')}</p>${isBudget ? '' : `<p>${html(h['Seguimiento'] || '')}</p>`}</div></section>
       <table><thead><tr><th>Descripción</th><th>Cantidad</th>${isBudget ? '<th>Precio unitario</th><th>Total</th>' : '<th>Lote</th>'}</tr></thead><tbody>${rows}</tbody></table>
