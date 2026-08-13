@@ -201,7 +201,7 @@
     </div>
     <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
     <script>
-  var URL_API = 'https://script.google.com/macros/s/AKfycbyVWyetHOv6ib9Vl8J3WOXIbF9HaFq-Y68Y-ucNbDTC0GZi_vJ1nYgVREDkrUCOD6o/exec';
+  var URL_API = 'https://script.google.com/macros/s/AKfycbwUteggFNzFOHnalQy984viyoAS4W-YtSpznc7MPWXtMKvSk6nefa-rDNfG_3MDOk89/exec';
   const state = {
     view: 'inicio',
     bootstrap: null,
@@ -980,6 +980,9 @@ function invSubmitApartado() {
         ${field('CUIL', record['CUIL'], true)}
         ${field('DNI', record['DNI'])}
         ${field('Matrícula profesional', record['Matrícula profesional'])}
+        ${field('Empresa', record['Empresa'], false, false, 'text', 'Nombre de la empresa')}
+        ${field('Teléfono', record['Teléfono'])}
+        ${field('Email', record['Email'], false, false, 'email')}
         ${field('Localidad', record['Localidad'])}
         ${field('Código postal', record['Código postal'])}
         ${selectField('Provincia', provinces(), record['Provincia'])}
@@ -1455,14 +1458,73 @@ function invSubmitApartado() {
       ${field('date', todayIso(), true, false, 'date', 'Fecha')}
       ${field('amount', sale['Saldo'], true, false, 'number', 'Importe')}
       ${selectField('paymentMethod', ['Transferencia', 'Efectivo', 'Tarjeta', 'Cheque', 'Otro'], '', true, false, 'Medio de pago')}
-      ${field('receipt', '', false, false, 'text', 'Comprobante')}
+      <div class="field full"><label>Comprobante (foto o captura, opcional)</label><input type="file" id="paymentReceiptFile" accept="image/*,application/pdf"></div>
       ${textareaField('notes', '', false, 'Observaciones')}
       ${actions('Registrar cobro')}
     </form>`);
     document.getElementById('paymentForm').onsubmit = function (event) {
       event.preventDefault();
-      submit('savePayment', Object.assign({ saleId: sale['Venta ID'] }, formObject(event.target)), 'Cobro registrado.');
+      const file = document.getElementById('paymentReceiptFile').files[0];
+      const raw = formObject(event.target);
+      const submitButton = event.target.querySelector('button[type="submit"]');
+      submitButton.disabled = true;
+      submitButton.textContent = 'Guardando…';
+      server('savePayment', Object.assign({ saleId: sale['Venta ID'] }, raw)).then(function (result) {
+        if (!file) return result;
+        // El cobro ya quedó guardado — si la subida del comprobante falla
+        // por lo que sea, no perdemos el cobro, solo el archivo adjunto.
+        return subirComprobantePago_(result.id, file).catch(function () {}).then(function () { return result; });
+      }).then(function () {
+        closeModal();
+        showToast('Cobro registrado' + (file ? ' — comprobante adjuntado.' : '.'));
+        refresh();
+      }).catch(function (err) {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Registrar cobro';
+        showError(err);
+      });
     };
+  }
+  // Sube la imagen/PDF del comprobante de pago a la carpeta de Drive
+  // compartida de Bio-Fix. Va por un <form method="POST"> a un iframe
+  // oculto (no por jsonp/server): un archivo no entra en la URL de un GET,
+  // y esta página es externa al proyecto de Apps Script, así que un
+  // fetch() normal chocaría con CORS — el POST a un iframe evita ese
+  // problema (el navegador solo navega el iframe, no necesita leer la
+  // respuesta con JS). Ver doPost/subirComprobante_ en Codigo.gs/ArchivosDrive.gs.
+  function subirComprobantePago_(cobroId, file) {
+    return new Promise(function (resolve) {
+      const reader = new FileReader();
+      reader.onload = function () {
+        const dataUrl = String(reader.result || '');
+        const base64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
+        if (!base64) return resolve();
+        let iframe = document.getElementById('comprobanteUploadFrame');
+        if (!iframe) {
+          iframe = document.createElement('iframe');
+          iframe.id = 'comprobanteUploadFrame';
+          iframe.name = 'comprobanteUploadFrame';
+          iframe.style.display = 'none';
+          document.body.appendChild(iframe);
+        }
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = URL_API;
+        form.target = 'comprobanteUploadFrame';
+        form.style.display = 'none';
+        [['accion', 'subirComprobante'], ['cobroId', cobroId], ['mimeType', file.type || 'image/jpeg'], ['base64', base64]]
+          .forEach(function (pair) {
+            const input = document.createElement('input');
+            input.type = 'hidden'; input.name = pair[0]; input.value = pair[1];
+            form.appendChild(input);
+          });
+        document.body.appendChild(form);
+        iframe.onload = function () { form.remove(); resolve(); };
+        form.submit();
+      };
+      reader.onerror = function () { resolve(); };
+      reader.readAsDataURL(file);
+    });
   }
   // Sugiere la Dirección de entrega según la Forma de entrega elegida
   // (Via Cargo -> sucursal, Fábrica -> San Pedro 4929).
@@ -1632,12 +1694,12 @@ function invSubmitApartado() {
       .notes{margin-top:26px;min-height:75px}.print{position:fixed;right:20px;top:20px}@media print{.print{display:none}body{padding:16px}}</style></head><body>
       <button class="print" onclick="window.print()">${isBudget ? 'Guardar presupuesto en PDF' : 'Imprimir remito'}</button>
       <header><div><span class="label">${html(s.Empresa || 'Bio-Fix')}</span><h1>${title} N.º ${html(number)}</h1></div><div class="company"><strong>${html(s['Razón social'] || 'Grado Cuatro S.R.L.')}</strong><br>${html(s['Dirección'] || '')}<br>${html(s['Localidad'] || '')}</div></header>
-      <section class="info"><div class="box"><span class="label">Información del cliente</span><p><strong>${html(h['Cliente'])}</strong></p><p>CUIL: ${html(c['CUIL'] || '')}</p><p>${html(c['Localidad'] || '')} · ${html(c['Provincia'] || '')}</p></div>
-      <div class="box"><span class="label">${isBudget ? 'Enviar a' : 'Entrega'}</span><p><strong>${html(h['Dirección de entrega'] || '')}</strong></p><p>${html(c['Localidad'] || '')} ${html(c['Código postal'] || '')}</p><p>${html(c['Provincia'] || '')}</p></div>
+      <section class="info"><div class="box"><span class="label">Información del cliente</span><p><strong>${html(h['Cliente'])}</strong></p>${isBudget && c['Empresa'] ? `<p>${html(c['Empresa'])}</p>` : ''}<p>CUIL: ${html(c['CUIL'] || '')}</p><p>${html(c['Localidad'] || '')} · ${html(c['Provincia'] || '')}</p>${isBudget ? `<p>${html(c['Teléfono'] || '')} ${c['Teléfono'] && c['Email'] ? '·' : ''} ${html(c['Email'] || '')}</p>` : ''}</div>
+      <div class="box"><span class="label">${isBudget ? 'Enviar a' : 'Entrega'}</span><p><strong>${html(h['Dirección de entrega'] || '')}</strong></p><p>${html(c['Localidad'] || '')} ${html(c['Código postal'] || '')}</p><p>${html(c['Provincia'] || '')}</p>${isBudget ? `<p>${html(c['Teléfono'] || '')} ${c['Teléfono'] && c['Email'] ? '·' : ''} ${html(c['Email'] || '')}</p>` : ''}</div>
       <div class="box"><span class="label">Fecha</span><p><strong>${html(h['Fecha'])}</strong></p>${isBudget ? `<p>Válido hasta: ${html(h['Válido hasta'])}</p>` : `<p>Pedido: ${html(h['Pedido ID'] || '')}</p>`}</div>
       <div class="box"><span class="label">${isBudget ? 'Condiciones' : 'Transporte / seguimiento'}</span><p>${isBudget ? html(h['Condiciones'] || 'A convenir') : html(h['Transporte'] || '')}</p>${isBudget ? '' : `<p>${html(h['Seguimiento'] || '')}</p>`}</div></section>
       <table><thead><tr><th>Descripción</th><th>Cantidad</th>${isBudget ? '<th>Precio unitario</th><th>Total</th>' : '<th>Lote</th>'}</tr></thead><tbody>${rows}</tbody></table>
-      ${isBudget ? `<div class="totals"><p><span>Subtotal</span><strong>${money(h['Subtotal'])}</strong></p><p><span>Descuento</span><strong>${money(h['Descuento importe'])}</strong></p><p><span>Subtotal menos descuento</span><strong>${money(subtotalAfterDiscount)}</strong></p>${pendingBalance > 0 ? `<p><span>Saldo pendiente</span><strong>${money(pendingBalance)}</strong></p>` : ''}<p class="grand"><span>Total</span><strong>${money(h['Total'])}</strong></p></div><p style="text-align:right;color:#5f7076;font-size:11px">Importes expresados en pesos argentinos (ARS).</p>` : ''}
+      ${isBudget ? `<div class="totals"><p><span>Subtotal</span><strong>${money(h['Subtotal'])}</strong></p><p><span>Descuento</span><strong>${money(h['Descuento importe'])}</strong></p><p><span>Subtotal menos descuento</span><strong>${money(subtotalAfterDiscount)}</strong></p>${pendingBalance > 0 ? `<p><span>Saldo pendiente${h['Saldo pendiente ref'] ? ' (Ppto. N.º ' + html(h['Saldo pendiente ref']) + ')' : ''}</span><strong>${money(pendingBalance)}</strong></p>` : ''}<p class="grand"><span>Total</span><strong>${money(h['Total'])}</strong></p></div><p style="text-align:right;color:#5f7076;font-size:11px">Importes expresados en pesos argentinos (ARS).</p>` : ''}
       <div class="box notes"><span class="label">Observaciones / notas</span><p>${html(h['Observaciones'] || '')}</p></div>
       </body></html>`;
   }
