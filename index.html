@@ -1313,19 +1313,21 @@ function invSubmitApartado() {
     // El Lote real no vive en Pedido Detalle (un pedido puede juntar varios
     // lotes) sino en el apartado del cliente — lo autocompletamos acá contra
     // el apartado actual, matcheado por Producto ID (getLotesApartadoPorPedido,
-    // PedidoApartadoSync.gs). Si el pedido no vino de un apartado, no
-    // devuelve nada y el campo queda como estaba.
-    server('getLotesApartadoPorPedido', order['Pedido ID']).then(function (lotes) {
-      if (!lotes) return;
+    // PedidosApartadoSync.gs). Se llama por jsonp() a una ruta directa en
+    // Codigo.gs (getLotesApartadoPorPedidoDirecto) en vez de por server(),
+    // para no depender de RouterPanel.gs. Si el pedido no vino de un
+    // apartado, no devuelve nada y el campo queda como estaba.
+    jsonp({ accion: 'getLotesApartadoPorPedidoDirecto', orderId: order['Pedido ID'] }, function (err, data) {
+      if (err || !data || !data.ok || !data.lotes) return;
       let huboCambios = false;
       items.forEach(function (i) {
-        if (!i.lot && i.productId && lotes[i.productId]) { i.lot = lotes[i.productId]; huboCambios = true; }
+        if (!i.lot && i.productId && data.lotes[i.productId]) { i.lot = data.lotes[i.productId]; huboCambios = true; }
       });
       if (huboCambios) {
         document.getElementById('emitirRemitoItemsBody').innerHTML =
           items.map(i => `<tr><td>${html(i.producto)}</td><td>${html(i.quantity)}</td><td>${html(i.lot || '—')}</td></tr>`).join('');
       }
-    }).catch(function () { /* si falla, el remito se emite igual sin lote autocompletado */ });
+    });
     document.getElementById('emitirRemitoForm').onsubmit = function (event) {
       event.preventDefault();
       const raw = formObject(event.target);
