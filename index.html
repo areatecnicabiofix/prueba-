@@ -201,7 +201,7 @@
     </div>
     <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
     <script>
-  var URL_API = 'https://script.google.com/macros/s/AKfycbzqxEopKRw_MujhjW7AkIGyxVOOGFBQakiA_ng_nurGqC9H3iO4bSpRzkuAYGhODoTn/exec';
+  var URL_API = 'https://script.google.com/macros/s/AKfycbwg6JNJGPjJOOW9wc3VXpObIunq-xfwqDJaUp-Ocvxvz6rx-Xsh9n5-cW7Up2In2fph/exec';
   const state = {
     view: 'inicio',
     bootstrap: null,
@@ -1316,12 +1316,28 @@ function invSubmitApartado() {
       ${selectField('delivery', ['Retiro por sucursal Via Cargo', 'Retiro en Fábrica'], '', true, false, 'Tipo de entrega')}
       ${textareaField('notes', resumenItemsTexto_(items), true, 'Aclaración (opcional)')}
       <p class="section-label">Productos · autocompletado desde el pedido</p>
-      <div class="table-wrap field full"><table><thead><tr><th>Producto</th><th>Cantidad</th><th>Lote</th></tr></thead><tbody>
+      <div class="table-wrap field full"><table><thead><tr><th>Producto</th><th>Cantidad</th><th>Lote</th></tr></thead><tbody id="emitirRemitoItemsBody">
         ${items.map(i => `<tr><td>${html(i.producto)}</td><td>${html(i.quantity)}</td><td>${html(i.lot || '—')}</td></tr>`).join('')}
       </tbody></table></div>
       <div class="field full"><p style="color:var(--muted);font-size:12px">El número de remito se genera solo, arriba del documento, y no se repite. Al confirmar se guarda el PDF en Drive (carpeta "Remitos Bio-Fix") y se abre para imprimir.</p></div>
       ${actions('Emitir remito')}
     </form>`);
+    // El Lote real no vive en Pedido Detalle (un pedido puede juntar varios
+    // lotes) sino en el apartado del cliente — lo autocompletamos acá contra
+    // el apartado actual, matcheado por Producto ID (getLotesApartadoPorPedido,
+    // PedidoApartadoSync.gs). Si el pedido no vino de un apartado, no
+    // devuelve nada y el campo queda como estaba.
+    server('getLotesApartadoPorPedido', order['Pedido ID']).then(function (lotes) {
+      if (!lotes) return;
+      let huboCambios = false;
+      items.forEach(function (i) {
+        if (!i.lot && i.productId && lotes[i.productId]) { i.lot = lotes[i.productId]; huboCambios = true; }
+      });
+      if (huboCambios) {
+        document.getElementById('emitirRemitoItemsBody').innerHTML =
+          items.map(i => `<tr><td>${html(i.producto)}</td><td>${html(i.quantity)}</td><td>${html(i.lot || '—')}</td></tr>`).join('');
+      }
+    }).catch(function () { /* si falla, el remito se emite igual sin lote autocompletado */ });
     document.getElementById('emitirRemitoForm').onsubmit = function (event) {
       event.preventDefault();
       const raw = formObject(event.target);
