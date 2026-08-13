@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BIOFIX_PANEL_V11_CATALOGO_PEDIDOS_DESDE_FORMULARIO -->
+<!-- BIOFIX_PANEL_V12_APARTADO_AUTOPRESUPUESTO -->
 <html lang="es">
   <head>
     <base target="_top">
@@ -201,7 +201,7 @@
     </div>
     <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
     <script>
-  var URL_API = 'https://script.google.com/macros/s/AKfycbw2UvrrwG6vokg5X58KyggaPPELyiqjAd-iy5e4Nkt64ICRNCcJyKFAPgRG6hFzye_a/exec';
+  var URL_API = 'https://script.google.com/macros/s/AKfycbwGkE1NMB3CsSGmA8D_oNRZG2nFjT5JteN1lVy5vhvzY9CS6DJZBStjiFW9Z0wCunFQ/exec';
   const state = {
     view: 'inicio',
     bootstrap: null,
@@ -464,7 +464,7 @@ function invSetMov(mov) {
   inv.apartadoActivo = null;
 inv.usandoApartado = false;
 document.getElementById('invApartadoBox').classList.add('hidden');
-  const labels = { deposito: 'Registrar movimiento', salida: 'Registrar venta y generar remito', apartado: 'Registrar apartado' };
+  const labels = { deposito: 'Registrar movimiento', salida: 'Registrar venta y generar remito', apartado: 'Registrar apartado y generar presupuesto' };
   document.getElementById('invSubmit').textContent = labels[mov];
   invRenderCarrito();
 }
@@ -722,6 +722,14 @@ function invSubmitVenta() {
     showError(err);
   });
 }
+// Registra el apartado y, automáticamente (sin pasos intermedios), genera
+// el presupuesto de ese apartado y lo abre listo para imprimir. La
+// ventana de impresión se abre YA, en el mismo click, para que el
+// navegador no la bloquee — recién se completa cuando el presupuesto
+// está listo. Si algo del presupuesto falla, el apartado igual queda
+// registrado: se avisa y se puede generar el presupuesto a mano después
+// desde Presupuestos (donde también se puede editar y reimprimir las
+// veces que haga falta).
 function invSubmitApartado() {
   if (!inv.carrito.length) return showError(new Error('Agregá al menos un ítem.'));
   const clientId = document.getElementById('invClienteId').value;
@@ -745,33 +753,42 @@ function invSubmitApartado() {
       'Email': document.getElementById('invEmail').value.trim()
     });
   }
+
+  const popup = window.open('', '_blank', 'width=980,height=760');
   document.getElementById('invSubmit').disabled = true;
+
   jsonp(params, (err, data) => {
-    document.getElementById('invSubmit').disabled = false;
-    if (data && data.ok) {
-      showToast('Apartado registrado.');
-      inv.stockCargado = false;
-      renderInventory();
-      if (clientId) ofrecerPresupuestoApartado(clientId);
+    if (!(data && data.ok)) {
+      document.getElementById('invSubmit').disabled = false;
+      if (popup) popup.close();
+      return showError(new Error(data ? (data.error || data.mensaje) : 'No hubo respuesta.'));
     }
-    else showError(new Error(data ? (data.error || data.mensaje) : 'No hubo respuesta.'));
+
+    showToast('Apartado registrado.');
+    inv.stockCargado = false;
+    renderInventory();
+
+    const orderId = data.orderId;
+    if (!orderId) {
+      if (popup) popup.close();
+      return;
+    }
+
+    server('crearPresupuestoDesdeApartado', { orderId: orderId })
+      .then(function (resultado) {
+        return imprimirPresupuestoEnPopup_(popup, resultado.id);
+      })
+      .then(function () {
+        showToast('Presupuesto generado e impreso. Podés editarlo o reimprimirlo cuando quieras desde Presupuestos.');
+        refresh();
+      })
+      .catch(function (err2) {
+        if (popup) popup.close();
+        showToast('El apartado se registró, pero no se pudo generar el presupuesto automáticamente: ' +
+          (err2 && err2.message ? err2.message : err2) + '. Podés generarlo manualmente desde Presupuestos.', true);
+        refresh();
+      });
   });
-}
-// Después de registrar un apartado, ofrece ir directo a generar el
-// presupuesto (el Pedido ya quedó armado solo, vía sincronizarPedidoDesdeApartado_).
-function ofrecerPresupuestoApartado(clienteId) {
-  openModal('Apartado registrado', `
-    <div class="form-grid">
-      <div class="field full"><p>¿Querés generar el presupuesto de este apartado ahora?</p></div>
-      <div class="form-actions">
-        <button type="button" class="secondary-button" onclick="closeModal()">Más tarde</button>
-        <button type="button" class="primary-button" id="irAPresupuestoApartado">Generar presupuesto</button>
-      </div>
-    </div>`);
-  document.getElementById('irAPresupuestoApartado').onclick = function () {
-    closeModal();
-    openBudgetFromApartadoPicker(clienteId);
-  };
 }
   function loadView(moduleKey) {
     document.getElementById('appContent').innerHTML = loading();
@@ -993,16 +1010,17 @@ function ofrecerPresupuestoApartado(clienteId) {
   // sincronizarPedidoDesdeApartado_), autocompleta cliente/tipo de cliente
   // y precio sugerido por implante, deja tocar el precio a mano, permite
   // descuento (porcentaje o importe fijo) + observaciones, y muestra el
-  // total final en vivo. Si no hay pedidos de apartado, o el presupuesto es
-  // para otro producto (no implantes), hay un link al formulario libre de
-  // siempre.
+  // total final en vivo. Se usa como generador manual/de respaldo — el
+  // flujo normal (Inventario > Apartado) ya genera e imprime el
+  // presupuesto solo; esta pantalla sirve para pedidos de apartado viejos
+  // o si el paso automático falló, y para presupuestos de otros productos.
   function openBudgetFromApartadoPicker(preselectClienteId) {
     openModal('Nuevo presupuesto', loading());
     server('getPedidosApartadoPendientes').then(function (pedidos) {
       if (!pedidos.length) {
         document.getElementById('modalContent').innerHTML = `
           <div class="form-grid">
-            <div class="field full"><p>Todavía no hay pedidos armados desde un apartado. Generá uno en Inventario › Apartado, o cargá un presupuesto para otro producto.</p></div>
+            <div class="field full"><p>Todavía no hay pedidos armados desde un apartado. Generá uno en Inventario › Apartado (el presupuesto se genera solo), o cargá un presupuesto para otro producto.</p></div>
             <div class="form-actions"><button type="button" class="secondary-button" onclick="closeModal()">Cerrar</button><button type="button" class="primary-button" id="goManualBudget">Presupuesto manual</button></div>
           </div>`;
         document.getElementById('goManualBudget').onclick = openManualBudgetForm;
@@ -1220,7 +1238,7 @@ function ofrecerPresupuestoApartado(clienteId) {
       ${selectField('delivery', ['Envío a domicilio', 'Retiro por sucursal Via Cargo', 'Retiro en fábrica'], remit['Forma de entrega'], false, false, 'Forma de entrega')}
       ${field('address', remit['Dirección de entrega'], false, true, 'text', 'Dirección de entrega')}
       ${field('transport', remit['Transporte'], false, false, 'text', 'Transporte')}
-      ${field('tracking', remit['Seguimiento'], false, false, 'text', 'Seguimiento')}
+      ${field('tracking', remit['Seguimiento'], false, false, 'text', 'Seguimiento / N° Via Cargo')}
       ${textareaField('notes', remit['Observaciones'], false, 'Observaciones')}
       <p class="section-label">Productos y lotes</p>
       <div class="line-items" id="editRemitItems"></div>
@@ -1374,17 +1392,35 @@ function ofrecerPresupuestoApartado(clienteId) {
     }).catch(showError);
   }
   function done() { closeModal(); showToast('Estado actualizado.'); refresh(); }
+  // Popula una ventana YA ABIERTA (window.open llamado de antemano, en el
+  // mismo click que dispara todo, para no chocar con el bloqueador de
+  // pop-ups) con el presupuesto indicado, y dispara la impresión. Se usa
+  // tanto desde "Generar PDF" en la tabla de Presupuestos como desde el
+  // apartado→presupuesto automático.
+  function imprimirPresupuestoEnPopup_(popup, budgetId) {
+    if (popup) popup.document.write('<p style="font-family:Arial;padding:30px">Preparando presupuesto…</p>');
+    return server('getDocumentData', 'presupuesto', budgetId).then(function (data) {
+      if (popup) {
+        popup.document.open();
+        popup.document.write(documentTemplate(data));
+        popup.document.close();
+        setTimeout(function () { popup.focus(); popup.print(); }, 450);
+      }
+      return data;
+    });
+  }
   function printDocument(type, id) {
     const popup = window.open('', '_blank', 'width=980,height=760');
     if (!popup) return showError(new Error('El navegador bloqueó la ventana de impresión.'));
+    if (type === 'presupuesto') {
+      imprimirPresupuestoEnPopup_(popup, id).catch(function (error) { popup.close(); showError(error); });
+      return;
+    }
     popup.document.write('<p style="font-family:Arial;padding:30px">Preparando documento…</p>');
     server('getDocumentData', type, id).then(function (data) {
       popup.document.open();
       popup.document.write(documentTemplate(data));
       popup.document.close();
-      if (type === 'presupuesto') {
-        setTimeout(function () { popup.focus(); popup.print(); }, 450);
-      }
     }).catch(function (error) { popup.close(); showError(error); });
   }
   function documentTemplate(data) {
@@ -1477,7 +1513,7 @@ function ofrecerPresupuestoApartado(clienteId) {
     }
     return Number(t) || 0;
   }
-  function normalize(value) { return String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+  function normalize(value) { return String(value || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
   function todayIso() { return new Date().toISOString().slice(0,10); }
   function inputDate(value) {
     const text = String(value || '').trim();
