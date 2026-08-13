@@ -201,7 +201,7 @@
     </div>
     <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
     <script>
-  var URL_API = 'https://script.google.com/macros/s/AKfycbxsZ6IxY4yoS_PMA6-SYrfRS9ptzCuvjtKV_fYPd0NW8t_bZiVhh_PbwqfptUR06yto/exec';
+  var URL_API = 'https://script.google.com/macros/s/AKfycbwd38YUN2lacVAqnFzPpkqaK-jH6gdGdv-EBp9f05FNPbZydUxQJ5wj9sbgR1Brpnh6/exec';
   const state = {
     view: 'inicio',
     bootstrap: null,
@@ -284,7 +284,6 @@
     const labels = {
       clientes: '＋ Nuevo cliente',
       productos: '＋ Nuevo producto',
-      pedidos: '＋ Pedido manual',
       remitos: 'Ver pedidos',
       ventas: 'Ver presupuestos',
       cobros: 'Ver ventas',
@@ -293,9 +292,10 @@
     // El botón rojo de arriba se saca en: Inicio (el único acceso a "Nuevo
     // pedido" queda en la tile de Accesos rápidos, que redirige a
     // Inventario › Apartado), Inventario (tiene sus propios botones de
-    // movimiento) y Presupuestos (ya tiene su propio botón "＋ Generar
-    // presupuesto" en la barra de la tabla — no hace falta duplicarlo).
-    const oculto = ['inicio', 'inventario', 'presupuestos'].includes(state.view);
+    // movimiento), Presupuestos (ya tiene su propio botón "＋ Generar
+    // presupuesto" en la barra de la tabla) y Pedidos (los pedidos de
+    // implantes ya no se cargan a mano, salen del Apartado en Inventario).
+    const oculto = ['inicio', 'inventario', 'presupuestos', 'pedidos'].includes(state.view);
     button.classList.toggle('hidden', oculto);
     button.textContent = labels[state.view] || '＋ Nuevo';
   }
@@ -307,7 +307,6 @@
     if (state.view === 'remitos') return navigate('pedidos');
     if (state.view === 'ventas') return navigate('presupuestos');
     if (state.view === 'cobros') return navigate('ventas');
-    return openManualOrderForm();
   }
   function renderDashboard() {
     const s = state.bootstrap.stats;
@@ -383,6 +382,10 @@ function renderInventory() {
             <button type="button" class="secondary-button inv-mov" data-mov="salida">Salida (venta)</button>
             <button type="button" class="secondary-button inv-mov" data-mov="apartado">Apartado</button>
           </div>
+        </div>
+        <div class="field full hidden" id="invApartadosPendientesWrap">
+          <p class="section-label" id="invApartadosPendientesLabel">Apartados pendientes</p>
+          <div id="invApartadosPendientesBox"></div>
         </div>
         <div class="field"><label>Tipo de implante</label>
           <select id="invTipo"><option value="">— Seleccioná —</option>${STOCK_TIPOS.map(t => `<option value="${t.id}">${html(t.nombre)}</option>`).join('')}</select>
@@ -466,20 +469,103 @@ document.getElementById('invApartadoBox').classList.add('hidden');
   const labels = { deposito: 'Registrar movimiento', salida: 'Registrar venta y generar remito', apartado: 'Registrar apartado y generar presupuesto' };
   document.getElementById('invSubmit').textContent = labels[mov];
   invRenderCarrito();
+  // Lista de apartados pendientes: en Salida sirve para elegir directo el
+  // cliente que ya tiene algo apartado (sin tener que buscarlo a mano), y
+  // en Apartado sirve para reabrir/editar/imprimir el presupuesto de uno
+  // ya cargado.
+  const mostrarPendientes = (mov === 'salida' || mov === 'apartado');
+  document.getElementById('invApartadosPendientesWrap').classList.toggle('hidden', !mostrarPendientes);
+  document.getElementById('invApartadosPendientesLabel').textContent = mov === 'apartado'
+    ? 'Apartados pendientes — tocá uno para editarlo o imprimirlo'
+    : 'Apartados pendientes — tocá uno para cargarlo a la venta';
+  if (mostrarPendientes) invRenderApartadosPendientes();
+}
+// Lista todos los clientes con ítems apartados activos ahora mismo (sea o
+// no que ya tengan Pedido/Presupuesto generado), para no tener que buscar
+// cliente por cliente.
+function invRenderApartadosPendientes() {
+  const box = document.getElementById('invApartadosPendientesBox');
+  box.innerHTML = '<p class="helper">Buscando apartados pendientes…</p>';
+  jsonp({ accion: 'obtenerApartadosPorProfesional' }, (err, data) => {
+    if (inv.mov !== 'salida' && inv.mov !== 'apartado') return; // el usuario ya cambió de pestaña
+    if (err || !(data && data.ok)) {
+      box.innerHTML = '<p class="helper">No se pudo cargar la lista de apartados pendientes.</p>';
+      return;
+    }
+    const grupos = (data.profesionales || []).filter(p => p.items && p.items.length);
+    if (!grupos.length) {
+      box.innerHTML = '<p class="helper">No hay apartados pendientes ahora mismo.</p>';
+      return;
+    }
+    box.innerHTML = grupos.map(function (g) {
+      const cliente = state.clients.find(c => c['Cliente ID'] === g.clienteId);
+      const nombre = cliente ? cliente['Nombre completo'] : (g.profesional || g.clienteId || 'Cliente');
+      const resumen = g.items.map(it => `${it.tipo} ${it.medida} · ${it.cantidad}u`).join(', ');
+      return `<div class="task-row ghost-row" style="cursor:pointer" data-apartado-cliente="${attr(g.clienteId || '')}">
+        <span><strong>${html(nombre)}</strong><small>${html(resumen)}</small></span>
+        <span class="pill warning">${g.items.length} ítem${g.items.length === 1 ? '' : 's'}</span>
+      </div>`;
+    }).join('');
+    box.querySelectorAll('[data-apartado-cliente]').forEach(function (row) {
+      row.onclick = () => invSeleccionarApartadoPendiente(row.dataset.apartadoCliente);
+    });
+  });
+}
+function invSeleccionarApartadoPendiente(clienteId) {
+  if (!clienteId) return showError(new Error('Este apartado no tiene un Cliente ID válido — abrilo desde Presupuestos.'));
+  if (inv.mov === 'salida') {
+    invClienteSeleccionar(clienteId);
+    return;
+  }
+  if (inv.mov === 'apartado') {
+    invAbrirApartadoParaEditar(clienteId);
+  }
+}
+// Desde la pestaña Apartado: si el cliente ya tiene presupuesto generado
+// para su apartado, lo abre para editar/reimprimir. Si todavía no lo
+// tiene (el auto-generado falló o es un apartado viejo), ofrece armarlo.
+function invAbrirApartadoParaEditar(clienteId) {
+  showToast('Buscando presupuesto de este apartado…');
+  server('getPedidoPresupuestadoPorCliente', clienteId).then(function (pedido) {
+    if (pedido && pedido.numero) {
+      return server('getDocumentData', 'presupuesto', pedido.numero).then(function (doc) {
+        openEditBudget(Object.assign({}, doc.header, { items: doc.items }));
+      });
+    }
+    openBudgetFromApartadoPicker(clienteId);
+  }).catch(showError);
 }
 // Llamada JSONP directa al doGet del archivo de Stock (acciones que NO
 // están registradas en FUNCIONES_PANEL, así que no se puede usar server()).
 function jsonp(params, cb) {
   var cbName = 'jscbInv_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
   var script = document.createElement('script');
-  window[cbName] = function (data) {
+  var done = false;
+  // Si el Web App no contesta (deployment viejo, sin conexión, error de
+  // permisos que devuelve HTML en vez del callback JS), antes esto se
+  // quedaba esperando para siempre sin avisar nada. Ahora, a los 25s,
+  // se corta y se avisa el error en vez de dejar todo colgado en blanco.
+  var timeoutId = setTimeout(function () {
+    if (done) return;
+    done = true;
     delete window[cbName];
-    document.body.removeChild(script);
+    if (script.parentNode) script.parentNode.removeChild(script);
+    cb(new Error('El servidor no respondió a tiempo. Verificá que el Web App de Apps Script esté desplegado con la última versión del código.'), null);
+  }, 25000);
+  window[cbName] = function (data) {
+    if (done) return;
+    done = true;
+    clearTimeout(timeoutId);
+    delete window[cbName];
+    if (script.parentNode) script.parentNode.removeChild(script);
     cb(null, data);
   };
   script.onerror = function () {
+    if (done) return;
+    done = true;
+    clearTimeout(timeoutId);
     delete window[cbName];
-    document.body.removeChild(script);
+    if (script.parentNode) script.parentNode.removeChild(script);
     cb(new Error('No se pudo conectar con el servidor.'), null);
   };
   var qs = '?callback=' + cbName;
@@ -754,36 +840,53 @@ function invSubmitApartado() {
   document.getElementById('invSubmit').disabled = true;
 
   jsonp(params, (err, data) => {
-    if (!(data && data.ok)) {
+    // Todo el manejo de la respuesta va en try/catch: si algo inesperado
+    // tira una excepción acá, antes se perdía en silencio y la ventana de
+    // impresión quedaba abierta en blanco para siempre. Ahora se cierra y
+    // se avisa el error.
+    try {
+      if (err) {
+        document.getElementById('invSubmit').disabled = false;
+        if (popup) popup.close();
+        return showError(err);
+      }
+      if (!(data && data.ok)) {
+        document.getElementById('invSubmit').disabled = false;
+        if (popup) popup.close();
+        return showError(new Error(data ? (data.error || data.mensaje) : 'No hubo respuesta.'));
+      }
+
+      showToast('Apartado registrado.');
+      inv.stockCargado = false;
+
+      const orderId = data.orderId;
+      if (!orderId) {
+        if (popup) popup.close();
+        renderInventory();
+        return;
+      }
+
+      server('crearPresupuestoDesdeApartado', { orderId: orderId })
+        .then(function (resultado) {
+          return imprimirPresupuestoEnPopup_(popup, resultado.id);
+        })
+        .then(function () {
+          showToast('Presupuesto generado e impreso. Podés editarlo o reimprimirlo cuando quieras desde Presupuestos.');
+          renderInventory();
+          refresh();
+        })
+        .catch(function (err2) {
+          if (popup) popup.close();
+          showToast('El apartado se registró, pero no se pudo generar el presupuesto automáticamente: ' +
+            (err2 && err2.message ? err2.message : err2) + '. Podés generarlo manualmente desde Presupuestos.', true);
+          renderInventory();
+          refresh();
+        });
+    } catch (ex) {
       document.getElementById('invSubmit').disabled = false;
       if (popup) popup.close();
-      return showError(new Error(data ? (data.error || data.mensaje) : 'No hubo respuesta.'));
+      showError(ex);
     }
-
-    showToast('Apartado registrado.');
-    inv.stockCargado = false;
-    renderInventory();
-
-    const orderId = data.orderId;
-    if (!orderId) {
-      if (popup) popup.close();
-      return;
-    }
-
-    server('crearPresupuestoDesdeApartado', { orderId: orderId })
-      .then(function (resultado) {
-        return imprimirPresupuestoEnPopup_(popup, resultado.id);
-      })
-      .then(function () {
-        showToast('Presupuesto generado e impreso. Podés editarlo o reimprimirlo cuando quieras desde Presupuestos.');
-        refresh();
-      })
-      .catch(function (err2) {
-        if (popup) popup.close();
-        showToast('El apartado se registró, pero no se pudo generar el presupuesto automáticamente: ' +
-          (err2 && err2.message ? err2.message : err2) + '. Podés generarlo manualmente desde Presupuestos.', true);
-        refresh();
-      });
   });
 }
   function loadView(moduleKey) {
@@ -793,22 +896,42 @@ function invSubmitApartado() {
       renderTable(moduleKey, records);
     }).catch(showError);
   }
+  // Pedidos "cerrados": ya terminaron su circuito (vendidos) o se
+  // cancelaron. Por defecto la pestaña de Pedidos solo muestra los
+  // activos — hay un botón para ver los cerrados sin perderlos de vista.
+  const CLOSED_ORDER_STATES = ['Vendido', 'Cancelado'];
   function renderTable(moduleKey, records) {
     const meta = views[moduleKey];
     const createBudgetButton = moduleKey === 'presupuestos' ? '<button class="primary-button" id="createBudgetButton">＋ Generar presupuesto</button>' : '';
+    const isPedidos = moduleKey === 'pedidos';
+    if (isPedidos && state.mostrarPedidosCerrados === undefined) state.mostrarPedidosCerrados = false;
+    const closedCount = isPedidos ? records.filter(r => CLOSED_ORDER_STATES.includes(r['Estado'])).length : 0;
+    const toggleClosedButton = (isPedidos && closedCount)
+      ? `<button class="ghost-button" id="togglePedidosCerrados">${state.mostrarPedidosCerrados ? 'Ver solo activos' : 'Ver cerrados (' + closedCount + ')'}</button>`
+      : '';
+    const visibleRecords = (isPedidos && !state.mostrarPedidosCerrados)
+      ? records.filter(r => !CLOSED_ORDER_STATES.includes(r['Estado']))
+      : records;
     document.getElementById('appContent').innerHTML = `
   <div class="view-toolbar">
     <input class="search" id="searchInput" type="search" placeholder="Buscar en ${html(meta.title.toLowerCase())} …">
     ${createBudgetButton}
-    <span class="pill neutral">${records.length} registro${records.length === 1 ? '' : 's'}</span>
+    ${toggleClosedButton}
+    <span class="pill neutral">${visibleRecords.length} registro${visibleRecords.length === 1 ? '' : 's'}</span>
   </div>
-  <div id="tableContent">${tableHtml(moduleKey, records)}</div>`;
+  <div id="tableContent">${tableHtml(moduleKey, visibleRecords)}</div>`;
     if (moduleKey === 'presupuestos') {
       document.getElementById('createBudgetButton').onclick = openBudgetFromApartadoPicker;
     }
+    if (isPedidos && closedCount) {
+      document.getElementById('togglePedidosCerrados').onclick = function () {
+        state.mostrarPedidosCerrados = !state.mostrarPedidosCerrados;
+        renderTable(moduleKey, records);
+      };
+    }
     document.getElementById('searchInput').addEventListener('input', function (event) {
       const query = normalize(event.target.value);
-      const filtered = records.filter(r => normalize(JSON.stringify(r)).includes(query));
+      const filtered = visibleRecords.filter(r => normalize(JSON.stringify(r)).includes(query));
       document.getElementById('tableContent').innerHTML = tableHtml(moduleKey, filtered);
       bindRows(moduleKey);
     });
@@ -1151,10 +1274,15 @@ function invSubmitApartado() {
       ${field('discountValue', toNumber(budget['Descuento valor']), false, false, 'number', 'Descuento')}
       ${textareaField('conditions', budget['Condiciones'], false, 'Condiciones')}
       ${textareaField('notes', budget['Observaciones'], false, 'Observaciones')}
-      ${actions('Guardar presupuesto')}
+      <div class="form-actions">
+        <button type="button" class="ghost-button" id="printEditBudget">Imprimir</button>
+        <button type="button" class="secondary-button" onclick="closeModal()">Cancelar</button>
+        <button type="submit" class="primary-button">Guardar presupuesto</button>
+      </div>
     </form>`);
     (budget.items || []).forEach(i => addLine('editBudgetItems', 'budget', i));
     document.getElementById('addEditBudgetItem').onclick = () => addLine('editBudgetItems', 'budget');
+    document.getElementById('printEditBudget').onclick = () => printDocument('presupuesto', budget['Presupuesto ID']);
     document.getElementById('editBudgetForm').onsubmit = function (event) {
       event.preventDefault();
       const raw = formObject(event.target);
@@ -1580,9 +1708,24 @@ function invSubmitApartado() {
   return new Promise(function (resolve, reject) {
     var cbName = 'jscbPanel_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
     var script = document.createElement('script');
-    window[cbName] = function (data) {
+    var done = false;
+    // Mismo motivo que en jsonp(): sin esto, un Web App desplegado viejo o
+    // sin permisos deja la promesa colgada para siempre (ventanas de
+    // impresión en blanco, botones que no vuelven a habilitarse, etc.)
+    // sin ningún aviso.
+    var timeoutId = setTimeout(function () {
+      if (done) return;
+      done = true;
       delete window[cbName];
-      document.body.removeChild(script);
+      if (script.parentNode) script.parentNode.removeChild(script);
+      reject(new Error('El servidor no respondió a tiempo (' + name + '). Verificá que el Web App de Apps Script esté desplegado con la última versión del código.'));
+    }, 25000);
+    window[cbName] = function (data) {
+      if (done) return;
+      done = true;
+      clearTimeout(timeoutId);
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
       if (data && data.ok) {
         resolve('data' in data ? data.data : data);
       } else {
@@ -1590,8 +1733,11 @@ function invSubmitApartado() {
       }
     };
     script.onerror = function () {
+      if (done) return;
+      done = true;
+      clearTimeout(timeoutId);
       delete window[cbName];
-      document.body.removeChild(script);
+      if (script.parentNode) script.parentNode.removeChild(script);
       reject(new Error('No se pudo conectar con el servidor.'));
     };
     var qs = '?callback=' + cbName
