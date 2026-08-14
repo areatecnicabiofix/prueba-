@@ -201,7 +201,7 @@
     </div>
     <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
     <script>
-  var URL_API = 'https://script.google.com/macros/s/AKfycbxbBZKZidsj9e4EN5DYxnK-v3cEtdScjoXAIIt5UvNxXgOXpVV7JuC6dyGbHWXLufBe/exec';
+  var URL_API = 'https://script.google.com/macros/s/AKfycbwult823p20pmsSdBRT9yKgC2ZYyY3sXHNDYMP7NQI4ZdTAyJquqEvLPkS5D_i-WI5H/exec';
   const state = {
     view: 'inicio',
     bootstrap: null,
@@ -215,7 +215,7 @@
     productos: { title: 'Productos para pedidos y remitos', singular: 'producto detallado', columns: ['Producto', 'Categoría', 'Sistema', 'Precio', 'Activo'] },
     pedidos: { title: 'Pedidos', singular: 'pedido', columns: ['Pedido ID', 'Fecha y hora', 'Cliente', 'Vendedor', 'Cantidad total', 'Forma de entrega', 'Estado'] },
     presupuestos: { title: 'Presupuestos', singular: 'presupuesto', columns: ['Presupuesto ID', 'Fecha', 'Pedido ID', 'Cliente', 'Total', 'Saldo pendiente', 'Estado'] },
-    remitos: { title: 'Remitos', singular: 'remito', columns: ['Remito ID', 'Fecha', 'Pedido ID', 'Cliente', 'Transporte', 'Seguimiento', 'Estado', 'Origen', 'Revisión'] },
+    remitos: { title: 'Remitos', singular: 'remito', columns: ['Remito ID', 'Fecha', 'Pedido ID', 'Cliente', 'Numero de Remito Via Cargo', 'Seguimiento', 'Estado', 'Origen', 'Revisión'] },
     ventas: { title: 'Ventas', singular: 'venta', columns: ['Venta ID', 'Fecha', 'Cliente', 'Total', 'Cobrado', 'Saldo', 'Estado'] },
     cobros: { title: 'Cobros', singular: 'cobro', columns: ['Cobro ID', 'Fecha', 'Venta ID', 'Cliente', 'Importe', 'Medio de pago', 'Comprobante'] },
     gastos: { title: 'Gastos', singular: 'gasto', columns: ['Gasto ID', 'Fecha', 'Categoría', 'Proveedor', 'Concepto', 'Medio de pago', 'Importe'] }
@@ -1415,6 +1415,58 @@ function invSubmitApartado() {
       }, 'Presupuesto actualizado.');
     };
   }
+  // Número de remito Via Cargo: prefijo de agencia (4 dígitos, entre 5090 y
+  // 9090, elegible de una lista) + el resto del número, que se escribe a
+  // mano — es un dato DISTINTO del número de seguimiento (que es un campo
+  // libre aparte). Estos helpers arman/leen/parsean ese par de campos y se
+  // reusan en "Emitir remito" y en "Editar remito".
+  const VIA_CARGO_PREFIJOS_ = ['5090', '6090', '7090', '8090', '9090'];
+  function viaCargoCamposHtml_(prefijoActual, restoActual) {
+    const prefijoConocido = VIA_CARGO_PREFIJOS_.indexOf(prefijoActual) !== -1;
+    const prefijoManual = !!prefijoActual && !prefijoConocido;
+    return `<div class="field full">
+      <label>Número de remito Via Cargo (opcional)</label>
+      <div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap">
+        <div style="flex:0 0 130px">
+          <select id="viaCargoPrefijo">
+            <option value="">— Prefijo —</option>
+            ${VIA_CARGO_PREFIJOS_.map(p => `<option value="${p}" ${p === prefijoActual ? 'selected' : ''}>${p}</option>`).join('')}
+            <option value="__otro__" ${prefijoManual ? 'selected' : ''}>Otro…</option>
+          </select>
+          <input type="text" id="viaCargoPrefijoManual" class="${prefijoManual ? '' : 'hidden'}" value="${attr(prefijoManual ? prefijoActual : '')}" maxlength="4" placeholder="Ej: 5090" style="margin-top:4px;width:100%">
+        </div>
+        <input type="text" id="viaCargoResto" value="${attr(restoActual || '')}" placeholder="Resto del número" style="flex:1;min-width:140px">
+      </div>
+      <small style="color:var(--muted)">Prefijo de agencia (entre 5090 y 9090) + el resto del número, a mano.</small>
+    </div>`;
+  }
+  function wireViaCargoCampos_() {
+    const select = document.getElementById('viaCargoPrefijo');
+    const manual = document.getElementById('viaCargoPrefijoManual');
+    if (!select) return;
+    select.onchange = function () {
+      if (select.value === '__otro__') { manual.classList.remove('hidden'); manual.focus(); }
+      else { manual.classList.add('hidden'); manual.value = ''; }
+    };
+  }
+  function leerViaCargoNumero_() {
+    const select = document.getElementById('viaCargoPrefijo');
+    if (!select) return '';
+    const manual = document.getElementById('viaCargoPrefijoManual');
+    const resto = document.getElementById('viaCargoResto');
+    const prefijo = select.value === '__otro__' ? (manual ? manual.value.trim() : '') : select.value;
+    const restoVal = resto ? resto.value.trim() : '';
+    return (prefijo || '') + restoVal;
+  }
+  function parseViaCargoNumero_(valor) {
+    valor = String(valor || '').trim();
+    if (!valor) return { prefijo: '', resto: '' };
+    const prefijo4 = valor.slice(0, 4);
+    if (VIA_CARGO_PREFIJOS_.indexOf(prefijo4) !== -1) return { prefijo: prefijo4, resto: valor.slice(4) };
+    // Prefijo no reconocido (remito viejo, u otro formato): se deja todo
+    // en "resto" en vez de inventar un corte que capaz no corresponde.
+    return { prefijo: '', resto: valor };
+  }
   // Emitir remito: parte de un Pedido ya presupuestado, autocompleta
   // cliente/fecha/producto/cantidad/lote desde el pedido (no hace falta
   // tocar nada ahí), deja "Forma de entrega" y "Aclaración" para completar
@@ -1432,7 +1484,8 @@ function invSubmitApartado() {
       <div class="field"><label>Cliente</label><strong>${html(order['Cliente'])}</strong></div>
       <div class="field"><label>Fecha</label><strong>${html(todayIso())}</strong></div>
       ${selectField('delivery', ['Retiro por sucursal Via Cargo', 'Retiro en Fábrica'], '', true, false, 'Tipo de entrega')}
-      ${field('tracking', '', false, false, 'text', 'Número de remito Via Cargo (opcional)')}
+      ${viaCargoCamposHtml_('', '')}
+      ${field('tracking', '', false, false, 'text', 'Número de seguimiento (opcional)')}
       ${textareaField('notes', resumenItemsTexto_(items), true, 'Aclaración (opcional)')}
       <p class="section-label">Productos · autocompletado desde el pedido</p>
       <div class="table-wrap field full"><table><thead><tr><th>Producto</th><th>Cantidad</th><th>Lote</th></tr></thead><tbody id="emitirRemitoItemsBody">
@@ -1441,6 +1494,7 @@ function invSubmitApartado() {
       <div class="field full"><p style="color:var(--muted);font-size:12px">El número de remito se genera solo y no se repite. Si cargás el número de Via Cargo, queda guardado en el remito y también en el historial de Movimientos. Al confirmar se guarda el PDF en Drive (carpeta "Ventas Bio-Fix"), se abre para imprimir y queda registrada la venta pendiente de este presupuesto.</p></div>
       ${actions('Emitir remito')}
     </form>`);
+    wireViaCargoCampos_();
     // El Lote real no vive en Pedido Detalle (un pedido puede juntar varios
     // lotes) sino en el apartado del cliente — lo autocompletamos acá contra
     // el apartado actual, matcheado por Producto ID (getLotesApartadoPorPedido,
@@ -1467,16 +1521,19 @@ function invSubmitApartado() {
       submitButton.disabled = true;
       submitButton.textContent = 'Emitiendo…';
       const trackingVal = (raw.tracking || '').trim();
-      server('createRemitFromOrder', { orderId: order['Pedido ID'], date: todayIso(), transport: '', tracking: trackingVal, notes: raw.notes, items: items })
+      const viaCargoVal = leerViaCargoNumero_();
+      server('createRemitFromOrder', { orderId: order['Pedido ID'], date: todayIso(), viaCargoRemito: viaCargoVal, tracking: trackingVal, notes: raw.notes, items: items })
         .then(function (created) {
           // createRemitFromOrder trae "Forma de entrega" del Pedido; acá la
           // pisamos con lo que se completó a mano al emitir el remito. El
-          // número Via Cargo cargado acá es lo que updateRemit propaga a la
-          // columna "Remito Via Cargo" de Movimientos (sincronizarViaCargoEnMovimientos_,
-          // BackendPanel.gs) — solo si el tipo de entrega es Via Cargo.
+          // número de remito Via Cargo cargado acá es lo que updateRemit
+          // propaga a la columna "Remito Via Cargo" de Movimientos
+          // (sincronizarViaCargoEnMovimientos_, BackendPanel.gs) — solo si
+          // el tipo de entrega es Via Cargo. El número de seguimiento es
+          // un dato aparte, no se usa para eso.
           return server('updateRemit', {
             remitId: created.id, date: todayIso(), delivery: raw.delivery, address: suggestedAddressForDelivery_(raw.delivery),
-            transport: '', tracking: trackingVal, notes: raw.notes, items: items
+            viaCargoRemito: viaCargoVal, tracking: trackingVal, notes: raw.notes, items: items
           }).then(function () { return created; });
         })
         .then(function (created) {
@@ -1514,11 +1571,13 @@ function invSubmitApartado() {
     // siempre se conoce en el momento).
     const orderDelRemit = findRecord('pedidos', 'Pedido ID', remit['Pedido ID']);
     const ventaAprobada = !!(orderDelRemit && orderDelRemit['Estado'] === 'Vendido');
+    const viaCargoActual = parseViaCargoNumero_(remit['Numero de Remito Via Cargo']);
     openModal('Editar remito ' + remit['Remito ID'], `<form class="form-grid" id="editRemitForm">
       ${field('date', inputDate(remit['Fecha']), true, false, 'date', 'Fecha')}
       ${selectField('delivery', ['Retiro por sucursal Via Cargo', 'Retiro en Fábrica'], remit['Forma de entrega'], false, false, 'Forma de entrega')}
       ${field('address', remit['Dirección de entrega'], false, true, 'text', 'Dirección de entrega')}
-      ${field('tracking', remit['Seguimiento'], false, false, 'text', 'Número de remito Via Cargo / Seguimiento')}
+      ${viaCargoCamposHtml_(viaCargoActual.prefijo, viaCargoActual.resto)}
+      ${field('tracking', remit['Seguimiento'], false, false, 'text', 'Número de seguimiento')}
       ${selectField('origen', ['Formulario', 'Histórico'], remit['Origen'] || 'Formulario', false, false, 'Origen')}
       ${textareaField('notes', remit['Observaciones'], false, 'Observaciones')}
       <p class="section-label">Productos y lotes${ventaAprobada ? ' — venta ya aprobada, no se pueden modificar' : ''}</p>
@@ -1526,6 +1585,7 @@ function invSubmitApartado() {
       ${ventaAprobada ? '' : '<button type="button" class="secondary-button" id="addEditRemitItem">＋ Agregar producto</button>'}
       ${actions('Guardar remito')}
     </form>`);
+    wireViaCargoCampos_();
     (remit.items || []).forEach(i => addLine('editRemitItems', 'remit', i));
     if (ventaAprobada) deshabilitarLineas_('editRemitItems');
     wireDeliveryAddressAutoFill_('editRemitForm', 'delivery', 'address');
@@ -1538,6 +1598,7 @@ function invSubmitApartado() {
         date: raw.date,
         delivery: raw.delivery,
         address: raw.address,
+        viaCargoRemito: leerViaCargoNumero_(),
         tracking: raw.tracking,
         origen: raw.origen,
         notes: raw.notes,
@@ -1876,7 +1937,7 @@ function invSubmitApartado() {
       <section class="info"><div class="box"><span class="label">Información del cliente</span><p><strong>${html(h['Cliente'])}</strong></p>${isBudget && c['Empresa'] ? `<p>${html(c['Empresa'])}</p>` : ''}<p>CUIL: ${html(c['CUIL'] || '')}</p><p>${html(c['Localidad'] || '')} · ${html(c['Provincia'] || '')}</p>${isBudget ? `<p>${html(c['Teléfono'] || '')} ${c['Teléfono'] && c['Email'] ? '·' : ''} ${html(c['Email'] || '')}</p>` : ''}</div>
       <div class="box"><span class="label">${isBudget ? 'Enviar a' : 'Entrega'}</span><p><strong>${html(h['Dirección de entrega'] || '')}</strong></p><p>${html(c['Localidad'] || '')} ${html(c['Código postal'] || '')}</p><p>${html(c['Provincia'] || '')}</p>${isBudget ? `<p>${html(c['Teléfono'] || '')} ${c['Teléfono'] && c['Email'] ? '·' : ''} ${html(c['Email'] || '')}</p>` : ''}</div>
       <div class="box"><span class="label">Fecha</span><p><strong>${html(h['Fecha'])}</strong></p>${isBudget ? '' : `<p>Pedido: ${html(h['Pedido ID'] || '')}</p>`}</div>
-      ${isBudget ? '' : `<div class="box"><span class="label">Transporte / seguimiento</span><p>${html(h['Transporte'] || '')}</p><p>${html(h['Seguimiento'] || '')}</p></div>`}</section>
+      ${isBudget ? '' : `<div class="box"><span class="label">N.° remito Via Cargo</span><p>${html(h['Numero de Remito Via Cargo'] || '')}</p></div><div class="box"><span class="label">N.° de seguimiento</span><p>${html(h['Seguimiento'] || '')}</p></div>`}</section>
       <table><thead><tr><th>Descripción</th><th>Cantidad</th>${isBudget ? '<th>Precio unitario</th><th>Total</th>' : '<th>Lote</th>'}</tr></thead><tbody>${rows}</tbody></table>
       ${isBudget ? `<div class="totals"><p><span>Subtotal</span><strong>${money(h['Subtotal'])}</strong></p><p><span>Descuento</span><strong>${money(h['Descuento importe'])}</strong></p><p><span>Subtotal menos descuento</span><strong>${money(subtotalAfterDiscount)}</strong></p>${pendingBalance > 0 ? `<p><span>Saldo pendiente${h['Saldo pendiente ref'] ? ' (Ppto. N.º ' + html(h['Saldo pendiente ref']) + ')' : ''}</span><strong>${money(pendingBalance)}</strong></p>` : ''}<p class="grand"><span>Total</span><strong>${money(h['Total'])}</strong></p></div><p style="text-align:right;color:#5f7076;font-size:11px">Importes expresados en pesos argentinos (ARS).</p>` : ''}
       <div class="box notes"><span class="label">Observaciones / notas</span><p>${html(h['Observaciones'] || '')}</p></div>
