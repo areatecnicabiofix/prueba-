@@ -201,7 +201,7 @@
     </div>
     <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
     <script>
-  var URL_API = 'https://script.google.com/macros/s/AKfycbxc4znG7Vu1CPuDLswCFxXflYBgmNs0l8gNltrVIODKALXS-j4lTdeDVDa1KU_MoEm7/exec';
+  var URL_API = 'https://script.google.com/macros/s/AKfycbxbBZKZidsj9e4EN5DYxnK-v3cEtdScjoXAIIt5UvNxXgOXpVV7JuC6dyGbHWXLufBe/exec';
   const state = {
     view: 'inicio',
     bootstrap: null,
@@ -401,10 +401,10 @@ function renderInventory() {
         </div>
         <div class="field"><label>Cantidad</label><input type="number" id="invCantidad" min="1"></div>
         <button type="button" class="secondary-button hidden" id="invAddItem">＋ Agregar</button>
+        </div>
         <div class="field full hidden" id="invCartWrap">
           <p class="section-label" id="invCartLabel">Ítems</p>
           <div id="invCartList"></div>
-        </div>
         </div>
         <div class="field full hidden" id="invClienteWrap">
           <p class="section-label">Cliente</p>
@@ -467,6 +467,7 @@ function invSetMov(mov) {
   invClienteLimpiarCampos();
   inv.apartadoActivo = null;
 inv.usandoApartado = false;
+inv.pedidoPresupuestado = null;
 document.getElementById('invApartadoBox').classList.add('hidden');
   invToggleManualVentaUI_(true); // vuelve a mostrar la carga manual al cambiar de pestaña
   const labels = { deposito: 'Registrar movimiento', salida: 'Registrar venta y generar remito', apartado: 'Registrar apartado y generar presupuesto' };
@@ -484,14 +485,18 @@ document.getElementById('invApartadoBox').classList.add('hidden');
   if (mostrarPendientes) invRenderApartadosPendientes();
 }
 // En Salida (venta), cuando el cliente elegido ya tiene presupuesto, la
-// única forma de vender es "Emitir remito y registrar venta" — se oculta
-// la carga manual (tipo/medida/lote/cantidad + su botón de registrar) para
-// que no queden las dos opciones juntas y sea claro cuál usar. Se vuelve a
-// mostrar apenas se cambia de cliente/pestaña o el cliente no tiene
-// presupuesto todavía.
-function invToggleManualVentaUI_(mostrar) {
-  document.getElementById('invManualEntryWrap').classList.toggle('hidden', !mostrar);
-  document.getElementById('invSubmitWrap').classList.toggle('hidden', !mostrar);
+// única forma de vender es el botón de siempre ("Registrar venta y generar
+// remito") — se oculta la carga manual (tipo/medida/lote/cantidad + su
+// botón de "＋ Agregar") para que no queden dos opciones juntas, pero el
+// botón de abajo se deja visible y pasa a emitir el remito de ese
+// presupuesto (los ítems ya se muestran arriba, cargados solos). Cuando el
+// remito ya se emitió no queda nada para registrar, así que ahí se oculta
+// también el botón de abajo. Se vuelve a mostrar todo apenas se cambia de
+// cliente/pestaña o el cliente no tiene presupuesto todavía.
+function invToggleManualVentaUI_(mostrarManual, mostrarSubmit) {
+  if (mostrarSubmit === undefined) mostrarSubmit = mostrarManual;
+  document.getElementById('invManualEntryWrap').classList.toggle('hidden', !mostrarManual);
+  document.getElementById('invSubmitWrap').classList.toggle('hidden', !mostrarSubmit);
 }
 // Lista todos los clientes con ítems apartados activos ahora mismo (sea o
 // no que ya tengan Pedido/Presupuesto generado), para no tener que buscar
@@ -753,28 +758,45 @@ function invBuscarApartadoCliente(clienteId) {
   const box = document.getElementById('invApartadoBox');
   box.innerHTML = '<p>Buscando apartados de este cliente…</p>';
   box.classList.remove('hidden');
+  inv.pedidoPresupuestado = null;
   // Primero: ¿este cliente ya tiene un presupuesto generado para su
-  // apartado (o ya remitido)? Si es así, no repetimos el circuito —
-  // vamos directo a emitir el remito con esos datos.
+  // apartado (o ya remitido)? Si es así, no repetimos el circuito.
   server('getPedidoPresupuestadoPorCliente', clienteId).then(function (pedido) {
     if (pedido) {
       inv.apartadoActivo = null;
       inv.usandoApartado = false;
-      // Si el cliente ya tiene presupuesto, la única forma de vender es el
-      // botón de acá abajo — se oculta la carga manual para que no queden
-      // las dos opciones juntas.
-      invToggleManualVentaUI_(false);
       const yaRemitido = pedido.estado === 'Remitido' || pedido.estado === 'Vendido';
-      box.innerHTML = `
-        <div class="pill warning" style="margin-bottom:8px">Este cliente ya está presupuestado${pedido.numero ? ' (N° ' + html(pedido.numero) + ')' : ''}${pedido.total ? ' por ' + money(pedido.total) : ''}${yaRemitido ? ' — el remito ya se emitió' : ''}</div>
-        <button type="button" class="secondary-button" id="invIrARemito">${yaRemitido ? 'Ver pedido / remito' : 'Emitir remito y registrar venta'}</button>`;
-      // Si todavía no se emitió el remito, va directo al formulario de
-      // emitir remito (que además registra la venta pendiente) — no hace
-      // falta pasar antes por la pantalla del pedido para tocar un segundo
-      // botón. Si ya se emitió, sí tiene sentido ir a verlo/reimprimirlo.
-      document.getElementById('invIrARemito').onclick = yaRemitido
-        ? () => openOrderById(pedido.orderId)
-        : () => irAEmitirRemitoPorPedidoId_(pedido.orderId);
+      if (yaRemitido) {
+        // Ya no queda nada para registrar acá — se oculta todo (carga
+        // manual y botón de abajo) y se deja solo un link para ver/reimprimir.
+        invToggleManualVentaUI_(false, false);
+        document.getElementById('invCartList').innerHTML = empty('El remito de este cliente ya se emitió.');
+        box.innerHTML = `
+          <div class="pill warning" style="margin-bottom:8px">Este cliente ya está presupuestado${pedido.numero ? ' (N° ' + html(pedido.numero) + ')' : ''}${pedido.total ? ' por ' + money(pedido.total) : ''} — el remito ya se emitió</div>
+          <button type="button" class="secondary-button" id="invIrARemito">Ver pedido / remito</button>`;
+        document.getElementById('invIrARemito').onclick = () => openOrderById(pedido.orderId);
+        return;
+      }
+      // Todavía no se emitió el remito: se cargan solos los ítems del
+      // presupuesto en la lista de "Ítems de la venta" (se ocultan la
+      // carga manual, pero el botón de abajo queda visible y pasa a
+      // emitir el remito + registrar la venta de este mismo presupuesto).
+      inv.pedidoPresupuestado = pedido;
+      invToggleManualVentaUI_(false, true);
+      box.innerHTML = `<div class="pill warning">Este cliente ya está presupuestado${pedido.numero ? ' (N° ' + html(pedido.numero) + ')' : ''}${pedido.total ? ' por ' + money(pedido.total) : ''} — los ítems ya están cargados abajo, apretá "Registrar venta y generar remito" para emitirlo.</div>`;
+      document.getElementById('invCartList').innerHTML = '<p class="helper">Cargando ítems del presupuesto…</p>';
+      const cached = findRecord('pedidos', 'Pedido ID', pedido.orderId);
+      const load = cached ? Promise.resolve(cached) : server('listAdmin', 'pedidos').then(rows => rows.find(r => r['Pedido ID'] === pedido.orderId));
+      load.then(function (order) {
+        if (inv.pedidoPresupuestado !== pedido) return; // el usuario ya cambió de cliente mientras cargaba
+        const items = (order && order.items) || [];
+        document.getElementById('invCartList').innerHTML = items.length
+          ? items.map(i => `<div class="pill neutral" style="margin:3px 6px 3px 0;display:inline-flex">${html(i['Producto'] || i['Producto ID'] || '')} · ${html(i['Cantidad'])}u${i['Lote'] ? ' · Lote ' + html(i['Lote']) : ''}</div>`).join('')
+          : empty('Sin ítems.');
+      }).catch(function () {
+        if (inv.pedidoPresupuestado !== pedido) return;
+        document.getElementById('invCartList').innerHTML = '<p class="helper">No se pudieron cargar los ítems del presupuesto.</p>';
+      });
       return;
     }
     invBuscarApartadoCrudo(clienteId, box);
@@ -796,20 +818,25 @@ function invBuscarApartadoCrudo(clienteId, box) {
       box.innerHTML = '';
       inv.apartadoActivo = null;
       inv.usandoApartado = false;
+      inv.pedidoPresupuestado = null;
       // Este cliente no tiene ningún apartado activo: acá sí corresponde
       // la carga manual (venta directa de stock, sin apartado de por medio).
       invToggleManualVentaUI_(true);
+      invRenderCarrito();
       return;
     }
     inv.apartadoActivo = grupo;
+    inv.pedidoPresupuestado = null;
     // Ya no hay atajo para "cargar directo a la venta": el circuito
     // siempre pasa por generar el presupuesto primero — recién desde ahí
     // (o desde Remitos) se emite el remito y se registra la venta. Se
-    // oculta la carga manual acá también, para no dejar dos caminos juntos.
-    invToggleManualVentaUI_(false);
+    // oculta la carga manual acá también, y también el botón de abajo (no
+    // hay nada para "registrar" todavía, primero hay que generar el
+    // presupuesto), para no dejar caminos a medio armar.
+    invToggleManualVentaUI_(false, false);
+    document.getElementById('invCartList').innerHTML = grupo.items.map(it => `<div class="pill neutral" style="margin:3px 6px 3px 0;display:inline-flex">${html(it.tipo)} · ${html(it.medida)} · ${html(it.lote)} · ${it.cantidad}u</div>`).join('');
     box.innerHTML = `
-      <div class="pill warning" style="margin-bottom:8px">Este cliente tiene un apartado activo — todavía sin presupuesto</div>
-      <div>${grupo.items.map(it => `<div class="pill neutral" style="margin:2px 4px 2px 0;display:inline-flex">${html(it.tipo)} · ${html(it.medida)} · ${html(it.lote)} · ${it.cantidad}u</div>`).join('')}</div>
+      <div class="pill warning" style="margin-bottom:8px">Este cliente tiene un apartado activo — todavía sin presupuesto. Los ítems ya se muestran abajo; generá el presupuesto para poder emitir el remito y registrar la venta.</div>
       <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
         <button type="button" class="primary-button" id="invGenerarPresupuesto">Generar presupuesto para este apartado</button>
       </div>`;
@@ -832,6 +859,11 @@ function invClienteClickAfuera(event) {
 function invSubmit() {
   if (inv.mov === 'deposito') return invSubmitDeposito();
   if (inv.mov === 'apartado') return invSubmitApartado();
+  // Cliente con presupuesto ya generado (a partir de su apartado): el
+  // mismo botón de siempre pasa a emitir el remito de ese presupuesto —
+  // createRemitFromOrder ya deja la venta pendiente registrada sola, así
+  // que "emitir remito" y "registrar venta" quedan en un solo click.
+  if (inv.mov === 'salida' && inv.pedidoPresupuestado) return irAEmitirRemitoPorPedidoId_(inv.pedidoPresupuestado.orderId);
   if (inv.mov === 'salida' && inv.usandoApartado) return invSubmitVentaDesdeApartado();
   return invSubmitVenta();
 }
@@ -1400,12 +1432,13 @@ function invSubmitApartado() {
       <div class="field"><label>Cliente</label><strong>${html(order['Cliente'])}</strong></div>
       <div class="field"><label>Fecha</label><strong>${html(todayIso())}</strong></div>
       ${selectField('delivery', ['Retiro por sucursal Via Cargo', 'Retiro en Fábrica'], '', true, false, 'Tipo de entrega')}
+      ${field('tracking', '', false, false, 'text', 'Número de remito Via Cargo (opcional)')}
       ${textareaField('notes', resumenItemsTexto_(items), true, 'Aclaración (opcional)')}
       <p class="section-label">Productos · autocompletado desde el pedido</p>
       <div class="table-wrap field full"><table><thead><tr><th>Producto</th><th>Cantidad</th><th>Lote</th></tr></thead><tbody id="emitirRemitoItemsBody">
         ${items.map(i => `<tr><td>${html(i.producto)}</td><td>${html(i.quantity)}</td><td>${html(i.lot || '—')}</td></tr>`).join('')}
       </tbody></table></div>
-      <div class="field full"><p style="color:var(--muted);font-size:12px">El número de remito se genera solo y no se repite. Al confirmar se guarda el PDF en Drive (carpeta "Ventas Bio-Fix"), se abre para imprimir y queda registrada la venta pendiente de este presupuesto.</p></div>
+      <div class="field full"><p style="color:var(--muted);font-size:12px">El número de remito se genera solo y no se repite. Si cargás el número de Via Cargo, queda guardado en el remito y también en el historial de Movimientos. Al confirmar se guarda el PDF en Drive (carpeta "Ventas Bio-Fix"), se abre para imprimir y queda registrada la venta pendiente de este presupuesto.</p></div>
       ${actions('Emitir remito')}
     </form>`);
     // El Lote real no vive en Pedido Detalle (un pedido puede juntar varios
@@ -1433,13 +1466,17 @@ function invSubmitApartado() {
       const submitButton = event.target.querySelector('button[type="submit"]');
       submitButton.disabled = true;
       submitButton.textContent = 'Emitiendo…';
-      server('createRemitFromOrder', { orderId: order['Pedido ID'], date: todayIso(), transport: '', tracking: '', notes: raw.notes, items: items })
+      const trackingVal = (raw.tracking || '').trim();
+      server('createRemitFromOrder', { orderId: order['Pedido ID'], date: todayIso(), transport: '', tracking: trackingVal, notes: raw.notes, items: items })
         .then(function (created) {
           // createRemitFromOrder trae "Forma de entrega" del Pedido; acá la
-          // pisamos con lo que se completó a mano al emitir el remito.
+          // pisamos con lo que se completó a mano al emitir el remito. El
+          // número Via Cargo cargado acá es lo que updateRemit propaga a la
+          // columna "Remito Via Cargo" de Movimientos (sincronizarViaCargoEnMovimientos_,
+          // BackendPanel.gs) — solo si el tipo de entrega es Via Cargo.
           return server('updateRemit', {
             remitId: created.id, date: todayIso(), delivery: raw.delivery, address: suggestedAddressForDelivery_(raw.delivery),
-            transport: '', tracking: '', notes: raw.notes, items: items
+            transport: '', tracking: trackingVal, notes: raw.notes, items: items
           }).then(function () { return created; });
         })
         .then(function (created) {
@@ -1458,24 +1495,41 @@ function invSubmitApartado() {
         });
     };
   }
+  // Bloquea los renglones de producto/cantidad/lote de una lista de ítems
+  // ya cargada (deshabilita selects/inputs/botón de quitar) — se usa en
+  // "Editar remito" cuando la venta de ese pedido ya está aprobada, para
+  // que no se puedan tocar los productos/lotes de un remito ya vendido.
+  function deshabilitarLineas_(containerId) {
+    document.querySelectorAll('#' + containerId + ' .line-item').forEach(function (row) {
+      row.querySelectorAll('select, input, button').forEach(function (el) { el.disabled = true; });
+    });
+  }
   function openEditRemit(remit) {
     if (!remit) return showError(new Error('Remito no encontrado.'));
+    // "Venta aprobada" = el Pedido de este remito ya quedó 'Vendido' (venta
+    // saldada, o confirmada a mano con "Marcar vendido"). Ahí los productos
+    // y lotes del remito quedan fijos — ya salió mercadería real con esos
+    // datos. El número de Via Cargo/seguimiento sí se puede seguir
+    // completando o corrigiendo después (llega después de emitir, no
+    // siempre se conoce en el momento).
+    const orderDelRemit = findRecord('pedidos', 'Pedido ID', remit['Pedido ID']);
+    const ventaAprobada = !!(orderDelRemit && orderDelRemit['Estado'] === 'Vendido');
     openModal('Editar remito ' + remit['Remito ID'], `<form class="form-grid" id="editRemitForm">
       ${field('date', inputDate(remit['Fecha']), true, false, 'date', 'Fecha')}
       ${selectField('delivery', ['Retiro por sucursal Via Cargo', 'Retiro en Fábrica'], remit['Forma de entrega'], false, false, 'Forma de entrega')}
       ${field('address', remit['Dirección de entrega'], false, true, 'text', 'Dirección de entrega')}
-      ${field('transport', remit['Transporte'], false, false, 'text', 'Transporte')}
-      ${field('tracking', remit['Seguimiento'], false, false, 'text', 'Seguimiento / N° Via Cargo')}
+      ${field('tracking', remit['Seguimiento'], false, false, 'text', 'Número de remito Via Cargo / Seguimiento')}
       ${selectField('origen', ['Formulario', 'Histórico'], remit['Origen'] || 'Formulario', false, false, 'Origen')}
       ${textareaField('notes', remit['Observaciones'], false, 'Observaciones')}
-      <p class="section-label">Productos y lotes</p>
+      <p class="section-label">Productos y lotes${ventaAprobada ? ' — venta ya aprobada, no se pueden modificar' : ''}</p>
       <div class="line-items" id="editRemitItems"></div>
-      <button type="button" class="secondary-button" id="addEditRemitItem">＋ Agregar producto</button>
+      ${ventaAprobada ? '' : '<button type="button" class="secondary-button" id="addEditRemitItem">＋ Agregar producto</button>'}
       ${actions('Guardar remito')}
     </form>`);
     (remit.items || []).forEach(i => addLine('editRemitItems', 'remit', i));
+    if (ventaAprobada) deshabilitarLineas_('editRemitItems');
     wireDeliveryAddressAutoFill_('editRemitForm', 'delivery', 'address');
-    document.getElementById('addEditRemitItem').onclick = () => addLine('editRemitItems', 'remit');
+    if (!ventaAprobada) document.getElementById('addEditRemitItem').onclick = () => addLine('editRemitItems', 'remit');
     document.getElementById('editRemitForm').onsubmit = function (event) {
       event.preventDefault();
       const raw = formObject(event.target);
@@ -1484,7 +1538,6 @@ function invSubmitApartado() {
         date: raw.date,
         delivery: raw.delivery,
         address: raw.address,
-        transport: raw.transport,
         tracking: raw.tracking,
         origen: raw.origen,
         notes: raw.notes,
