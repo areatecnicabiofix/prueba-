@@ -1420,7 +1420,7 @@ function invSubmitApartado() {
   // mano — es un dato DISTINTO del número de seguimiento (que es un campo
   // libre aparte). Estos helpers arman/leen/parsean ese par de campos y se
   // reusan en "Emitir remito" y en "Editar remito".
-  const VIA_CARGO_PREFIJOS_ = ['5090', '6090', '7090', '8090', '9090'];
+  const VIA_CARGO_PREFIJOS_ = ['5090','9090'];
   function viaCargoCamposHtml_(prefijoActual, restoActual) {
     const prefijoConocido = VIA_CARGO_PREFIJOS_.indexOf(prefijoActual) !== -1;
     const prefijoManual = !!prefijoActual && !prefijoConocido;
