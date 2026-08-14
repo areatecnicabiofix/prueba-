@@ -201,7 +201,7 @@
     </div>
     <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
     <script>
-  var URL_API = 'https://script.google.com/macros/s/AKfycbzaB_TfxOFXxhqHemdt8Emu9J_h201DmqlNmNeSIM9eeZqkskUrRJPY7uBUUxZGPVLu/exec';
+  var URL_API = 'https://script.google.com/macros/s/AKfycbyZIOokuEI6bveVy-drIUULwY-B6VQBcqVpiQdht3bvhkM2XsulaNqCKTjcDvrnsyRF/exec';
   const state = {
     view: 'inicio',
     bootstrap: null,
@@ -492,7 +492,26 @@ function invRenderApartadosPendientes() {
       box.innerHTML = '<p class="helper">No se pudo cargar la lista de apartados pendientes.</p>';
       return;
     }
-    const grupos = (data.profesionales || []).filter(p => p.items && p.items.length);
+    // Si el pedido de ese apartado ya está presupuestado (o remitido, o
+    // vendido), deja de contar como "pendiente" acá — aunque el saldo en
+    // stock todavía no se haya terminado de cerrar, ya sigue por el
+    // circuito normal (Presupuestos/Remitos), no por este atajo.
+    server('listAdmin', 'pedidos').then(function (pedidos) {
+      const clientesYaPresupuestados = new Set(
+        pedidos.filter(p => ['Presupuestado', 'Remitido', 'Vendido'].includes(p['Estado'])).map(p => p['Cliente ID'])
+      );
+      const grupos = (data.profesionales || [])
+        .filter(p => p.items && p.items.length)
+        .filter(p => !clientesYaPresupuestados.has(p.clienteId));
+      renderApartadosPendientesLista_(box, grupos);
+    }).catch(function () {
+      // Si no se pudo traer Pedidos, mejor mostrar la lista sin filtrar
+      // que dejar la pantalla en blanco.
+      renderApartadosPendientesLista_(box, (data.profesionales || []).filter(p => p.items && p.items.length));
+    });
+  });
+}
+function renderApartadosPendientesLista_(box, grupos) {
     if (!grupos.length) {
       box.innerHTML = '<p class="helper">No hay apartados pendientes ahora mismo.</p>';
       return;
@@ -527,7 +546,6 @@ function invRenderApartadosPendientes() {
         invEliminarItemApartado(btn.dataset);
       };
     });
-  });
 }
 // Elimina (a 0) un ítem apartado puntual: la cantidad vuelve al depósito
 // (mismo mecanismo de ajustarApartado que ya usa el sistema al bajar una
@@ -762,24 +780,17 @@ function invBuscarApartadoCrudo(clienteId, box) {
       return;
     }
     inv.apartadoActivo = grupo;
+    // Ya no hay atajo para "cargar directo a la venta": el circuito
+    // siempre pasa por generar el presupuesto primero — recién desde ahí
+    // (o desde Remitos) se emite el remito y se registra la venta.
     box.innerHTML = `
-      <div class="pill warning" style="margin-bottom:8px">Este cliente tiene un apartado activo</div>
+      <div class="pill warning" style="margin-bottom:8px">Este cliente tiene un apartado activo — todavía sin presupuesto</div>
       <div>${grupo.items.map(it => `<div class="pill neutral" style="margin:2px 4px 2px 0;display:inline-flex">${html(it.tipo)} · ${html(it.medida)} · ${html(it.lote)} · ${it.cantidad}u</div>`).join('')}</div>
       <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
-        <button type="button" class="secondary-button" id="invUsarApartado">Cargar este apartado a la venta</button>
-        <button type="button" class="ghost-button" id="invGenerarPresupuesto">Generar presupuesto para este apartado</button>
+        <button type="button" class="primary-button" id="invGenerarPresupuesto">Generar presupuesto para este apartado</button>
       </div>`;
-    document.getElementById('invUsarApartado').onclick = invUsarApartado;
     document.getElementById('invGenerarPresupuesto').onclick = () => openBudgetFromApartadoPicker(clienteId);
   });
-}
-function invUsarApartado() {
-  if (!inv.apartadoActivo) return;
-  inv.carrito = inv.apartadoActivo.items.map(it => ({ tipo_imp: it.tipo, medida: it.medida, lote_sel: it.lote, cantidad: it.cantidad }));
-  inv.usandoApartado = true;
-  invRenderCarrito();
-  document.getElementById('invSubmit').textContent = 'Cerrar apartado y generar remito';
-  showToast('Apartado cargado — el stock no se vuelve a descontar.');
 }
 function invClienteLimpiarCampos() {
   ['invNombre', 'invApellido', 'invCuil', 'invLocalidad'].forEach(id => {
@@ -1006,9 +1017,10 @@ function invSubmitApartado() {
     if (moduleKey === 'productos') return `<div class="row-actions"><button class="ghost-button" data-edit-product="${attr(r['Producto ID'])}">Editar</button></div>`;
     if (moduleKey === 'pedidos') return `<div class="row-actions"><button class="ghost-button" data-open-order="${attr(r['Pedido ID'])}">Abrir</button><button class="ghost-button" data-edit-order="${attr(r['Pedido ID'])}">Editar</button></div>`;
     // Ya no hay botón para crear la venta directo desde acá: la venta se
-    // genera sola al marcar el remito como vendido (Remitos > "Marcar
-    // vendido") — no puede haber venta sin remito emitido antes.
-    if (moduleKey === 'presupuestos') return `<div class="row-actions"><button class="ghost-button" data-edit-budget="${attr(r['Presupuesto ID'])}">Editar</button><button class="primary-button" data-print-budget="${attr(r['Presupuesto ID'])}">Generar PDF</button></div>`;
+    // genera sola al emitir el remito. "Emitir remito" solo aparece si el
+    // presupuesto tiene un Pedido asociado — si ese pedido ya tiene remito,
+    // createRemitFromOrder avisa cuál es en vez de duplicarlo.
+    if (moduleKey === 'presupuestos') return `<div class="row-actions"><button class="ghost-button" data-edit-budget="${attr(r['Presupuesto ID'])}">Editar</button><button class="ghost-button" data-print-budget="${attr(r['Presupuesto ID'])}">Generar PDF</button>${r['Pedido ID'] ? `<button class="primary-button" data-emit-remit-budget="${attr(r['Pedido ID'])}">Emitir remito</button>` : ''}</div>`;
     if (moduleKey === 'remitos') return `<div class="row-actions"><button class="ghost-button" data-edit-remit="${attr(r['Remito ID'])}">Editar</button><button class="ghost-button" data-print-remit="${attr(r['Remito ID'])}">Imprimir</button>${r['Estado'] === 'Entregado' ? '<span class="pill success">Vendido</span>' : `<button class="primary-button" data-sold-remit="${attr(r['Remito ID'])}">Marcar vendido</button>`}</div>`;
     if (moduleKey === 'ventas') return `<div class="row-actions">${toNumber(r['Saldo']) > 0 ? `<button class="ghost-button" data-payment="${attr(r['Venta ID'])}">Registrar cobro</button>` : '<span class="pill success">Saldado</span>'}</div>`;
     if (moduleKey === 'gastos') return '<span class="pill neutral">Registrado</span>';
@@ -1022,6 +1034,7 @@ function invSubmitApartado() {
     document.querySelectorAll('[data-edit-budget]').forEach(b => b.onclick = () => openEditBudget(findRecord('presupuestos', 'Presupuesto ID', b.dataset.editBudget)));
     document.querySelectorAll('[data-edit-remit]').forEach(b => b.onclick = () => openEditRemit(findRecord('remitos', 'Remito ID', b.dataset.editRemit)));
     document.querySelectorAll('[data-print-budget]').forEach(b => b.onclick = () => printDocument('presupuesto', b.dataset.printBudget));
+    document.querySelectorAll('[data-emit-remit-budget]').forEach(b => b.onclick = () => irAEmitirRemitoPorPedidoId_(b.dataset.emitRemitBudget));
     document.querySelectorAll('[data-print-remit]').forEach(b => b.onclick = () => printDocument('remito', b.dataset.printRemit));
     document.querySelectorAll('[data-sold-remit]').forEach(b => b.onclick = () => confirmRemitSold(b.dataset.soldRemit));
     document.querySelectorAll('[data-payment]').forEach(b => b.onclick = () => openPaymentForm(findRecord('ventas', 'Venta ID', b.dataset.payment)));
