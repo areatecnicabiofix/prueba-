@@ -204,7 +204,7 @@
     </div>
     <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
     <script>
-  var URL_API = 'https://script.google.com/macros/s/AKfycbwlDj6rdKJDhdOWlYXZKEPOHnN4TlfxVRwXsiWrp9aIhigTB4uCNKobP0X0btsT4fZO/exec';
+  var URL_API = 'https://script.google.com/macros/s/AKfycbyARoMu59gAGOhipHgOHnXfBMM0OsS3q4XsdF4hMeZj2LycImCXLFedUUZI3by7b1yc/exec';
   const state = {
     view: 'inicio',
     bootstrap: null,
@@ -1354,14 +1354,14 @@ function invSubmitApartado() {
     body.innerHTML = `
       <div class="field"><label>Cliente</label><strong>${html(pedido.cliente)}</strong></div>
       <div class="field"><label>Tipo de cliente</label><span class="pill neutral">${html((client && client['Tipo']) || '—')}</span></div>
-      <p class="section-label">Ítems · precio sugerido y lote (editables)</p>
+      <p class="section-label">Ítems · precio sugerido editable — el lote es el que ya está apartado en Inventario (no se edita acá)</p>
       <div class="line-items" id="apartadoBudgetItems">
         ${pedido.items.map(function (it) { return `
           <div class="line-item" style="grid-template-columns:2fr 1fr 1fr 1fr">
             <div class="field"><label>Producto</label><input type="text" value="${attr(it.producto)}" readonly></div>
             <div class="field"><label>Cantidad</label><input type="number" class="apartado-item-qty" value="${attr(it.cantidad)}" disabled></div>
             <div class="field"><label>Precio unitario (ARS)</label><input type="number" min="0" step="0.01" class="apartado-item-price" value="${attr(it.precioSugerido || 0)}"></div>
-            <div class="field"><label>Lote</label><input type="text" class="apartado-item-lote" value="${attr(it.lote || '')}" placeholder="Carga manual"></div>
+            <div class="field"><label>Lote (automático, del apartado)</label><input type="text" class="apartado-item-lote" value="${attr(it.lote || '')}" readonly></div>
           </div>`; }).join('')}
       </div>
       ${selectField('discountType', ['Porcentaje', 'Importe'], 'Porcentaje', false, false, 'Tipo de descuento')}
@@ -1389,7 +1389,7 @@ function invSubmitApartado() {
     openModal('Nuevo presupuesto', `<form class="form-grid" id="budgetForm">
       ${selectField('clientId', state.clients.map(c => ({value:c['Cliente ID'], label:c['Nombre completo']})), '', true, true, 'Cliente')}
       ${field('date', todayIso(), true, false, 'date', 'Fecha')}
-      <p class="section-label">Productos, precios y lotes</p>
+      <p class="section-label">Productos y precios — el lote es manual solo para componentes/instrumental; los implantes lo toman del apartado</p>
       <div class="line-items" id="budgetItems"></div>
       <button type="button" class="secondary-button" id="addBudgetItem">＋ Agregar producto</button>
       ${selectField('discountType', ['Porcentaje', 'Importe'], 'Porcentaje', false, false, 'Tipo de descuento')}
@@ -1417,7 +1417,7 @@ function invSubmitApartado() {
     openModal('Editar presupuesto ' + budget['Presupuesto ID'], `<form class="form-grid" id="editBudgetForm">
       ${selectField('clientId', state.clients.map(c => ({value:c['Cliente ID'], label:c['Nombre completo']})), budget['Cliente ID'], true, true, 'Cliente')}
       ${field('date', inputDate(budget['Fecha']), true, false, 'date', 'Fecha')}
-      <p class="section-label">Productos, precios y lotes</p>
+      <p class="section-label">Productos y precios — el lote es manual solo para componentes/instrumental; los implantes lo toman del apartado</p>
       <div class="line-items" id="editBudgetItems"></div>
       <button type="button" class="secondary-button" id="addEditBudgetItem">＋ Agregar producto</button>
       ${selectField('discountType', ['Porcentaje', 'Importe'], budget['Descuento tipo'] || 'Porcentaje', false, false, 'Tipo de descuento')}
@@ -1429,8 +1429,15 @@ function invSubmitApartado() {
         <button type="submit" class="primary-button">Guardar presupuesto</button>
       </div>
     </form>`);
-    (budget.items || []).forEach(i => addLine('editBudgetItems', 'budget', i));
-    document.getElementById('addEditBudgetItem').onclick = () => addLine('editBudgetItems', 'budget');
+    // Si este presupuesto viene de un pedido apartado, se trae el lote
+    // ACTUAL de cada implante en ese apartado — así, si se agrega un
+    // implante nuevo mientras se edita, también toma su lote real en vez
+    // de quedar en blanco. Los ítems que ya tenían "Lote" guardado de
+    // antes lo conservan tal cual (renderLoteFieldBudget_ le da prioridad).
+    cargarLotesApartadoDePedido_(budget['Pedido ID']).then(function (lotesMap) {
+      (budget.items || []).forEach(i => addLine('editBudgetItems', 'budget', i, lotesMap));
+      document.getElementById('addEditBudgetItem').onclick = () => addLine('editBudgetItems', 'budget', {}, lotesMap);
+    });
     document.getElementById('printEditBudget').onclick = () => printDocument('presupuesto', budget['Presupuesto ID']);
     document.getElementById('editBudgetForm').onsubmit = function (event) {
       event.preventDefault();
@@ -1813,8 +1820,55 @@ function invSubmitApartado() {
       .map(function (i) { return i.quantity + 'x ' + i.producto; })
       .join(', ');
   }
-  function addLine(containerId, type, source) {
+  // Un implante SIEMPRE toma el lote que ya tiene apartado en Inventario —
+  // no se puede escribir a mano (evita que el remito termine con un lote
+  // inventado que no coincide con lo que se descontó del depósito). Para
+  // componentes/instrumental (que no llevan control de stock por lote) sí
+  // se carga a mano, tal como se pidió.
+  function esProductoImplante_(product) {
+    return !!(product && String(product.categoria || '').toUpperCase() === 'IMPLANTE');
+  }
+  function renderLoteFieldBudget_(source, matchedProduct, lotesApartadoMap) {
+    const esImplante = esProductoImplante_(matchedProduct);
+    const productId = matchedProduct ? matchedProduct.id : '';
+    const loteGuardado = source['Lote'] ?? source.lot;
+    const lote = (loteGuardado !== undefined && loteGuardado !== null && loteGuardado !== '')
+      ? loteGuardado
+      : (esImplante && productId ? ((lotesApartadoMap || {})[productId] || '') : '');
+    return `<div class="field"><label>Lote${esImplante ? ' (automático, del apartado)' : ' (opcional)'}</label><input class="line-lot" type="text" value="${attr(lote)}" ${esImplante ? 'readonly' : ''} placeholder="${esImplante ? 'Se completa solo' : 'Carga manual'}"></div>`;
+  }
+  // Se llama cada vez que cambia el producto elegido en una línea de
+  // presupuesto: si pasa a ser un implante, bloquea el campo Lote y lo
+  // completa con el lote del apartado (si se conoce); si deja de serlo
+  // (componente/instrumental, o texto libre), lo vuelve a habilitar para
+  // carga manual.
+  function actualizarLoteCampo_(row, matchedProduct, lotesApartadoMap) {
+    const loteField = row.querySelector('.line-lot');
+    if (!loteField) return;
+    const label = loteField.previousElementSibling;
+    const esImplante = esProductoImplante_(matchedProduct);
+    const productId = matchedProduct ? matchedProduct.id : '';
+    loteField.readOnly = esImplante;
+    loteField.placeholder = esImplante ? 'Se completa solo' : 'Carga manual';
+    if (label && label.tagName === 'LABEL') label.textContent = 'Lote' + (esImplante ? ' (automático, del apartado)' : ' (opcional)');
+    if (esImplante) {
+      loteField.value = (productId && lotesApartadoMap && lotesApartadoMap[productId]) || loteField.value || '';
+    }
+  }
+  // Trae { <Producto ID>: <Lote> } del apartado ACTUAL del cliente de este
+  // pedido (getLotesApartadoPorPedidoDirecto, Codigo.gs) — se usa para
+  // prellenar/bloquear el lote de los implantes al editar un presupuesto.
+  function cargarLotesApartadoDePedido_(orderId) {
+    if (!orderId) return Promise.resolve({});
+    return new Promise(function (resolve) {
+      jsonp({ accion: 'getLotesApartadoPorPedidoDirecto', orderId: orderId }, function (err, data) {
+        resolve((!err && data && data.ok && data.lotes) || {});
+      });
+    });
+  }
+  function addLine(containerId, type, source, lotesApartadoMap) {
     source = source || {};
+    lotesApartadoMap = lotesApartadoMap || {};
     const container = document.getElementById(containerId);
     const row = document.createElement('div');
     row.className = 'line-item ' + type;
@@ -1843,7 +1897,8 @@ function invSubmitApartado() {
       </div>
       <div class="field"><label>Cantidad</label><input class="line-quantity" type="number" min="1" step="1" value="${attr(quantity)}" required></div>
       ${type === 'budget' ? `<div class="field"><label>Precio unitario (ARS)</label><input class="line-price" type="number" min="0" step="0.01" value="${attr(budgetLinePrice(source, matchedProduct))}"></div>` : ''}
-      ${(type === 'remit' || type === 'budget') ? `<div class="field"><label>Lote${type === 'budget' ? ' (opcional)' : ''}</label><input class="line-lot" type="text" value="${attr(source['Lote'] ?? source.lot ?? '')}" placeholder="Carga manual"></div>` : ''}
+      ${type === 'remit' ? `<div class="field"><label>Lote</label><input class="line-lot" type="text" value="${attr(source['Lote'] ?? source.lot ?? '')}" placeholder="Carga manual"></div>` : ''}
+      ${type === 'budget' ? renderLoteFieldBudget_(source, matchedProduct, lotesApartadoMap) : ''}
       <button type="button" class="icon-button line-remove" aria-label="Quitar">×</button>`;
     container.appendChild(row);
     const select = row.querySelector('.line-product');
@@ -1856,6 +1911,7 @@ function invSubmitApartado() {
       customInput.required = true;
       backButton.classList.remove('hidden');
       customInput.focus();
+      if (type === 'budget') actualizarLoteCampo_(row, null, lotesApartadoMap);
     };
     const showList = function () {
       select.hidden = false;
@@ -1865,6 +1921,7 @@ function invSubmitApartado() {
       customInput.required = false;
       customInput.value = '';
       backButton.classList.add('hidden');
+      if (type === 'budget') actualizarLoteCampo_(row, null, lotesApartadoMap);
     };
     select.addEventListener('change', function () {
       if (select.value === '__manual__') showManual();
@@ -1878,6 +1935,13 @@ function invSubmitApartado() {
       };
       select.addEventListener('change', setPrice);
       if (source['Precio unitario'] === undefined && source.price === undefined) setPrice();
+      // El campo Lote se bloquea/desbloquea según si el producto elegido
+      // es un implante o no (ver esProductoImplante_ más arriba).
+      select.addEventListener('change', function () {
+        const p = state.products.find(x => x.id === select.value);
+        actualizarLoteCampo_(row, p || null, lotesApartadoMap);
+      });
+      actualizarLoteCampo_(row, matchedProduct, lotesApartadoMap); // estado inicial
     }
     row.querySelector('.line-remove').onclick = () => row.remove();
   }
