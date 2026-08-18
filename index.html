@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BIOFIX_PANEL_V12_APARTADO_AUTOPRESUPUESTO -->
+<!-- BIOFIX_PANEL_V13_REMITO_DESDE_PRESUPUESTO -->
 <html lang="es">
   <head>
     <base target="_top">
@@ -118,7 +118,10 @@
   .line-items { grid-column: 1 / -1; display: grid; gap: 9px; }
   .line-item { display: grid; grid-template-columns: 1fr 105px 130px 44px; gap: 8px; align-items: end; padding: 12px; border: 1px solid var(--line-soft); border-radius: 9px; background: #fbfcfc; }
   .line-item.remit { grid-template-columns: 1fr 90px 190px 44px; }
-  .line-item.budget { grid-template-columns: 1fr 1fr; }
+  /* Presupuesto: Producto ocupa todo el renglón de arriba (budget-producto,
+     grid-column 1/-1) y abajo van Cantidad + Precio + Lote (3 columnas
+     iguales) + el botón de quitar (44px) — mismo patrón que .line-item.remit. */
+  .line-item.budget { grid-template-columns: repeat(3, 1fr) 44px; }
   .line-item.budget .field.budget-producto { grid-column: 1 / -1; }
   .section-label { grid-column: 1 / -1; margin: 5px 0 -3px; font-size: 14px; font-weight: 800; }
   .toast { position: fixed; top: 88px; right: 24px; z-index: 120; max-width: 360px; padding: 13px 16px; border-radius: 8px; color: #fff; background: var(--petrol); box-shadow: 0 12px 34px rgba(6,26,36,.20); font-size: 13px; font-weight: 700; }
@@ -201,7 +204,7 @@
     </div>
     <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
     <script>
-  var URL_API = 'https://script.google.com/macros/s/AKfycbwult823p20pmsSdBRT9yKgC2ZYyY3sXHNDYMP7NQI4ZdTAyJquqEvLPkS5D_i-WI5H/exec';
+  var URL_API = 'https://script.google.com/macros/s/AKfycbwlDj6rdKJDhdOWlYXZKEPOHnN4TlfxVRwXsiWrp9aIhigTB4uCNKobP0X0btsT4fZO/exec';
   const state = {
     view: 'inicio',
     bootstrap: null,
@@ -785,13 +788,13 @@ function invBuscarApartadoCliente(clienteId) {
       invToggleManualVentaUI_(false, true);
       box.innerHTML = `<div class="pill warning">Este cliente ya está presupuestado${pedido.numero ? ' (N° ' + html(pedido.numero) + ')' : ''}${pedido.total ? ' por ' + money(pedido.total) : ''} — los ítems ya están cargados abajo, apretá "Registrar venta y generar remito" para emitirlo.</div>`;
       document.getElementById('invCartList').innerHTML = '<p class="helper">Cargando ítems del presupuesto…</p>';
-      const cached = findRecord('pedidos', 'Pedido ID', pedido.orderId);
-      const load = cached ? Promise.resolve(cached) : server('listAdmin', 'pedidos').then(rows => rows.find(r => r['Pedido ID'] === pedido.orderId));
-      load.then(function (order) {
+      const cargarItemsDelPresupuesto = pedido.numero
+        ? server('getDocumentData', 'presupuesto', pedido.numero).then(function (doc) { return doc.items || []; })
+        : Promise.resolve([]);
+      cargarItemsDelPresupuesto.then(function (items) {
         if (inv.pedidoPresupuestado !== pedido) return; // el usuario ya cambió de cliente mientras cargaba
-        const items = (order && order.items) || [];
         document.getElementById('invCartList').innerHTML = items.length
-          ? items.map(i => `<div class="pill neutral" style="margin:3px 6px 3px 0;display:inline-flex">${html(i['Producto'] || i['Producto ID'] || '')} · ${html(i['Cantidad'])}u${i['Lote'] ? ' · Lote ' + html(i['Lote']) : ''}</div>`).join('')
+          ? items.map(i => `<div class="pill neutral" style="margin:3px 6px 3px 0;display:inline-flex">${html(i['Producto'] || '')} · ${html(i['Cantidad'])}u${i['Lote'] ? ' · Lote ' + html(i['Lote']) : ''}</div>`).join('')
           : empty('Sin ítems.');
       }).catch(function () {
         if (inv.pedidoPresupuestado !== pedido) return;
@@ -807,7 +810,7 @@ function irAEmitirRemitoPorPedidoId_(orderId) {
   const load = cached ? Promise.resolve(cached) : server('listAdmin', 'pedidos').then(rows => rows.find(r => r['Pedido ID'] === orderId));
   load.then(function (order) {
     if (!order) return showError(new Error('Pedido no encontrado.'));
-    openEmitirRemitoForm(order);
+    return prepararItemsRemitoDesdeOrder_(order).then(function (items) { openEmitirRemitoForm(order, items); });
   }).catch(showError);
 }
 function invBuscarApartadoCrudo(clienteId, box) {
@@ -961,9 +964,7 @@ function invSubmitApartado() {
       'Localidad': document.getElementById('invLocalidad').value.trim()
     });
   }
-
   document.getElementById('invSubmit').disabled = true;
-
   jsonp(params, (err, data) => {
     // Todo el manejo de la respuesta va en try/catch: si algo inesperado
     // tira una excepción acá, antes se perdía en silencio. Ahora se avisa
@@ -977,21 +978,18 @@ function invSubmitApartado() {
         document.getElementById('invSubmit').disabled = false;
         return showError(new Error(data ? (data.error || data.mensaje) : 'No hubo respuesta.'));
       }
-
       showToast('Apartado registrado.');
       inv.stockCargado = false;
-
       const orderId = data.orderId;
       if (!orderId) {
         renderInventory();
         return;
       }
-
       // El presupuesto se genera solo, pero NO se imprime en el momento:
-      // el usuario lo revisa/ajusta (por ejemplo aplica un descuento) desde
-      // Presupuestos y recién ahí imprime/genera el PDF cuando ya está todo
-      // ok — ese PDF es el que queda guardado en Drive junto con el remito
-      // y el comprobante de esa misma venta.
+      // el usuario lo revisa/ajusta (por ejemplo aplica un descuento, o
+      // corrige un lote) desde Presupuestos y recién ahí imprime/genera
+      // el PDF cuando ya está todo ok — ese PDF es el que queda guardado
+      // en Drive junto con el remito y el comprobante de esa misma venta.
       server('crearPresupuestoDesdeApartado', { orderId: orderId })
         .then(function () {
           showToast('Presupuesto generado. Revisalo, aplicá descuentos si hace falta e imprimilo desde Presupuestos cuando esté listo.');
@@ -1247,17 +1245,47 @@ function invSubmitApartado() {
         </div>
       </div>`);
     document.getElementById('editOrder').onclick = () => openEditOrder(order);
-    document.getElementById('remitFromOrder').onclick = () => openEmitirRemitoForm(order);
+    document.getElementById('remitFromOrder').onclick = function () {
+      const btn = document.getElementById('remitFromOrder');
+      btn.disabled = true;
+      prepararItemsRemitoDesdeOrder_(order).then(function (items) {
+        openEmitirRemitoForm(order, items);
+      }).catch(function (err) { btn.disabled = false; showError(err); });
+    };
+  }
+  // Arma los ítems del remito (producto, cantidad y lote) a partir del
+  // Presupuesto vinculado a este pedido, NO de Pedido Detalle: el remito
+  // debe reflejar exactamente lo que quedó en el presupuesto — incluidos
+  // componentes/instrumental que no tienen control de stock por lote (no
+  // aparecen en Inventario > Apartado). Si el pedido no tiene presupuesto
+  // (circuito viejo/manual, por ejemplo un remito armado antes de este
+  // cambio), se arma igual como antes, a partir de Pedido Detalle.
+  function prepararItemsRemitoDesdeOrder_(order) {
+    return server('listAdmin', 'presupuestos').then(function (presupuestos) {
+      const delPedido = presupuestos.filter(b => b['Pedido ID'] === order['Pedido ID']);
+      const presupuesto = delPedido.length ? delPedido[0] : null; // listAdmin devuelve el más reciente primero
+      if (!presupuesto) {
+        return (order.items || []).map(function (i) {
+          return { productId: i['Producto ID'], codigo: i['Código'], producto: i['Producto'], quantity: toNumber(i['Cantidad']), lot: i['Lote'] || '' };
+        });
+      }
+      return server('getDocumentData', 'presupuesto', presupuesto['Presupuesto ID']).then(function (doc) {
+        return (doc.items || []).map(function (i) {
+          return { productId: i['Producto ID'], codigo: i['Código'], producto: i['Producto'], quantity: toNumber(i['Cantidad']), lot: i['Lote'] || '' };
+        });
+      });
+    });
   }
   // Crear presupuesto: lista los Pedidos armados desde un apartado
   // (Inventario > Apartado los crea/actualiza solos vía
   // sincronizarPedidoDesdeApartado_), autocompleta cliente/tipo de cliente
-  // y precio sugerido por implante, deja tocar el precio a mano, permite
-  // descuento (porcentaje o importe fijo) + observaciones, y muestra el
-  // total final en vivo. Se usa como generador manual/de respaldo — el
-  // flujo normal (Inventario > Apartado) ya genera e imprime el
-  // presupuesto solo; esta pantalla sirve para pedidos de apartado viejos
-  // o si el paso automático falló, y para presupuestos de otros productos.
+  // y precio sugerido + lote por implante, deja tocar el precio y el lote
+  // a mano, permite descuento (porcentaje o importe fijo) + observaciones,
+  // y muestra el total final en vivo. Se usa como generador manual/de
+  // respaldo — el flujo normal (Inventario > Apartado) ya genera e
+  // imprime el presupuesto solo; esta pantalla sirve para pedidos de
+  // apartado viejos o si el paso automático falló, y para presupuestos de
+  // otros productos.
   function openBudgetFromApartadoPicker(preselectClienteId) {
     openModal('Nuevo presupuesto', loading());
     server('getPedidosApartadoPendientes').then(function (pedidos) {
@@ -1300,12 +1328,14 @@ function invSubmitApartado() {
         if (!pedido) return showError(new Error('Seleccioná un pedido.'));
         const raw = formObject(event.target);
         const prices = Array.from(document.querySelectorAll('.apartado-item-price')).map(i => Number(i.value) || 0);
+        const lotes = Array.from(document.querySelectorAll('.apartado-item-lote')).map(i => i.value.trim());
         const items = pedido.items.map((it, idx) => ({
           productId: it.productId,
           codigo: it.codigo,
           producto: it.producto,
           quantity: it.cantidad,
-          price: prices[idx] || 0
+          price: prices[idx] || 0,
+          lot: lotes[idx] || ''
         }));
         submit('crearPresupuestoDesdeApartado', {
           orderId: orderId,
@@ -1324,13 +1354,14 @@ function invSubmitApartado() {
     body.innerHTML = `
       <div class="field"><label>Cliente</label><strong>${html(pedido.cliente)}</strong></div>
       <div class="field"><label>Tipo de cliente</label><span class="pill neutral">${html((client && client['Tipo']) || '—')}</span></div>
-      <p class="section-label">Ítems · precio sugerido (editable)</p>
+      <p class="section-label">Ítems · precio sugerido y lote (editables)</p>
       <div class="line-items" id="apartadoBudgetItems">
         ${pedido.items.map(function (it) { return `
-          <div class="line-item budget">
-            <div class="field budget-producto"><label>Producto</label><input type="text" value="${attr(it.producto)}" readonly></div>
+          <div class="line-item" style="grid-template-columns:2fr 1fr 1fr 1fr">
+            <div class="field"><label>Producto</label><input type="text" value="${attr(it.producto)}" readonly></div>
             <div class="field"><label>Cantidad</label><input type="number" class="apartado-item-qty" value="${attr(it.cantidad)}" disabled></div>
             <div class="field"><label>Precio unitario (ARS)</label><input type="number" min="0" step="0.01" class="apartado-item-price" value="${attr(it.precioSugerido || 0)}"></div>
+            <div class="field"><label>Lote</label><input type="text" class="apartado-item-lote" value="${attr(it.lote || '')}" placeholder="Carga manual"></div>
           </div>`; }).join('')}
       </div>
       ${selectField('discountType', ['Porcentaje', 'Importe'], 'Porcentaje', false, false, 'Tipo de descuento')}
@@ -1358,7 +1389,7 @@ function invSubmitApartado() {
     openModal('Nuevo presupuesto', `<form class="form-grid" id="budgetForm">
       ${selectField('clientId', state.clients.map(c => ({value:c['Cliente ID'], label:c['Nombre completo']})), '', true, true, 'Cliente')}
       ${field('date', todayIso(), true, false, 'date', 'Fecha')}
-      <p class="section-label">Productos y precios</p>
+      <p class="section-label">Productos, precios y lotes</p>
       <div class="line-items" id="budgetItems"></div>
       <button type="button" class="secondary-button" id="addBudgetItem">＋ Agregar producto</button>
       ${selectField('discountType', ['Porcentaje', 'Importe'], 'Porcentaje', false, false, 'Tipo de descuento')}
@@ -1386,7 +1417,7 @@ function invSubmitApartado() {
     openModal('Editar presupuesto ' + budget['Presupuesto ID'], `<form class="form-grid" id="editBudgetForm">
       ${selectField('clientId', state.clients.map(c => ({value:c['Cliente ID'], label:c['Nombre completo']})), budget['Cliente ID'], true, true, 'Cliente')}
       ${field('date', inputDate(budget['Fecha']), true, false, 'date', 'Fecha')}
-      <p class="section-label">Productos y precios</p>
+      <p class="section-label">Productos, precios y lotes</p>
       <div class="line-items" id="editBudgetItems"></div>
       <button type="button" class="secondary-button" id="addEditBudgetItem">＋ Agregar producto</button>
       ${selectField('discountType', ['Porcentaje', 'Importe'], budget['Descuento tipo'] || 'Porcentaje', false, false, 'Tipo de descuento')}
@@ -1467,19 +1498,24 @@ function invSubmitApartado() {
     // en "resto" en vez de inventar un corte que capaz no corresponde.
     return { prefijo: '', resto: valor };
   }
-  // Emitir remito: parte de un Pedido ya presupuestado, autocompleta
-  // cliente/fecha/producto/cantidad/lote desde el pedido (no hace falta
-  // tocar nada ahí), deja "Forma de entrega" y "Aclaración" para completar
-  // a mano, y al confirmar: genera el remito con número correlativo único,
-  // arma el PDF con la plantilla Bio-Fix (RemitoPDF.gs) y lo guarda en la
-  // carpeta de Drive "Ventas Bio-Fix" — además lo abre en una pestaña nueva
-  // para poder imprimirlo al toque, y registra sola la venta pendiente
-  // ligada al presupuesto (createRemitFromOrder, BackendPanel.gs) — emitir
-  // el remito y registrar la venta quedan como un solo paso.
-  function openEmitirRemitoForm(order) {
-    const items = (order.items || []).map(function (i) {
+  // Emitir remito: parte de un Pedido ya presupuestado. Cliente/fecha se
+  // autocompletan desde el pedido, y los PRODUCTOS (producto, cantidad y
+  // lote) se autocompletan desde el PRESUPUESTO de ese pedido —
+  // prepararItemsRemitoDesdeOrder_ ya los resolvió antes de abrir este
+  // modal, y acá no se pueden agregar/quitar/editar: ese paso se hace en
+  // el Presupuesto (o en el Apartado, en Inventario), nunca al emitir o
+  // editar el remito. Deja "Forma de entrega" y "Aclaración" para
+  // completar a mano, y al confirmar: genera el remito con número
+  // correlativo único, arma el PDF con la plantilla Bio-Fix (RemitoPDF.gs)
+  // y lo guarda en la carpeta de Drive "Ventas Bio-Fix" — además lo abre
+  // en una pestaña nueva para poder imprimirlo al toque, y registra sola
+  // la venta pendiente ligada al presupuesto (createRemitFromOrder,
+  // BackendPanel.gs) — emitir el remito y registrar la venta quedan como
+  // un solo paso.
+  function openEmitirRemitoForm(order, items) {
+    items = (items || (order.items || []).map(function (i) {
       return { productId: i['Producto ID'], codigo: i['Código'], producto: i['Producto'], quantity: toNumber(i['Cantidad']), lot: i['Lote'] || '' };
-    });
+    }));
     openModal('Emitir remito · Pedido ' + order['Pedido ID'], `<form class="form-grid" id="emitirRemitoForm">
       <div class="field"><label>Cliente</label><strong>${html(order['Cliente'])}</strong></div>
       <div class="field"><label>Fecha</label><strong>${html(todayIso())}</strong></div>
@@ -1487,21 +1523,20 @@ function invSubmitApartado() {
       ${viaCargoCamposHtml_('', '')}
       ${field('tracking', '', false, false, 'text', 'Número de seguimiento (opcional)')}
       ${textareaField('notes', resumenItemsTexto_(items), true, 'Aclaración (opcional)')}
-      <p class="section-label">Productos · autocompletado desde el pedido</p>
+      <p class="section-label">Productos · tomados del presupuesto (no se pueden editar acá)</p>
       <div class="table-wrap field full"><table><thead><tr><th>Producto</th><th>Cantidad</th><th>Lote</th></tr></thead><tbody id="emitirRemitoItemsBody">
         ${items.map(i => `<tr><td>${html(i.producto)}</td><td>${html(i.quantity)}</td><td>${html(i.lot || '—')}</td></tr>`).join('')}
       </tbody></table></div>
-      <div class="field full"><p style="color:var(--muted);font-size:12px">El número de remito se genera solo y no se repite. Si cargás el número de Via Cargo, queda guardado en el remito y también en el historial de Movimientos. Al confirmar se guarda el PDF en Drive (carpeta "Ventas Bio-Fix"), se abre para imprimir y queda registrada la venta pendiente de este presupuesto.</p></div>
+      <div class="field full"><p style="color:var(--muted);font-size:12px">El número de remito se genera solo y no se repite. Si un producto, cantidad o lote está mal, corregilo en el Presupuesto (o en el Apartado, en Inventario) y volvé a emitir el remito. Si cargás el número de Via Cargo, queda guardado en el remito y también en el historial de Movimientos. Al confirmar se guarda el PDF en Drive (carpeta "Ventas Bio-Fix"), se abre para imprimir y queda registrada la venta pendiente de este presupuesto.</p></div>
       ${actions('Emitir remito')}
     </form>`);
     wireViaCargoCampos_();
-    // El Lote real no vive en Pedido Detalle (un pedido puede juntar varios
-    // lotes) sino en el apartado del cliente — lo autocompletamos acá contra
-    // el apartado actual, matcheado por Producto ID (getLotesApartadoPorPedido,
-    // PedidosApartadoSync.gs). Se llama por jsonp() a una ruta directa en
-    // Codigo.gs (getLotesApartadoPorPedidoDirecto) en vez de por server(),
-    // para no depender de RouterPanel.gs. Si el pedido no vino de un
-    // apartado, no devuelve nada y el campo queda como estaba.
+    // Red de seguridad: si algún ítem quedó sin lote en el presupuesto
+    // (por ejemplo porque se generó antes de este cambio, o el usuario lo
+    // dejó en blanco a propósito), se intenta completar contra el
+    // apartado ACTUAL del cliente (getLotesApartadoPorPedido,
+    // PedidosApartadoSync.gs) matcheado por Producto ID. Solo completa lo
+    // que esté vacío — nunca pisa un lote que ya vino del presupuesto.
     jsonp({ accion: 'getLotesApartadoPorPedidoDirecto', orderId: order['Pedido ID'] }, function (err, data) {
       if (err || !data || !data.ok || !data.lotes) return;
       let huboCambios = false;
@@ -1530,10 +1565,11 @@ function invSubmitApartado() {
           // propaga a la columna "Remito Via Cargo" de Movimientos
           // (sincronizarViaCargoEnMovimientos_, BackendPanel.gs) — solo si
           // el tipo de entrega es Via Cargo. El número de seguimiento es
-          // un dato aparte, no se usa para eso.
+          // un dato aparte, no se usa para eso. No se mandan "items" acá:
+          // updateRemit ya no los acepta (ver openEditRemit más abajo).
           return server('updateRemit', {
             remitId: created.id, date: todayIso(), delivery: raw.delivery, address: suggestedAddressForDelivery_(raw.delivery),
-            viaCargoRemito: viaCargoVal, tracking: trackingVal, notes: raw.notes, items: items
+            viaCargoRemito: viaCargoVal, tracking: trackingVal, notes: raw.notes
           }).then(function () { return created; });
         })
         .then(function (created) {
@@ -1554,8 +1590,9 @@ function invSubmitApartado() {
   }
   // Bloquea los renglones de producto/cantidad/lote de una lista de ítems
   // ya cargada (deshabilita selects/inputs/botón de quitar) — se usa en
-  // "Editar remito" cuando la venta de ese pedido ya está aprobada, para
-  // que no se puedan tocar los productos/lotes de un remito ya vendido.
+  // "Editar remito": los productos y lotes del remito se fijan una única
+  // vez al emitirlo (tomados del presupuesto/apartado) y ya no se pueden
+  // tocar desde acá bajo ningún estado del pedido.
   function deshabilitarLineas_(containerId) {
     document.querySelectorAll('#' + containerId + ' .line-item').forEach(function (row) {
       row.querySelectorAll('select, input, button').forEach(function (el) { el.disabled = true; });
@@ -1563,14 +1600,12 @@ function invSubmitApartado() {
   }
   function openEditRemit(remit) {
     if (!remit) return showError(new Error('Remito no encontrado.'));
-    // "Venta aprobada" = el Pedido de este remito ya quedó 'Vendido' (venta
-    // saldada, o confirmada a mano con "Marcar vendido"). Ahí los productos
-    // y lotes del remito quedan fijos — ya salió mercadería real con esos
-    // datos. El número de Via Cargo/seguimiento sí se puede seguir
-    // completando o corrigiendo después (llega después de emitir, no
-    // siempre se conoce en el momento).
-    const orderDelRemit = findRecord('pedidos', 'Pedido ID', remit['Pedido ID']);
-    const ventaAprobada = !!(orderDelRemit && orderDelRemit['Estado'] === 'Vendido');
+    // Los productos y lotes del remito NUNCA se pueden agregar/quitar/
+    // editar desde acá — ese paso se hace únicamente al Generar apartado o
+    // en el Presupuesto; el remito toma esos valores tal cual al emitirse
+    // (ver openEmitirRemitoForm / createRemitFromOrder). Acá solo se
+    // pueden corregir los datos de envío: fecha, forma de entrega,
+    // dirección, número de Via Cargo/seguimiento, origen y observaciones.
     const viaCargoActual = parseViaCargoNumero_(remit['Numero de Remito Via Cargo']);
     openModal('Editar remito ' + remit['Remito ID'], `<form class="form-grid" id="editRemitForm">
       ${field('date', inputDate(remit['Fecha']), true, false, 'date', 'Fecha')}
@@ -1580,16 +1615,14 @@ function invSubmitApartado() {
       ${field('tracking', remit['Seguimiento'], false, false, 'text', 'Número de seguimiento')}
       ${selectField('origen', ['Formulario', 'Histórico'], remit['Origen'] || 'Formulario', false, false, 'Origen')}
       ${textareaField('notes', remit['Observaciones'], false, 'Observaciones')}
-      <p class="section-label">Productos y lotes${ventaAprobada ? ' — venta ya aprobada, no se pueden modificar' : ''}</p>
+      <p class="section-label">Productos y lotes — se definen en el Presupuesto o al generar el Apartado; acá no se pueden modificar</p>
       <div class="line-items" id="editRemitItems"></div>
-      ${ventaAprobada ? '' : '<button type="button" class="secondary-button" id="addEditRemitItem">＋ Agregar producto</button>'}
       ${actions('Guardar remito')}
     </form>`);
     wireViaCargoCampos_();
     (remit.items || []).forEach(i => addLine('editRemitItems', 'remit', i));
-    if (ventaAprobada) deshabilitarLineas_('editRemitItems');
+    deshabilitarLineas_('editRemitItems');
     wireDeliveryAddressAutoFill_('editRemitForm', 'delivery', 'address');
-    if (!ventaAprobada) document.getElementById('addEditRemitItem').onclick = () => addLine('editRemitItems', 'remit');
     document.getElementById('editRemitForm').onsubmit = function (event) {
       event.preventDefault();
       const raw = formObject(event.target);
@@ -1601,8 +1634,8 @@ function invSubmitApartado() {
         viaCargoRemito: leerViaCargoNumero_(),
         tracking: raw.tracking,
         origen: raw.origen,
-        notes: raw.notes,
-        items: collectLines('editRemitItems', 'remit')
+        notes: raw.notes
+        // Sin "items": editar el remito no toca productos/lotes (ver comentario arriba).
       }, 'Remito actualizado.');
     };
   }
@@ -1810,7 +1843,7 @@ function invSubmitApartado() {
       </div>
       <div class="field"><label>Cantidad</label><input class="line-quantity" type="number" min="1" step="1" value="${attr(quantity)}" required></div>
       ${type === 'budget' ? `<div class="field"><label>Precio unitario (ARS)</label><input class="line-price" type="number" min="0" step="0.01" value="${attr(budgetLinePrice(source, matchedProduct))}"></div>` : ''}
-      ${type === 'remit' ? `<div class="field"><label>Lote</label><input class="line-lot" type="text" value="${attr(source['Lote'] ?? source.lot ?? '')}" placeholder="Carga manual"></div>` : ''}
+      ${(type === 'remit' || type === 'budget') ? `<div class="field"><label>Lote${type === 'budget' ? ' (opcional)' : ''}</label><input class="line-lot" type="text" value="${attr(source['Lote'] ?? source.lot ?? '')}" placeholder="Carga manual"></div>` : ''}
       <button type="button" class="icon-button line-remove" aria-label="Quitar">×</button>`;
     container.appendChild(row);
     const select = row.querySelector('.line-product');
@@ -1854,13 +1887,14 @@ function invSubmitApartado() {
       const catalog = state.products;
       const product = catalog.find(p => p.id === selectedValue) || {};
       const manualName = row.querySelector('.line-custom-product').value.trim();
+      const loteInput = row.querySelector('.line-lot');
       return {
         productId: product.id || '',
         codigo: product.codigo || '',
         producto: selectedValue === '__manual__' ? manualName : product.producto || '',
         quantity: row.querySelector('.line-quantity').value,
         price: type === 'budget' ? row.querySelector('.line-price').value : undefined,
-        lot: type === 'remit' ? row.querySelector('.line-lot').value : undefined
+        lot: (type === 'remit' || type === 'budget') ? (loteInput ? loteInput.value.trim() : '') : undefined
       };
     });
   }
