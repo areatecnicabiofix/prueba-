@@ -204,7 +204,7 @@
     </div>
     <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
     <script>
-  var URL_API = 'https://script.google.com/macros/s/AKfycbyNuvJOodwO_yCdE1c_ZG2h7qBbq5xuJYf5U7AhvywZivbdDebqf1SA_uyRBJTSTyRO/exec';
+  var URL_API = 'https://script.google.com/macros/s/AKfycbwWJ5GGT8BrTju4g87HJRT_Pdn4Ju1hfvtc-3k0gTg5Q_wHASBLEFCbAyzHpHhWFbuz/exec';
   const state = {
     view: 'inicio',
     bootstrap: null,
@@ -2004,13 +2004,79 @@ function invSubmitApartado() {
     popup.document.write('<p style="font-family:Arial;padding:30px">Preparando documento…</p>');
     server('getDocumentData', type, id).then(function (data) {
       popup.document.open();
-      popup.document.write(documentTemplate(data));
+      // El remito usa SU PROPIA plantilla (remitoTemplateHtml_), calcada
+      // de la que arma el PDF que se guarda en Drive (generarRemitoPDF,
+      // RemitoPDF.gs) — así lo que se ve al imprimir desde acá es
+      // exactamente el mismo diseño que queda guardado: logo arriba a la
+      // derecha, "Información del Cliente <número>", Nombre, Fecha, Tipo
+      // de entrega, Aclaración, y la tabla de Detalles (producto,
+      // cantidad y lote) con el total de implantes al pie.
+      popup.document.write(type === 'remito' ? remitoTemplateHtml_(data) : documentTemplate(data));
       popup.document.close();
       // Mismo motivo que arriba: garantiza que el remito quede guardado en
       // Drive cada vez que se imprime, aunque la generación original haya
       // fallado (por ejemplo, por un timeout al emitirlo).
       if (type === 'remito') server('generarRemitoPDF', id).catch(function () {});
     }).catch(function (error) { popup.close(); showError(error); });
+  }
+  // Solo los números del Cliente ID (ej: "CLI-006" -> "006"), igual
+  // criterio que soloNumeros_ en RemitoPDF.gs — así "Información del
+  // Cliente" se ve igual en el remito impreso y en el PDF guardado.
+  function soloNumerosCliente_(clienteId) {
+    const digitos = String(clienteId || '').replace(/\D+/g, '');
+    return digitos || String(clienteId || '');
+  }
+  // Plantilla del remito para imprimir desde el navegador — es el MISMO
+  // diseño que arma generarRemitoPDF (RemitoPDF.gs) para el PDF que queda
+  // guardado en Drive: logo/marca arriba a la derecha, bloque
+  // "Información del Cliente <número>" con Nombre/Fecha/Tipo de
+  // entrega/Aclaración arriba a la izquierda, y abajo la tabla de
+  // Detalles (producto, cantidad, lote — el lote viene del presupuesto,
+  // no se toca acá) con el total de implantes entregados al pie. Si se
+  // cambia esta plantilla, hay que cambiar la de RemitoPDF.gs junto con
+  // ella para que ambas sigan viéndose igual.
+  function remitoTemplateHtml_(data) {
+    const h = data.header, c = data.client, s = data.settings || {};
+    const items = data.items || [];
+    const totalCantidad = items.reduce(function (sum, it) { return sum + toNumber(it['Cantidad']); }, 0);
+    const filasItems = items.map(function (it) {
+      return `<tr><td>${html(it['Producto'])}</td><td class="centro">${toNumber(it['Cantidad'])}</td><td class="centro">${html(it['Lote'] || '')}</td></tr>`;
+    }).join('');
+    return `<!doctype html><html><head><meta charset="UTF-8"><title>Remito ${html(h['Remito ID'])}</title><style>
+      body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#111;margin:0;padding:24px}
+      table{border-collapse:collapse;width:100%;}
+      .encabezado{width:100%;margin-bottom:10px;}
+      .info td{border:1px solid #000;padding:4px 6px;}
+      .marca{font-size:22px;font-weight:bold;text-align:right;vertical-align:top;padding-left:14px;}
+      .marca small{display:block;font-weight:normal;font-size:9px;}
+      .seccion{background:#08242c;color:#fff;text-align:center;padding:4px;font-weight:bold;}
+      .items th{background:#9fc5e8;color:#000;font-weight:bold;padding:4px 6px;border:1px solid #000;}
+      .items td{border:1px solid #000;padding:4px 6px;}
+      .centro{text-align:center;}
+      .total td{font-weight:bold;border:1px solid #000;padding:4px 6px;}
+      .print{position:fixed;right:20px;top:20px}
+      @media print{.print{display:none}body{padding:8px}}
+      </style></head><body>
+      <button class="print" onclick="window.print()">Imprimir remito</button>
+      <table class="encabezado"><tr>
+      <td style="width:60%;vertical-align:top">
+        <table class="info">
+          <tr><td colspan="2">Información del Cliente ${html(soloNumerosCliente_(c['Cliente ID']))}</td></tr>
+          <tr><td colspan="2"><strong>NOMBRE:</strong> ${html(c['Nombre completo'] || '')}</td></tr>
+          <tr><td colspan="2"><strong>FECHA:</strong> ${html(h['Fecha'])}</td></tr>
+          <tr><td colspan="2"><strong>TIPO DE ENTREGA:</strong> ${html(h['Forma de entrega'] || '')}</td></tr>
+          <tr><td colspan="2"><strong>ACLARACIÓN:</strong> ${html(h['Observaciones'] || '')}</td></tr>
+        </table>
+      </td>
+      <td style="width:40%" class="marca">${s['Logo URL'] ? `<img src="${attr(s['Logo URL'])}" style="max-height:44px;max-width:200px">` : 'BIO-FIX'}<small>SISTEMA DE IMPLANTES DENTALES</small></td>
+      </tr></table>
+      <div class="seccion">Detalles</div>
+      <table class="items">
+        <tr><th>IMPLANTES ENTREGADOS</th><th>CANTIDAD</th><th>LOTE</th></tr>
+        ${filasItems}
+        <tr class="total"><td>TOTAL DE IMPLANTES</td><td class="centro">${totalCantidad}</td><td></td></tr>
+      </table>
+      </body></html>`;
   }
   function documentTemplate(data) {
     const h = data.header, c = data.client, s = data.settings;
