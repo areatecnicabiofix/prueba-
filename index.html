@@ -201,7 +201,7 @@
     </div>
     <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
     <script>
-  var URL_API = 'https://script.google.com/macros/s/AKfycbzSXPkTh25pX31BpNxitUPxnsMFrcsJ7ku3_ZyWINYBZEzJNFc1O0A93gXVAoUzfXfs/exec';
+  var URL_API = 'https://script.google.com/macros/s/AKfycbwoKqeYHQMYZx3pQLNHBiM7Ja_B36wOo65umeX8emHFtmo-mkE1379MwOnVl_-NEycu/exec';
   const state = {
     view: 'inicio',
     bootstrap: null,
@@ -382,7 +382,7 @@ function renderInventory() {
         </div>
         <div class="field hidden" id="invLoteTextoWrap">
           <label>Lote</label><input type="text" id="invLoteTexto" placeholder="Ej: Lot-MP-0185">
-          <small>Si ya existe ese lote, se suma la cantidad. Si no existe, se crea nuevo.</small>
+          <small>Un mismo lote se puede repetir en varias medidas: escribilo una vez, agregá cada medida con su cantidad y quedan todas bajo ese lote. Si ya existe, se suma la cantidad; si no existe, se crea nuevo.</small>
         </div>
         <div class="field"><label>Cantidad</label><input type="number" id="invCantidad" min="1"></div>
         <button type="button" class="secondary-button hidden" id="invAddItem">＋ Agregar</button>
@@ -441,11 +441,14 @@ function invSetMov(mov) {
   document.getElementById('invStockHint').textContent = '';
   document.getElementById('invLoteSelectWrap').classList.toggle('hidden', mov === 'deposito');
   document.getElementById('invLoteTextoWrap').classList.toggle('hidden', mov !== 'deposito');
-  const usaCarrito = (mov === 'salida' || mov === 'apartado');
+  // Depósito ahora también usa carrito: un mismo tipo + lote puede cargar
+  // varias medidas, cada una con su propia cantidad, en una sola operación.
+  // El cliente solo aplica a Salida/Apartado, nunca a Depósito.
+  const usaCarrito = (mov === 'salida' || mov === 'apartado' || mov === 'deposito');
   document.getElementById('invAddItem').classList.toggle('hidden', !usaCarrito);
   document.getElementById('invCartWrap').classList.toggle('hidden', !usaCarrito);
-  document.getElementById('invClienteWrap').classList.toggle('hidden', !usaCarrito);
-  document.getElementById('invCartLabel').textContent = mov === 'apartado' ? 'Ítems del apartado' : 'Ítems de la venta';
+  document.getElementById('invClienteWrap').classList.toggle('hidden', !(mov === 'salida' || mov === 'apartado'));
+  document.getElementById('invCartLabel').textContent = mov === 'apartado' ? 'Ítems del apartado' : (mov === 'deposito' ? 'Medidas a cargar' : 'Ítems de la venta');
   document.getElementById('invClienteBuscar').value = '';
   document.getElementById('invClienteId').value = '';
   document.getElementById('invClienteResultados').classList.add('hidden');
@@ -654,6 +657,13 @@ function invOnTipo() {
   document.getElementById('invLote').innerHTML = '<option value="">—</option>';
   document.getElementById('invLoteTexto').value = '';
   document.getElementById('invStockHint').textContent = '';
+  // Cambiar de tipo de implante a mitad de una carga de depósito invalida
+  // las medidas ya agregadas (pertenecen a la hoja del tipo anterior), así
+  // que se reinicia el carrito para no mezclar tipos en una misma carga.
+  if (inv.mov === 'deposito' && inv.carrito.length) {
+    inv.carrito = [];
+    invRenderCarrito();
+  }
   if (!tipo || !inv.stock[tipo]) return;
   const medidas = [...new Set(inv.stock[tipo].map(i => i.medida))];
   medidas.forEach(m => selMed.insertAdjacentHTML('beforeend', `<option value="${attr(m)}">${html(m)}</option>`));
@@ -689,8 +699,22 @@ function invOnLote() {
 function invAgregarItem() {
   const tipo = document.getElementById('invTipo').value;
   const medida = document.getElementById('invMedida').value;
-  const lote = document.getElementById('invLote').value;
   const cant = Number(document.getElementById('invCantidad').value) || 0;
+  // Depósito: el lote es el campo de texto libre (compartido por todas las
+  // medidas de esta carga) y no hay tope de stock — se está agregando
+  // stock nuevo, no descontándolo.
+  if (inv.mov === 'deposito') {
+    const lote = document.getElementById('invLoteTexto').value.trim();
+    if (!tipo || !medida) return showError(new Error('Elegí tipo y medida.'));
+    if (!lote) return showError(new Error('Escribí el número de lote.'));
+    if (cant <= 0) return showError(new Error('Ingresá una cantidad válida.'));
+    inv.carrito.push({ tipo_imp: tipo, medida: medida, lote_sel: lote, cantidad: cant });
+    invRenderCarrito();
+    document.getElementById('invCantidad').value = '';
+    document.getElementById('invMedida').value = '';
+    return;
+  }
+  const lote = document.getElementById('invLote').value;
   if (!tipo || !medida || !lote) return showError(new Error('Elegí tipo, medida y lote.'));
   if (cant <= 0 || cant > inv.stockMax) return showError(new Error('Cantidad inválida o mayor al stock disponible (' + inv.stockMax + ').'));
   inv.carrito.push({ tipo_imp: tipo, medida: medida, lote_sel: lote, cantidad: cant });
@@ -868,26 +892,30 @@ function invSubmitVentaDesdeApartado() {
 }
 function invSubmitDeposito() {
   const tipo = document.getElementById('invTipo').value;
-  const medida = document.getElementById('invMedida').value;
-  const loteTexto = document.getElementById('invLoteTexto').value.trim();
-  const cant = Number(document.getElementById('invCantidad').value) || 0;
-  if (!tipo || !medida) return showError(new Error('Completá tipo y medida.'));
-  if (!loteTexto) return showError(new Error('Escribí el número de lote.'));
-  if (cant <= 0) return showError(new Error('Ingresá una cantidad válida.'));
-  const existente = (inv.stock[tipo] || []).find(i => i.medida === medida && i.lote === loteTexto);
-  const loteSel = existente ? existente.lote : 'nuevo';
-  const loteNombre = existente ? '' : loteTexto;
+  if (!tipo) return showError(new Error('Elegí el tipo de implante.'));
+  // Si quedó una medida + cantidad cargada sin apretar "＋ Agregar", se
+  // suma sola al carrito — así una carga de una sola medida no obliga a
+  // tocar el botón aparte.
+  const medidaSuelta = document.getElementById('invMedida').value;
+  const cantSuelta = Number(document.getElementById('invCantidad').value) || 0;
+  if (medidaSuelta && cantSuelta > 0) invAgregarItem();
+  if (!inv.carrito.length) return showError(new Error('Agregá al menos una medida con su cantidad y su lote.'));
   document.getElementById('invSubmit').disabled = true;
   jsonp({
-    accion: 'registrarMovimiento',
-    tipo_mov: 'deposito', tipo_apartado: '', tipo_salida: '',
-    tipo_imp: tipo, medida: medida, lote_sel: loteSel, lote_nombre: loteNombre,
-    cantidad: cant, profesional: '', nro_remito: '', nro_presupuesto: '',
-    observacion: 'Cargado desde Panel'
+    accion: 'registrarDepositoMultiple',
+    tipo_imp: tipo,
+    items_json: JSON.stringify(inv.carrito.map(it => ({ medida: it.medida, lote: it.lote_sel, cantidad: it.cantidad }))),
+    profesional: '', observacion: 'Cargado desde Panel'
   }, (err, data) => {
     document.getElementById('invSubmit').disabled = false;
-    if (data && data.ok) { showToast('Movimiento registrado.'); inv.stockCargado = false; renderInventory(); }
-    else showError(new Error(data ? data.error : 'No hubo respuesta.'));
+    if (data && data.ok) {
+      const n = inv.carrito.length;
+      showToast('Depósito registrado (' + n + (n === 1 ? ' medida' : ' medidas') + ').');
+      inv.stockCargado = false;
+      renderInventory();
+    } else {
+      showError(new Error(data ? (data.error || data.mensaje) : (err ? err.message : 'No hubo respuesta.')));
+    }
   });
 }
 function invSubmitVenta() {
