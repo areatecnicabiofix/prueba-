@@ -201,7 +201,7 @@
     </div>
     <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
     <script>
-  var URL_API = 'https://script.google.com/macros/s/AKfycbwoKqeYHQMYZx3pQLNHBiM7Ja_B36wOo65umeX8emHFtmo-mkE1379MwOnVl_-NEycu/exec';
+  var URL_API = 'https://script.google.com/macros/s/AKfycbzlCejAF7EIGFlZPiQS0P5UUp17qnvtY4YgLgij7uT106M4lSAIOyDFztq_WZIMrVSn/exec';
   const state = {
     view: 'inicio',
     bootstrap: null,
@@ -354,7 +354,7 @@ const STOCK_TIPOS = [
   { id: 'MBT', nombre: 'Monopieza Basal Tratado (MBT)' },
   { id: 'MBP', nombre: 'Monopieza Basal Pulido (MBP)' }
 ];
-const inv = { mov: 'deposito', stock: {}, stockCargado: false, carrito: [], stockMax: 0 };
+const inv = { mov: 'deposito', stock: {}, medidas: {}, stockCargado: false, carrito: [], stockMax: 0 };
 function renderInventory() {
   document.getElementById('appContent').innerHTML = `
     <article class="panel">
@@ -649,6 +649,12 @@ function invCargarStock() {
   jsonp({ accion: 'obtenerTodoElStock' }, (err, data) => {
     if (data && data.ok && data.stock) { inv.stock = data.stock; inv.stockCargado = true; }
   });
+  // Catálogo completo de medidas por tipo (no filtra por stock > 0) — se
+  // usa para el desplegable de Depósito, para que aparezcan también las
+  // medidas todavía sin stock cargado.
+  jsonp({ accion: 'obtenerMedidasPorTipo' }, (err, data) => {
+    if (data && data.ok && data.medidas) { inv.medidas = data.medidas; }
+  });
 }
 function invOnTipo() {
   const tipo = document.getElementById('invTipo').value;
@@ -664,9 +670,22 @@ function invOnTipo() {
     inv.carrito = [];
     invRenderCarrito();
   }
-  if (!tipo || !inv.stock[tipo]) return;
-  const medidas = [...new Set(inv.stock[tipo].map(i => i.medida))];
-  medidas.forEach(m => selMed.insertAdjacentHTML('beforeend', `<option value="${attr(m)}">${html(m)}</option>`));
+  if (!tipo) return;
+  if (inv.mov === 'deposito') {
+    // Depósito: se listan TODAS las medidas del catálogo de este tipo,
+    // tengan o no stock cargado — para poder recibir una medida nueva o
+    // que hoy está en cero. El texto se ve formateado ("Ø3,30 X 8,5mm")
+    // pero el valor que viaja al servidor es el crudo (el que matchea la
+    // fila real de la hoja).
+    const medidas = (inv.medidas && inv.medidas[tipo]) || [];
+    medidas.forEach(m => selMed.insertAdjacentHTML('beforeend', `<option value="${attr(m.value)}">${html(m.label)}</option>`));
+    return;
+  }
+  // Salida/Apartado: solo medidas que hoy tienen stock disponible en
+  // algún lote (no tendría sentido ofrecer una medida sin nada para vender/apartar).
+  if (!inv.stock[tipo]) return;
+  const medidasConStock = [...new Set(inv.stock[tipo].map(i => i.medida))];
+  medidasConStock.forEach(m => selMed.insertAdjacentHTML('beforeend', `<option value="${attr(m)}">${html(m)}</option>`));
 }
 function invStockDisponible(tipo, medida, lote) {
   const item = (inv.stock[tipo] || []).find(i => i.medida === medida && i.lote === lote);
