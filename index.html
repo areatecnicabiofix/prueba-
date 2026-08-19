@@ -168,9 +168,6 @@
       <button class="nav-item" data-view="pedidos">Pedidos</button>
       <button class="nav-item" data-view="presupuestos">Presupuestos</button>
       <button class="nav-item" data-view="remitos">Remitos</button>
-      <button class="nav-item" data-view="ventas">Ventas</button>
-      <button class="nav-item" data-view="cobros">Cobros</button>
-      <button class="nav-item" data-view="gastos">Gastos</button>
       <button class="nav-item" data-view="productos">Productos pedidos/remitos</button>
       <button class="nav-item" data-view="inventario">Inventario</button>
     </nav>
@@ -204,7 +201,7 @@
     </div>
     <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
     <script>
-  var URL_API = 'https://script.google.com/macros/s/AKfycbwWJ5GGT8BrTju4g87HJRT_Pdn4Ju1hfvtc-3k0gTg5Q_wHASBLEFCbAyzHpHhWFbuz/exec';
+  var URL_API = 'https://script.google.com/macros/s/AKfycby0bevZ6W655uige14flDU94x500QH3lEFbVjNRgpBRxnvLtdJVAftH5YJi6RF9IbcC/exec';
   const state = {
     view: 'inicio',
     bootstrap: null,
@@ -217,11 +214,8 @@
     clientes: { title: 'Clientes', singular: 'cliente', columns: ['Cliente ID', 'Nombre completo', 'CUIL', 'Matrícula profesional', 'Localidad', 'Provincia', 'Estado'] },
     productos: { title: 'Productos para pedidos y remitos', singular: 'producto detallado', columns: ['Producto', 'Categoría', 'Sistema', 'Precio', 'Activo'] },
     pedidos: { title: 'Pedidos', singular: 'pedido', columns: ['Pedido ID', 'Fecha y hora', 'Cliente', 'Vendedor', 'Cantidad total', 'Forma de entrega', 'Estado'] },
-    presupuestos: { title: 'Presupuestos', singular: 'presupuesto', columns: ['Presupuesto ID', 'Fecha', 'Pedido ID', 'Cliente', 'Total', 'Saldo pendiente', 'Estado'] },
+    presupuestos: { title: 'Presupuestos', singular: 'presupuesto', columns: ['Presupuesto ID', 'Fecha', 'Pedido ID', 'Cliente', 'Total', 'Estado'] },
     remitos: { title: 'Remitos', singular: 'remito', columns: ['Remito ID', 'Fecha', 'Pedido ID', 'Cliente', 'Numero de Remito Via Cargo', 'Seguimiento', 'Estado', 'Origen', 'Revisión'] },
-    ventas: { title: 'Ventas', singular: 'venta', columns: ['Venta ID', 'Fecha', 'Cliente', 'Total', 'Cobrado', 'Saldo', 'Estado'] },
-    cobros: { title: 'Cobros', singular: 'cobro', columns: ['Cobro ID', 'Fecha', 'Venta ID', 'Cliente', 'Importe', 'Medio de pago', 'Comprobante'] },
-    gastos: { title: 'Gastos', singular: 'gasto', columns: ['Gasto ID', 'Fecha', 'Categoría', 'Proveedor', 'Concepto', 'Medio de pago', 'Importe'] }
   };
   document.addEventListener('DOMContentLoaded', function () {
     bindShell();
@@ -288,9 +282,6 @@
       clientes: '＋ Nuevo cliente',
       productos: '＋ Nuevo producto',
       remitos: 'Ver presupuestos',
-      ventas: 'Ver presupuestos',
-      cobros: 'Ver ventas',
-      gastos: '＋ Registrar gasto',
     };
     // El botón rojo de arriba se saca en: Inicio (el único acceso a "Nuevo
     // pedido" queda en la tile de Accesos rápidos, que redirige a
@@ -305,11 +296,8 @@
   function handleNew() {
     if (state.view === 'clientes') return openClientForm();
     if (state.view === 'productos') return openProductForm();
-    if (state.view === 'gastos') return openExpenseForm();
     if (state.view === 'presupuestos') return openBudgetFromApartadoPicker();
     if (state.view === 'remitos') return navigate('presupuestos');
-    if (state.view === 'ventas') return navigate('presupuestos');
-    if (state.view === 'cobros') return navigate('ventas');
   }
   function renderDashboard() {
     const s = state.bootstrap.stats;
@@ -319,8 +307,6 @@
         ${metric('Pedidos recibidos', s.pedidosNuevos, s.pedidosNuevos > 0)}
         ${metric('Presupuestos abiertos', s.presupuestosPendientes)}
         ${metric('Remitos por emitir', s.remitosPendientes)}
-        ${metric('Pendientes de pago', s.ventasPendientes, s.ventasPendientes > 0)}
-        ${metric('Saldo a cobrar', money(s.saldoPendiente), s.saldoPendiente > 0)}
       </section>
       <section class="dashboard-grid">
         <article class="panel">
@@ -342,8 +328,6 @@
             ${quick('pedido', 'Nuevo pedido', 'Implantes: vía apartado en Inventario')}
             ${quick('presupuesto', 'Crear presupuesto', 'Desde un pedido apartado')}
             ${quick('remito', 'Emitir remito', 'Completar lotes')}
-            ${quick('cobro', 'Registrar cobro', 'Aplicar a una venta')}
-            ${quick('gasto', 'Registrar gasto', 'Guardar un egreso')}
           </div>
         </article>
       </section>`;
@@ -356,8 +340,6 @@
         if (action === 'pedido') { navigate('inventario'); invSetMov('apartado'); }
         if (action === 'presupuesto') openBudgetFromApartadoPicker();
         if (action === 'remito') navigate('pedidos');
-        if (action === 'cobro') navigate('ventas');
-        if (action === 'gasto') openExpenseForm();
       };
     });
   }
@@ -864,8 +846,9 @@ function invSubmit() {
   if (inv.mov === 'apartado') return invSubmitApartado();
   // Cliente con presupuesto ya generado (a partir de su apartado): el
   // mismo botón de siempre pasa a emitir el remito de ese presupuesto —
-  // createRemitFromOrder ya deja la venta pendiente registrada sola, así
-  // que "emitir remito" y "registrar venta" quedan en un solo click.
+  // createRemitFromOrder ya deja la venta registrada y el pedido marcado
+  // como vendido, así que "emitir remito" y "registrar venta" quedan en
+  // un solo click.
   if (inv.mov === 'salida' && inv.pedidoPresupuestado) return irAEmitirRemitoPorPedidoId_(inv.pedidoPresupuestado.orderId);
   if (inv.mov === 'salida' && inv.usandoApartado) return invSubmitVentaDesdeApartado();
   return invSubmitVenta();
@@ -1076,8 +1059,6 @@ function invSubmitApartado() {
     // createRemitFromOrder avisa cuál es en vez de duplicarlo.
     if (moduleKey === 'presupuestos') return `<div class="row-actions"><button class="ghost-button" data-edit-budget="${attr(r['Presupuesto ID'])}">Editar</button><button class="ghost-button" data-print-budget="${attr(r['Presupuesto ID'])}">Generar PDF</button>${r['Pedido ID'] ? `<button class="primary-button" data-emit-remit-budget="${attr(r['Pedido ID'])}">Emitir remito</button>` : ''}</div>`;
     if (moduleKey === 'remitos') return `<div class="row-actions"><button class="ghost-button" data-edit-remit="${attr(r['Remito ID'])}">Editar</button><button class="ghost-button" data-print-remit="${attr(r['Remito ID'])}">Imprimir</button>${r['Estado'] === 'Entregado' ? '<span class="pill success">Vendido</span>' : `<button class="primary-button" data-sold-remit="${attr(r['Remito ID'])}">Marcar vendido</button>`}</div>`;
-    if (moduleKey === 'ventas') return `<div class="row-actions">${toNumber(r['Saldo']) > 0 ? `<button class="ghost-button" data-payment="${attr(r['Venta ID'])}">Registrar cobro</button>` : '<span class="pill success">Saldado</span>'}</div>`;
-    if (moduleKey === 'gastos') return '<span class="pill neutral">Registrado</span>';
     return '';
   }
   function bindRows(moduleKey) {
@@ -1091,7 +1072,6 @@ function invSubmitApartado() {
     document.querySelectorAll('[data-emit-remit-budget]').forEach(b => b.onclick = () => irAEmitirRemitoPorPedidoId_(b.dataset.emitRemitBudget));
     document.querySelectorAll('[data-print-remit]').forEach(b => b.onclick = () => printDocument('remito', b.dataset.printRemit));
     document.querySelectorAll('[data-sold-remit]').forEach(b => b.onclick = () => confirmRemitSold(b.dataset.soldRemit));
-    document.querySelectorAll('[data-payment]').forEach(b => b.onclick = () => openPaymentForm(findRecord('ventas', 'Venta ID', b.dataset.payment)));
   }
   function openClientForm(record) {
     record = record || {};
@@ -1132,23 +1112,6 @@ function invSubmitApartado() {
     document.getElementById('productForm').onsubmit = function (event) {
       event.preventDefault();
       submit('saveProduct', formObject(event.target));
-    };
-  }
-  function openExpenseForm() {
-    openModal('Registrar gasto', `<form class="form-grid" id="expenseForm">
-      ${field('Fecha', todayIso(), true, false, 'date')}
-      ${selectField('Categoría', ['Insumos', 'Servicios', 'Logística', 'Impuestos', 'Mantenimiento', 'Otros'], '')}
-      ${field('Proveedor', '')}
-      ${field('Concepto', '', true, true)}
-      ${selectField('Medio de pago', ['Transferencia', 'Efectivo', 'Tarjeta', 'Cheque', 'Otro'], '')}
-      ${field('Importe', '', true, false, 'number')}
-      ${field('Comprobante', '')}
-      ${textareaField('Observaciones', '')}
-      ${actions()}
-    </form>`);
-    document.getElementById('expenseForm').onsubmit = function (event) {
-      event.preventDefault();
-      submit('saveExpense', formObject(event.target));
     };
   }
   function openManualOrderForm() {
@@ -1224,7 +1187,7 @@ function invSubmitApartado() {
     if (!order) return showError(new Error('Pedido no encontrado.'));
     state.currentOrder = order;
     // El remito se emite recién cuando el pedido ya tiene presupuesto
-    // (circuito pedido -> presupuesto -> remito -> venta).
+    // (circuito pedido -> presupuesto -> remito, que directamente queda vendido).
     const puedeEmitirRemito = order['Estado'] === 'Presupuestado' || order['Estado'] === 'Remitido' || order['Estado'] === 'Vendido';
     openModal('Pedido ' + order['Pedido ID'], `
       <div class="form-grid">
@@ -1515,10 +1478,9 @@ function invSubmitApartado() {
   // completar a mano, y al confirmar: genera el remito con número
   // correlativo único, arma el PDF con la plantilla Bio-Fix (RemitoPDF.gs)
   // y lo guarda en la carpeta de Drive "Ventas Bio-Fix" — además lo abre
-  // en una pestaña nueva para poder imprimirlo al toque, y registra sola
-  // la venta pendiente ligada al presupuesto (createRemitFromOrder,
-  // BackendPanel.gs) — emitir el remito y registrar la venta quedan como
-  // un solo paso.
+  // en una pestaña nueva para poder imprimirlo al toque. En el mismo paso
+  // el remito y el pedido quedan marcados como VENDIDO y el stock que
+  // corresponda se descuenta — emitir el remito ya es "vender".
   function openEmitirRemitoForm(order, items) {
     items = (items || (order.items || []).map(function (i) {
       return { productId: i['Producto ID'], codigo: i['Código'], producto: i['Producto'], quantity: toNumber(i['Cantidad']), lot: i['Lote'] || '' };
@@ -1534,7 +1496,7 @@ function invSubmitApartado() {
       <div class="table-wrap field full"><table><thead><tr><th>Producto</th><th>Cantidad</th><th>Lote</th></tr></thead><tbody id="emitirRemitoItemsBody">
         ${items.map(i => `<tr><td>${html(i.producto)}</td><td>${html(i.quantity)}</td><td>${html(i.lot || '—')}</td></tr>`).join('')}
       </tbody></table></div>
-      <div class="field full"><p style="color:var(--muted);font-size:12px">El número de remito se genera solo y no se repite. Si un producto, cantidad o lote está mal, corregilo en el Presupuesto (o en el Apartado, en Inventario) y volvé a emitir el remito. Si cargás el número de Via Cargo, queda guardado en el remito y también en el historial de Movimientos. Al confirmar se guarda el PDF en Drive (carpeta "Ventas Bio-Fix"), se abre para imprimir y queda registrada la venta pendiente de este presupuesto.</p></div>
+      <div class="field full"><p style="color:var(--muted);font-size:12px">El número de remito se genera solo y no se repite. Si un producto, cantidad o lote está mal, corregilo en el Presupuesto (o en el Apartado, en Inventario) y volvé a emitir el remito. Si cargás el número de Via Cargo, queda guardado en el remito y también en el historial de Movimientos. Al confirmar se guarda el PDF en Drive (carpeta "Ventas Bio-Fix"), se abre para imprimir, y el remito/pedido quedan marcados como Vendido con el stock ya descontado.</p></div>
       ${actions('Emitir remito')}
     </form>`);
     wireViaCargoCampos_();
@@ -1584,7 +1546,7 @@ function invSubmitApartado() {
         })
         .then(function (result) {
           closeModal();
-          showToast('Remito ' + result.created.id + ' emitido y guardado en Drive.');
+          showToast('Remito ' + result.created.id + ' emitido y marcado como vendido.');
           if (result.pdf && result.pdf.url) window.open(result.pdf.url, '_blank');
           refresh();
         })
@@ -1646,156 +1608,27 @@ function invSubmitApartado() {
       }, 'Remito actualizado.');
     };
   }
-  // Confirmar la entrega de un remito — ya NO se puede hacer sin haber
-  // cobrado antes (markRemitAsSold ahora rechaza esto si la venta tiene
-  // saldo pendiente, en vez de inventar un cobro automático). Si el
-  // presupuesto ya generó su venta (lo normal desde que "Emitir remito" la
-  // registra sola), este modal la usa directamente y ni pregunta el
-  // presupuesto — solo hay que elegirlo a mano para remitos viejos que
-  // todavía no tengan venta asociada.
+  // Confirmar la entrega/venta de un remito que por algún motivo no quedó
+  // marcado como "Entregado" al emitirse (por ejemplo, remitos viejos
+  // cargados antes de este cambio). Simplemente marca el remito como
+  // Entregado, el pedido como Vendido, y descuenta stock si hace falta —
+  // sin pedir nada más (ya no hay cobros ni saldos que revisar).
   function confirmRemitSold(remitId) {
     const remit = findRecord('remitos', 'Remito ID', remitId) || {};
-    openModal('Confirmar venta y entrega', loading());
-    server('listAdmin', 'ventas').then(function (sales) {
-      const sale = sales.find(function (v) { return v['Pedido ID'] === remit['Pedido ID']; });
-      if (sale) return renderConfirmRemitSoldConVenta_(remitId, remit, sale);
-      renderConfirmRemitSoldSinVenta_(remitId, remit);
-    }).catch(showError);
-  }
-  function renderConfirmRemitSoldConVenta_(remitId, remit, sale) {
-    const saldo = toNumber(sale['Saldo']);
-    document.getElementById('modalContent').innerHTML = `
+    openModal('Confirmar venta y entrega', `
       <div class="form-grid">
         <div class="field"><label>Remito</label><strong>${html(remitId)}</strong></div>
         <div class="field"><label>Cliente</label><strong>${html(remit['Cliente'] || '')}</strong></div>
-        <div class="field"><label>Venta</label><strong>${html(sale['Venta ID'])}</strong></div>
-        <div class="field"><label>Saldo pendiente</label><strong>${money(saldo)}</strong></div>
-        ${saldo > 0
-          ? `<div class="field full"><p class="helper">Esta venta todavía tiene saldo pendiente — no se puede confirmar sin haber cobrado antes. Registrá el cobro desde Ventas y después volvé a confirmar acá.</p></div>
-             <div class="form-actions"><button type="button" class="secondary-button" onclick="closeModal()">Cerrar</button><button type="button" class="primary-button" id="irACobrarVenta">Ir a Ventas a registrar el cobro</button></div>`
-          : `<div class="field full"><p>Esta acción marcará el remito como <strong>Entregado</strong> y el pedido como <strong>Vendido</strong>.</p></div>
-             <div class="form-actions"><button type="button" class="secondary-button" onclick="closeModal()">Cancelar</button><button type="button" class="primary-button" id="confirmarVendidoBtn">Confirmar vendido</button></div>`}
-      </div>`;
-    if (saldo > 0) {
-      document.getElementById('irACobrarVenta').onclick = function () { closeModal(); navigate('ventas'); };
-      return;
-    }
+        <div class="field full"><p>Esta acción marcará el remito como <strong>Entregado</strong> y el pedido como <strong>Vendido</strong>.</p></div>
+        <div class="form-actions"><button type="button" class="secondary-button" onclick="closeModal()">Cancelar</button><button type="button" class="primary-button" id="confirmarVendidoBtn">Confirmar vendido</button></div>
+      </div>`);
     document.getElementById('confirmarVendidoBtn').onclick = function () {
       const btn = document.getElementById('confirmarVendidoBtn');
       btn.disabled = true; btn.textContent = 'Confirmando…';
-      server('markRemitAsSold', remitId, sale['Presupuesto ID'])
+      server('markRemitAsSold', remitId)
         .then(function () { closeModal(); showToast('Remito entregado.'); refresh(); })
         .catch(function (err) { btn.disabled = false; btn.textContent = 'Confirmar vendido'; showError(err); });
     };
-  }
-  function renderConfirmRemitSoldSinVenta_(remitId, remit) {
-    server('listAdmin', 'presupuestos').then(function (budgets) {
-      const clientBudgets = budgets.filter(function (budget) {
-        return budget['Cliente ID'] === remit['Cliente ID'] && toNumber(budget['Total']) > 0;
-      });
-      document.getElementById('modalContent').innerHTML = `
-        <form class="form-grid" id="soldRemitForm">
-          <div class="field"><label>Remito</label><strong>${html(remitId)}</strong></div>
-          <div class="field"><label>Cliente</label><strong>${html(remit['Cliente'] || '')}</strong></div>
-          ${selectField('budgetId', clientBudgets.map(b => ({
-            value: b['Presupuesto ID'],
-            label: 'Presupuesto ' + b['Presupuesto ID'] + ' · ' + money(b['Total'])
-          })), '', true, true, 'Presupuesto aceptado')}
-          <div class="field full"><p>Esto registra la venta a partir del presupuesto elegido, sin cobrar nada todavía. Después hay que registrar el cobro desde Ventas — recién con el saldo en $0 se puede confirmar como vendida.</p></div>
-          ${clientBudgets.length ? actions('Registrar venta') : '<div class="field full"><p class="helper">Este cliente todavía no tiene un presupuesto con importe.</p></div>'}
-        </form>`;
-      if (!clientBudgets.length) return;
-      document.getElementById('soldRemitForm').onsubmit = function (event) {
-        event.preventDefault();
-        const budgetId = formObject(event.target).budgetId;
-        const button = event.target.querySelector('button[type="submit"]');
-        button.disabled = true;
-        button.textContent = 'Guardando…';
-        server('markRemitAsSold', remitId, budgetId)
-          .then(function () { closeModal(); showToast('Remito entregado.'); refresh(); })
-          .catch(function (err) {
-            // La venta se crea igual aunque esto tire error — el error acá
-            // significa "quedó pendiente de cobro", no que falló de verdad.
-            closeModal();
-            showToast(err && err.message ? err.message : 'La venta quedó registrada, pero no se pudo confirmar como vendida.', true);
-            refresh();
-          });
-      };
-    }).catch(showError);
-  }
-  function openPaymentForm(sale) {
-    openModal('Registrar cobro · ' + sale['Venta ID'], `<form class="form-grid" id="paymentForm">
-      <div class="field full"><label>Cliente</label><strong>${html(sale['Cliente'])}</strong><span>Saldo pendiente: ${money(sale['Saldo'])}</span></div>
-      ${field('date', todayIso(), true, false, 'date', 'Fecha')}
-      ${field('amount', sale['Saldo'], true, false, 'number', 'Importe')}
-      ${selectField('paymentMethod', ['Transferencia', 'Efectivo', 'Tarjeta', 'Cheque', 'Otro'], '', true, false, 'Medio de pago')}
-      <div class="field full"><label>Comprobante (foto o captura, opcional)</label><input type="file" id="paymentReceiptFile" accept="image/*,application/pdf"></div>
-      ${textareaField('notes', '', false, 'Observaciones')}
-      ${actions('Registrar cobro')}
-    </form>`);
-    document.getElementById('paymentForm').onsubmit = function (event) {
-      event.preventDefault();
-      const file = document.getElementById('paymentReceiptFile').files[0];
-      const raw = formObject(event.target);
-      const submitButton = event.target.querySelector('button[type="submit"]');
-      submitButton.disabled = true;
-      submitButton.textContent = 'Guardando…';
-      server('savePayment', Object.assign({ saleId: sale['Venta ID'] }, raw)).then(function (result) {
-        if (!file) return result;
-        // El cobro ya quedó guardado — si la subida del comprobante falla
-        // por lo que sea, no perdemos el cobro, solo el archivo adjunto.
-        return subirComprobantePago_(result.id, file).catch(function () {}).then(function () { return result; });
-      }).then(function () {
-        closeModal();
-        showToast('Cobro registrado' + (file ? ' — comprobante adjuntado.' : '.'));
-        refresh();
-      }).catch(function (err) {
-        submitButton.disabled = false;
-        submitButton.textContent = 'Registrar cobro';
-        showError(err);
-      });
-    };
-  }
-  // Sube la imagen/PDF del comprobante de pago a la carpeta de Drive
-  // compartida de Bio-Fix. Va por un <form method="POST"> a un iframe
-  // oculto (no por jsonp/server): un archivo no entra en la URL de un GET,
-  // y esta página es externa al proyecto de Apps Script, así que un
-  // fetch() normal chocaría con CORS — el POST a un iframe evita ese
-  // problema (el navegador solo navega el iframe, no necesita leer la
-  // respuesta con JS). Ver doPost/subirComprobante_ en Codigo.gs/ArchivosDrive.gs.
-  function subirComprobantePago_(cobroId, file) {
-    return new Promise(function (resolve) {
-      const reader = new FileReader();
-      reader.onload = function () {
-        const dataUrl = String(reader.result || '');
-        const base64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
-        if (!base64) return resolve();
-        let iframe = document.getElementById('comprobanteUploadFrame');
-        if (!iframe) {
-          iframe = document.createElement('iframe');
-          iframe.id = 'comprobanteUploadFrame';
-          iframe.name = 'comprobanteUploadFrame';
-          iframe.style.display = 'none';
-          document.body.appendChild(iframe);
-        }
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = URL_API;
-        form.target = 'comprobanteUploadFrame';
-        form.style.display = 'none';
-        [['accion', 'subirComprobante'], ['cobroId', cobroId], ['mimeType', file.type || 'image/jpeg'], ['base64', base64]]
-          .forEach(function (pair) {
-            const input = document.createElement('input');
-            input.type = 'hidden'; input.name = pair[0]; input.value = pair[1];
-            form.appendChild(input);
-          });
-        document.body.appendChild(form);
-        iframe.onload = function () { form.remove(); resolve(); };
-        form.submit();
-      };
-      reader.onerror = function () { resolve(); };
-      reader.readAsDataURL(file);
-    });
   }
   // Sugiere la Dirección de entrega según la Forma de entrega elegida
   // (Via Cargo -> sucursal, Fábrica -> San Pedro 4929).
@@ -2081,7 +1914,6 @@ function invSubmitApartado() {
   function documentTemplate(data) {
     const h = data.header, c = data.client, s = data.settings;
     const isBudget = data.type === 'presupuesto';
-    const pendingBalance = isBudget ? toNumber(h['Saldo pendiente']) : 0;
     const subtotalAfterDiscount = isBudget
       ? Math.max(0, toNumber(h['Subtotal']) - toNumber(h['Descuento importe']))
       : 0;
@@ -2103,7 +1935,7 @@ function invSubmitApartado() {
       <div class="box"><span class="label">Fecha</span><p><strong>${html(h['Fecha'])}</strong></p>${isBudget ? '' : `<p>Pedido: ${html(h['Pedido ID'] || '')}</p>`}</div>
       ${isBudget ? '' : `<div class="box"><span class="label">N.° remito Via Cargo</span><p>${html(h['Numero de Remito Via Cargo'] || '')}</p></div><div class="box"><span class="label">N.° de seguimiento</span><p>${html(h['Seguimiento'] || '')}</p></div>`}</section>
       <table><thead><tr><th>Descripción</th><th>Cantidad</th>${isBudget ? '<th>Precio unitario</th><th>Total</th>' : '<th>Lote</th>'}</tr></thead><tbody>${rows}</tbody></table>
-      ${isBudget ? `<div class="totals"><p><span>Subtotal</span><strong>${money(h['Subtotal'])}</strong></p><p><span>Descuento</span><strong>${money(h['Descuento importe'])}</strong></p><p><span>Subtotal menos descuento</span><strong>${money(subtotalAfterDiscount)}</strong></p>${pendingBalance > 0 ? `<p><span>Saldo pendiente${h['Saldo pendiente ref'] ? ' (Ppto. N.º ' + html(h['Saldo pendiente ref']) + ')' : ''}</span><strong>${money(pendingBalance)}</strong></p>` : ''}<p class="grand"><span>Total</span><strong>${money(h['Total'])}</strong></p></div><p style="text-align:right;color:#5f7076;font-size:11px">Importes expresados en pesos argentinos (ARS).</p>` : ''}
+      ${isBudget ? `<div class="totals"><p><span>Subtotal</span><strong>${money(h['Subtotal'])}</strong></p><p><span>Descuento</span><strong>${money(h['Descuento importe'])}</strong></p><p><span>Subtotal menos descuento</span><strong>${money(subtotalAfterDiscount)}</strong></p><p class="grand"><span>Total</span><strong>${money(h['Total'])}</strong></p></div><p style="text-align:right;color:#5f7076;font-size:11px">Importes expresados en pesos argentinos (ARS).</p>` : ''}
       <div class="box notes"><span class="label">Observaciones / notas</span><p>${html(h['Observaciones'] || '')}</p></div>
       </body></html>`;
   }
@@ -2130,8 +1962,7 @@ function invSubmitApartado() {
   function loading() { return '<div class="loading-card"><div class="spinner"></div><p>Cargando información…</p></div>'; }
   function findRecord(moduleKey, fieldName, id) { return (state.records[moduleKey] || state.clients || []).find(r => String(r[fieldName]) === String(id)); }
   function cell(column, value) {
-    if (column === 'Saldo pendiente' && toNumber(value) <= 0) return '<span class="muted">—</span>';
-    if (/Precio|Importe|Subtotal|Total|Saldo|Cobrado/.test(column)) return `<span class="amount">${money(value)}</span>`;
+    if (/Precio|Importe|Subtotal|Total/.test(column)) return `<span class="amount">${money(value)}</span>`;
     if (column === 'Estado' || column === 'Revisión' || column === 'Activo') return `<span class="pill ${pillClass(value)}">${html(value || '-')}</span>`;
     const text = String(value || '-');
     return html(text.length > 95 ? text.slice(0, 95) + '…' : text);
@@ -2139,7 +1970,7 @@ function invSubmitApartado() {
   function pillClass(value) {
     const v = normalize(value);
     if (['recibido','en revision','borrador','enviado','preparado','despachado','apartado','pendiente','pendiente de pago'].includes(v) || v.includes('revisar')) return 'warning';
-    if (['aprobado','remitido','entregado','vendido','saldado','cobrada','activo','si'].includes(v)) return 'success';
+    if (['aprobado','remitido','entregado','vendido','saldado','activo','si'].includes(v)) return 'success';
     return 'neutral';
   }
   function money(value) { return new Intl.NumberFormat('es-AR', {style:'currency',currency:'ARS',maximumFractionDigits:2}).format(toNumber(value)); }
