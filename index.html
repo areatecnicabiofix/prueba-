@@ -487,11 +487,13 @@ function invRenderApartadosPendientes() {
       box.innerHTML = '<p class="helper">No se pudo cargar la lista de apartados pendientes.</p>';
       return;
     }
-    // Lo que YA se remitió/vendió (el remito ya se emitió) se saca de
-    // "pendiente" — no tiene sentido ofrecerlo de nuevo acá.
+    // Lo que YA se vendió (el remito ya se emitió) se saca de "pendiente" —
+    // no tiene sentido ofrecerlo de nuevo acá. Los que están "Remitido"
+    // (con un Remito todavía en Borrador, sin emitir) SÍ se muestran: hay
+    // que poder tocarlos para terminar de editar/emitir ese remito.
     server('listAdmin', 'pedidos').then(function (pedidos) {
       const clientesYaRemitidos = new Set(
-        pedidos.filter(p => ['Remitido', 'Vendido'].includes(p['Estado'])).map(p => p['Cliente ID'])
+        pedidos.filter(p => p['Estado'] === 'Vendido').map(p => p['Cliente ID'])
       );
       const grupos = (data.profesionales || [])
         .filter(p => p.items && p.items.length)
