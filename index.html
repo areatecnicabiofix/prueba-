@@ -196,7 +196,7 @@ const state = { view: 'inicio', bootstrap: null, products: [], clients: [], reco
 
 const views = {
   clientes: { title: 'Clientes', singular: 'cliente', columns: ['Cliente ID', 'Nombre completo', 'CUIL', 'Matrícula profesional', 'Localidad', 'Provincia', 'Estado'] },
-  productos: { title: 'Productos para pedidos y remitos', singular: 'producto detallado', columns: ['Producto', 'Categoría', 'Sistema', 'Precio', 'Activo'] },
+  productos: { title: 'Productos para pedidos y remitos', singular: 'producto detallado', columns: ['Producto', 'Categoría', 'Sistema', 'Activo'] },
   pedidos: { title: 'Pedidos', singular: 'pedido', columns: ['Pedido ID', 'Fecha y hora', 'Cliente', 'Vendedor', 'Cantidad total', 'Forma de entrega', 'Estado'] },
   remitos: { title: 'Remitos', singular: 'remito', columns: ['Remito ID', 'Fecha', 'Pedido ID', 'Cliente', 'Numero de Remito Via Cargo', 'Seguimiento', 'Estado', 'Origen', 'Revisión'] },
 };
@@ -1085,7 +1085,6 @@ function openProductForm(record) {
       ${field('Producto', record['Producto'], true, true)}
       ${selectField('Categoría', ['IMPLANTE', 'PROTESICO', 'INSTRUMENTAL', 'DIGITAL'], record['Categoría'])}
       ${selectField('Sistema', ['MP', 'HI', 'HE', 'CMU', 'CMU3', 'CMHI', 'IB', 'IBT', 'MU'], record['Sistema'])}
-      ${field('Precio', record['Precio'], false, false, 'number', 'Precio en pesos argentinos')}
       ${selectField('Activo', ['Sí', 'No'], record['Activo'] || 'Sí')}
       ${actions()}
     </form>`);
@@ -1626,13 +1625,6 @@ function loading() { return '<div class="loading-card"><div class="spinner"></di
 
 function findRecord(moduleKey, fieldName, id) {
   return (state.records[moduleKey] || state.clients || []).find(r => String(r[fieldName]) === String(id));
-}
-
-function cell(column, value) {
-  if (/Precio|Importe|Subtotal|Total/.test(column)) return `<span class="amount">${money(value)}</span>`;
-  if (column === 'Estado' || column === 'Revisión' || column === 'Activo') return `<span class="pill ${pillClass(value)}">${html(value || '-')}</span>`;
-  const text = String(value || '-');
-  return html(text.length > 95 ? text.slice(0, 95) + '…' : text);
 }
 
 function pillClass(value) {
