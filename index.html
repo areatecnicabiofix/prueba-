@@ -190,7 +190,7 @@ tbody tr:hover td { background: #fafcfc; }
 <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
 
 <script>
-var URL_API = 'https://script.google.com/macros/s/AKfycbwx78y5oKFSvXC4XI-DoUu_9p1XHNVmZtuCwHkTSNzzYczjXrqFC99Zq4MEIL4xLROt/exec';
+var URL_API = 'https://script.google.com/macros/s/AKfycbyuigXuVH5gllL6vuQAD7hfKdBdJX609G_SUm3nswRt-C_X4AWHkEq8cHQeN4uEjgwH/exec';
 
 const state = { view: 'inicio', bootstrap: null, products: [], clients: [], records: {}, currentOrder: null };
 
@@ -822,25 +822,19 @@ function invBuscarApartadoCrudo(clienteId, box) {
   });
 }
 
-// Genera el Remito Borrador del apartado activo de este cliente
-// (buscando primero su Pedido) y lo abre para revisar/editar/emitir.
+// Genera el Remito Borrador del apartado activo de este cliente y lo abre
+// para revisar/editar/emitir — todo en UN solo viaje al servidor
+// (generarRemitoBorradorApartadoCliente busca el Pedido, crea el Remito y
+// devuelve el documento completo ya armado). Antes esto eran 4 llamadas
+// seguidas y se sentía lento.
 function invGenerarRemitoParaApartado_(clienteId) {
   const btn = document.getElementById('invGenerarRemito');
   if (btn) { btn.disabled = true; btn.textContent = 'Generando…'; }
-  server('listAdmin', 'pedidos').then(function (pedidos) {
-    const pedido = pedidos.find(p => p['Cliente ID'] === clienteId && p['Estado'] === 'Apartado');
-    if (!pedido) throw new Error('No se encontró el pedido apartado de este cliente.');
-    return server('crearRemitoBorradorDesdeApartado', { orderId: pedido['Pedido ID'] });
-  }).then(function () {
-    return server('getPedidoConRemitoPorCliente', clienteId);
-  }).then(function (pedidoConRemito) {
-    if (!pedidoConRemito || !pedidoConRemito.remitoId) throw new Error('El remito se generó pero no se pudo abrir. Buscalo desde Remitos.');
-    return server('getDocumentData', 'remito', pedidoConRemito.remitoId);
-  }).then(function (doc) {
+  server('generarRemitoBorradorApartadoCliente', clienteId).then(function (result) {
     showToast('Remito generado en borrador.');
     inv.stockCargado = false;
     refresh();
-    openEditRemit(Object.assign({}, doc.header, { items: doc.items }));
+    openEditRemit(Object.assign({}, result.doc.header, { items: result.doc.items }));
   }).catch(function (err) {
     if (btn) { btn.disabled = false; btn.textContent = 'Generar remito para este apartado'; }
     showError(err);
@@ -913,16 +907,16 @@ function invSubmitVenta() {
     };
   }
   document.getElementById('invSubmit').disabled = true;
+  // crearRemitoBorradorVentaDirecta ya devuelve el documento completo —
+  // un viaje menos al servidor que antes (no hace falta un getDocumentData aparte).
   server('crearRemitoBorradorVentaDirecta', payload).then(function (result) {
-    return server('getDocumentData', 'remito', result.remitoId);
-  }).then(function (doc) {
     document.getElementById('invSubmit').disabled = false;
     showToast('Remito generado en borrador. Revisalo y emitilo para confirmar la venta.');
     inv.carrito = [];
     inv.stockCargado = false;
     renderInventory();
     refresh();
-    openEditRemit(Object.assign({}, doc.header, { items: doc.items }));
+    openEditRemit(Object.assign({}, result.doc.header, { items: result.doc.items }));
   }).catch(function (err) {
     document.getElementById('invSubmit').disabled = false;
     showError(err);
@@ -1306,12 +1300,13 @@ function confirmEmitirRemito(remitId) {
   document.getElementById('confirmarEmitirBtn').onclick = function () {
     const btn = document.getElementById('confirmarEmitirBtn');
     btn.disabled = true; btn.textContent = 'Emitiendo…';
+    // emitirRemito ya genera el PDF del lado del servidor (ver
+    // BackendPanel.gs) — un viaje menos al servidor que antes.
     server('emitirRemito', remitId)
-      .then(() => server('generarRemitoPDF', remitId))
-      .then(function (pdf) {
+      .then(function (result) {
         closeModal();
         showToast('Remito ' + remitId + ' emitido y marcado como vendido.');
-        if (pdf && pdf.url) window.open(pdf.url, '_blank');
+        if (result && result.pdf && result.pdf.url) window.open(result.pdf.url, '_blank');
         refresh();
       })
       .catch(function (err) { btn.disabled = false; btn.textContent = 'Emitir remito'; showError(err); });
@@ -1374,13 +1369,15 @@ function openEditRemit(remit) {
     document.getElementById('emitirRemitoBtn').onclick = function () {
       const btn = document.getElementById('emitirRemitoBtn');
       btn.disabled = true; btn.textContent = 'Emitiendo…';
+      // emitirRemito ya genera el PDF del lado del servidor — un viaje
+      // menos al servidor que antes (updateRemit + emitirRemito, en vez
+      // de updateRemit + emitirRemito + generarRemitoPDF).
       server('updateRemit', payloadDesdeForm())
         .then(() => server('emitirRemito', remit['Remito ID']))
-        .then(() => server('generarRemitoPDF', remit['Remito ID']))
-        .then(function (pdf) {
+        .then(function (result) {
           closeModal();
           showToast('Remito ' + remit['Remito ID'] + ' emitido y marcado como vendido.');
-          if (pdf && pdf.url) window.open(pdf.url, '_blank');
+          if (result && result.pdf && result.pdf.url) window.open(result.pdf.url, '_blank');
           refresh();
         })
         .catch(function (err) { btn.disabled = false; btn.textContent = 'Emitir remito'; showError(err); });
