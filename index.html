@@ -190,7 +190,7 @@ tbody tr:hover td { background: #fafcfc; }
 <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
 
 <script>
-var URL_API = 'https://script.google.com/macros/s/AKfycby7-CqJqQ4331AColY2bKMhbdl7yh8uOum3jGnuJMQBKYOn8oko-TB8doz2E1PLwHe1/exec';
+var URL_API = 'https://script.google.com/macros/s/AKfycbxJlWWGPc9yvZlqaHmG1v1a1f4KUmauj_FZzDORTc8EAQr6PIXKcgCN_gq1crDsMYw/exec';
 
 const state = { view: 'inicio', bootstrap: null, products: [], clients: [], records: {}, currentOrder: null };
 
@@ -448,7 +448,7 @@ function invSetMov(mov) {
   invToggleManualVentaUI_(true); // vuelve a mostrar la carga manual al cambiar de pestaña
   const labels = {
     deposito: 'Registrar movimiento',
-    salida: 'Registrar venta y generar remito',
+    salida: 'Generar remito en borrador',
     apartado: 'Registrar apartado y generar remito'
   };
   document.getElementById('invSubmit').textContent = labels[mov];
@@ -893,6 +893,11 @@ function invSubmitDeposito() {
   });
 }
 
+// Venta SIN apartado: igual que la venta con apartado, ya no se descuenta
+// stock ni se vende en el acto. Se genera el Remito en Borrador con los
+// ítems del carrito y se abre para revisar/editar — recién al tocar
+// "Emitir remito" ahí adentro se descuenta el stock real, se genera el
+// PDF y se registra la venta.
 function invSubmitVenta() {
   if (!inv.carrito.length) return showError(new Error('Agregá al menos un ítem.'));
   const clientId = document.getElementById('invClienteId').value;
@@ -908,11 +913,16 @@ function invSubmitVenta() {
     };
   }
   document.getElementById('invSubmit').disabled = true;
-  server('registrarVentaStockConRemito', payload).then(function (result) {
+  server('crearRemitoBorradorVentaDirecta', payload).then(function (result) {
+    return server('getDocumentData', 'remito', result.remitoId);
+  }).then(function (doc) {
     document.getElementById('invSubmit').disabled = false;
-    showToast('Venta registrada. Remito ' + result.numeroRemito + '.');
+    showToast('Remito generado en borrador. Revisalo y emitilo para confirmar la venta.');
+    inv.carrito = [];
     inv.stockCargado = false;
     renderInventory();
+    refresh();
+    openEditRemit(Object.assign({}, doc.header, { items: doc.items }));
   }).catch(function (err) {
     document.getElementById('invSubmit').disabled = false;
     showError(err);
@@ -1323,7 +1333,7 @@ function openEditRemit(remit) {
     ${field('address', remit['Dirección de entrega'], false, true, 'text', 'Dirección de entrega')}
     ${viaCargoCamposHtml_(viaCargoActual.prefijo, viaCargoActual.resto)}
     ${field('tracking', remit['Seguimiento'], false, false, 'text', 'Número de seguimiento')}
-    ${field('numeroPresupuesto', remit['Numero de Presupuesto'], false, false, 'text', 'Número de presupuesto (opcional, manual — tu talonario en papel)')}
+    ${fieldConPrefijo('numeroPresupuesto', 'PRE-', quitarPrefijoPresupuesto_(remit['Numero de Presupuesto']), 'Número de presupuesto (opcional, manual — tu talonario en papel)')}
     ${selectField('origen', ['Formulario', 'Histórico'], remit['Origen'] || 'Formulario', false, false, 'Origen')}
     ${textareaField('notes', remit['Observaciones'], false, 'Observaciones')}
     <p class="section-label">Productos y lotes${esBorrador ? ' — editar el remito es editar el apartado' : ' — ya se emitió, quedan fijos'}</p>
@@ -1566,6 +1576,24 @@ function closeModal() {
 
 function field(name, value, required, full, type, label) {
   return `<div class="field ${full ? 'full' : ''}"><label>${html(label || name)}${required ? ' *' : ''}</label><input name="${attr(name)}" type="${type || 'text'}" value="${attr(value || '')}" ${required ? 'required' : ''} ${type === 'number' ? 'min="0" step="0.01"' : ''}></div>`;
+}
+
+// Campo con un prefijo fijo no editable + un input para el resto (usado
+// para "Número de presupuesto": el prefijo "PRE-" es fijo, el usuario solo
+// tipea el número — ver normalizarNumeroPresupuesto_ en BackendPanel.gs,
+// que arma el valor final "PRE-<número>" al guardar).
+function fieldConPrefijo(name, prefijo, value, label) {
+  return `<div class="field"><label>${html(label || name)}</label>
+    <div style="display:flex;align-items:center;gap:6px">
+      <span class="pill neutral" style="flex:0 0 auto">${html(prefijo)}</span>
+      <input name="${attr(name)}" type="text" value="${attr(value || '')}" style="flex:1 1 auto" placeholder="número">
+    </div></div>`;
+}
+
+// Para mostrar en el input solo el número, sin el prefijo "PRE-" ya
+// guardado (si el remito es viejo y no lo tenía, se muestra tal cual).
+function quitarPrefijoPresupuesto_(valor) {
+  return String(valor || '').replace(/^PRE-/i, '');
 }
 
 function hidden(name, value) {
