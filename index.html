@@ -1,348 +1,336 @@
 <!DOCTYPE html>
-<!-- BIOFIX_PANEL_V13_REMITO_DESDE_PRESUPUESTO -->
+<!-- BIOFIX_PANEL_V14_SIN_PRESUPUESTO -->
 <html lang="es">
-  <head>
-    <base target="_top">
-    <meta charset="UTF-8">
-    <style>
-  :root {
-    --petrol: #061a24;
-    --petrol-hover: #0b2632;
-    --red: #c8162e;
-    --red-hover: #a91227;
-    --ink: #1b2a30;
-    --muted: #6d7c82;
-    --line: #dce4e7;
-    --line-soft: #e8eef0;
-    --bg: #f4f7f8;
-    --surface: #fff;
-    --blue-soft: #eaf3ff;
-    --blue: #2366b1;
-    --red-soft: #fce9ec;
-    --green-soft: #e9f6ef;
-    --green: #247a56;
-  }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; min-height: 100%; }
-  body { color: var(--ink); background: var(--bg); font-family: Inter, "Segoe UI", Arial, sans-serif; -webkit-font-smoothing: antialiased; }
-  button, input, select, textarea { font: inherit; }
-  button { cursor: pointer; }
-  h1, h2, h3, p { margin-top: 0; }
-  .brandbar {
-    height: 72px; padding: 0 36px; color: #fff; background: var(--petrol);
-    display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(3,21,29,.18);
-  }
-  .brand { display: flex; align-items: center; gap: 7px; font-size: 19px; }
-  .brand strong { font-weight: 750; }
-  .brand span { font-weight: 400; }
-  .brand-mark { width: 36px; height: 36px; margin-right: 7px; border: 1px solid #fff; border-radius: 9px; display: grid; place-items: center; font-size: 13px; font-weight: 850; }
-  .profile { display: flex; align-items: center; gap: 9px; font-size: 14px; font-weight: 600; }
-  .profile-icon { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: #fff; color: var(--petrol); font-size: 13px; }
-  .module-nav {
-    height: 56px; padding: 0 28px; background: #fff; border-bottom: 1px solid var(--line);
-    display: flex; align-items: stretch; gap: 2px; overflow-x: auto; scrollbar-width: thin;
-  }
-  .nav-item {
-    flex: 0 0 auto; min-width: max-content; padding: 0 19px; border: 0; border-bottom: 4px solid transparent;
-    color: #31434a; background: transparent; font-size: 14px; font-weight: 550; transition: 160ms ease-out;
-  }
-  .nav-item:hover { background: #f7f9fa; }
-  .nav-item.active { color: var(--ink); border-bottom-color: var(--red); font-weight: 700; }
-  .main { width: min(100%, 1440px); margin: 0 auto; }
-  .page-header { min-height: 144px; padding: 36px 36px 24px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
-  .eyebrow { margin-bottom: 7px; color: var(--red); font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
-  h1 { margin-bottom: 7px; font-size: clamp(25px, 3vw, 32px); line-height: 1.15; letter-spacing: -.035em; }
-  h2 { margin-bottom: 0; font-size: 22px; letter-spacing: -.025em; }
-  h3 { margin-bottom: 0; font-size: 18px; }
-  .page-subtitle, .today { margin-bottom: 0; color: var(--muted); font-size: 14px; }
-  .header-actions { display: flex; align-items: center; gap: 16px; }
-  .primary-button, .secondary-button, .ghost-button, .danger-button, .icon-button {
-    min-height: 44px; border: 0; border-radius: 8px; font-weight: 700; transition: 160ms ease-out;
-  }
-  .primary-button { padding: 0 20px; color: #fff; background: var(--red); box-shadow: 0 6px 14px rgba(200,22,46,.16); }
-  .primary-button:hover { background: var(--red-hover); transform: translateY(-1px); }
-  .secondary-button { padding: 0 16px; color: var(--petrol); background: #e9f0f2; }
-  .ghost-button { min-height: 36px; padding: 0 10px; color: var(--petrol); background: transparent; }
-  .ghost-button:hover { background: #f1f5f6; }
-  .danger-button { padding: 0 16px; color: var(--red); background: var(--red-soft); }
-  .icon-button { width: 40px; color: var(--muted); background: #eef3f4; font-size: 22px; }
-  button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid rgba(200,22,46,.22); outline-offset: 2px; }
-  .content { padding: 0 36px 44px; }
-  .metric-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 18px; }
-  .metric-card, .panel, .loading-card, .inventory-card { background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 2px 7px rgba(6,26,36,.05); }
-  .metric-card { min-height: 132px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; }
-  .metric-label { color: var(--muted); font-size: 13px; font-weight: 650; }
-  .metric-value { font-size: 30px; line-height: 1; font-weight: 780; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
-  .metric-card.urgent { border-color: #efc8cf; }
-  .metric-card.urgent .metric-value { color: var(--red); }
-  .dashboard-grid { display: grid; grid-template-columns: 7fr 5fr; gap: 20px; margin-top: 20px; }
-  .panel { padding: 26px; }
-  .panel-header, .view-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 17px; }
-  .task-list { display: grid; }
-  .task-row { min-height: 64px; padding: 10px 4px; border-top: 1px solid var(--line-soft); display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 14px; }
-  .task-row:first-child { border-top: 0; }
-  .task-row strong { display: block; margin-bottom: 3px; font-size: 14px; }
-  .task-row small { color: var(--muted); }
-  .quick-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-  .quick-action { min-height: 75px; padding: 15px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: #fff; text-align: left; font-weight: 650; transition: 160ms ease-out; }
-  .quick-action:hover { border-color: #b8c7cc; background: #f8fafb; transform: translateY(-1px); }
-  .quick-action small { display: block; margin-top: 5px; color: var(--muted); font-weight: 450; }
-  .view-toolbar { margin-bottom: 14px; }
-  .search { width: min(420px, 100%); height: 44px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: #fff; }
-  .table-wrap { overflow: auto; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
-  table { width: 100%; border-collapse: collapse; min-width: 850px; }
-  th { padding: 13px 14px; color: var(--muted); background: #f8fafb; border-bottom: 1px solid var(--line); text-align: left; font-size: 11px; font-weight: 750; letter-spacing: .05em; text-transform: uppercase; }
-  td { padding: 13px 14px; border-bottom: 1px solid var(--line-soft); font-size: 13px; vertical-align: middle; }
-  tr:last-child td { border-bottom: 0; }
-  tbody tr:hover td { background: #fafcfc; }
-  .row-actions { display: flex; gap: 4px; white-space: nowrap; }
-  .amount { font-weight: 750; font-variant-numeric: tabular-nums; }
-  .pill { display: inline-flex; align-items: center; min-height: 25px; padding: 0 9px; border-radius: 5px; color: var(--blue); background: var(--blue-soft); font-size: 11px; font-weight: 700; }
-  .pill.warning { color: var(--red); background: var(--red-soft); }
-  .pill.success { color: var(--green); background: var(--green-soft); }
-  .pill.neutral { color: #536168; background: #f0f2f3; }
-  .empty-state { padding: 48px 20px; color: var(--muted); text-align: center; }
-  .empty-state strong { display: block; margin-bottom: 6px; color: var(--ink); }
-  .inventory-card { min-height: 260px; padding: 32px; display: grid; place-items: center; text-align: center; }
-  .inventory-card p { max-width: 520px; margin: 10px auto 0; color: var(--muted); }
-  .modal-backdrop { position: fixed; inset: 0; z-index: 100; padding: 24px; background: rgba(3,17,22,.62); display: grid; place-items: center; backdrop-filter: blur(5px); }
-  .modal { width: min(1040px, 100%); max-height: calc(100vh - 48px); overflow: auto; border-radius: 14px; background: #fff; box-shadow: 0 28px 80px rgba(0,0,0,.25); }
-  .modal-header { padding: 23px 26px 18px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 18px; }
-  .form-grid { padding: 22px 26px 26px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
-  .field { display: grid; gap: 7px; }
-  .field.full { grid-column: 1 / -1; }
-  .field label { color: #4f5d62; font-size: 12px; font-weight: 750; }
-  .field input, .field select, .field textarea { width: 100%; min-height: 43px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: #fff; }
-  .field textarea { min-height: 86px; resize: vertical; }
-  .form-actions { grid-column: 1 / -1; padding-top: 8px; display: flex; justify-content: flex-end; gap: 9px; }
-  .line-items { grid-column: 1 / -1; display: grid; gap: 9px; }
-  .line-item { display: grid; grid-template-columns: 1fr 105px 130px 44px; gap: 8px; align-items: end; padding: 12px; border: 1px solid var(--line-soft); border-radius: 9px; background: #fbfcfc; }
-  .line-item.remit { grid-template-columns: 1fr 90px 190px 44px; }
-  /* Presupuesto: Producto ocupa todo el renglón de arriba (budget-producto,
-     grid-column 1/-1) y abajo van Cantidad + Precio + Lote (3 columnas
-     iguales) + el botón de quitar (44px) — mismo patrón que .line-item.remit. */
-  .line-item.budget { grid-template-columns: repeat(3, 1fr) 44px; }
-  .line-item.budget .field.budget-producto { grid-column: 1 / -1; }
-  .section-label { grid-column: 1 / -1; margin: 5px 0 -3px; font-size: 14px; font-weight: 800; }
-  .toast { position: fixed; top: 88px; right: 24px; z-index: 120; max-width: 360px; padding: 13px 16px; border-radius: 8px; color: #fff; background: var(--petrol); box-shadow: 0 12px 34px rgba(6,26,36,.20); font-size: 13px; font-weight: 700; }
-  .toast.error { background: var(--red-hover); }
-  .loading-card { min-height: 270px; display: grid; place-items: center; align-content: center; color: var(--muted); }
-  .spinner { width: 34px; height: 34px; border: 3px solid #dce7e9; border-top-color: var(--petrol); border-radius: 50%; animation: spin .8s linear infinite; }
-  .loading-card p { margin: 13px 0 0; }
-  .hidden { display: none !important; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  @media (max-width: 1120px) {
-    .metric-grid { grid-template-columns: repeat(2, 1fr); }
-    .dashboard-grid { grid-template-columns: 1fr; }
-  }
-  @media (max-width: 720px) {
-    .brandbar { padding: 0 18px; }
-    .profile { font-size: 0; }
-    .module-nav { padding: 0 8px; }
-    .nav-item { padding: 0 14px; }
-    .page-header { padding: 26px 17px 20px; align-items: flex-start; flex-direction: column; }
-    .header-actions { width: 100%; justify-content: space-between; }
-    .content { padding: 0 16px 32px; }
-    .metric-grid { grid-template-columns: 1fr; }
-    .quick-grid { grid-template-columns: 1fr; }
-    .form-grid { grid-template-columns: 1fr; padding: 19px; }
-    .field.full, .form-actions, .line-items, .section-label { grid-column: auto; }
-    .line-item, .line-item.remit, .line-item.budget { grid-template-columns: 1fr; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
-  }
+<head>
+<base target="_top">
+<meta charset="UTF-8">
+<style>
+:root {
+  --petrol: #061a24;
+  --petrol-hover: #0b2632;
+  --red: #c8162e;
+  --red-hover: #a91227;
+  --ink: #1b2a30;
+  --muted: #6d7c82;
+  --line: #dce4e7;
+  --line-soft: #e8eef0;
+  --bg: #f4f7f8;
+  --surface: #fff;
+  --blue-soft: #eaf3ff;
+  --blue: #2366b1;
+  --red-soft: #fce9ec;
+  --green-soft: #e9f6ef;
+  --green: #247a56;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body { color: var(--ink); background: var(--bg); font-family: Inter, "Segoe UI", Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+button, input, select, textarea { font: inherit; }
+button { cursor: pointer; }
+h1, h2, h3, p { margin-top: 0; }
+.brandbar { height: 72px; padding: 0 36px; color: #fff; background: var(--petrol); display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(3,21,29,.18); }
+.brand { display: flex; align-items: center; gap: 7px; font-size: 19px; }
+.brand strong { font-weight: 750; }
+.brand span { font-weight: 400; }
+.brand-mark { width: 36px; height: 36px; margin-right: 7px; border: 1px solid #fff; border-radius: 9px; display: grid; place-items: center; font-size: 13px; font-weight: 850; }
+.profile { display: flex; align-items: center; gap: 9px; font-size: 14px; font-weight: 600; }
+.profile-icon { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: #fff; color: var(--petrol); font-size: 13px; }
+.module-nav { height: 56px; padding: 0 28px; background: #fff; border-bottom: 1px solid var(--line); display: flex; align-items: stretch; gap: 2px; overflow-x: auto; scrollbar-width: thin; }
+.nav-item { flex: 0 0 auto; min-width: max-content; padding: 0 19px; border: 0; border-bottom: 4px solid transparent; color: #31434a; background: transparent; font-size: 14px; font-weight: 550; transition: 160ms ease-out; }
+.nav-item:hover { background: #f7f9fa; }
+.nav-item.active { color: var(--ink); border-bottom-color: var(--red); font-weight: 700; }
+.main { width: min(100%, 1440px); margin: 0 auto; }
+.page-header { min-height: 144px; padding: 36px 36px 24px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.eyebrow { margin-bottom: 7px; color: var(--red); font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+h1 { margin-bottom: 7px; font-size: clamp(25px, 3vw, 32px); line-height: 1.15; letter-spacing: -.035em; }
+h2 { margin-bottom: 0; font-size: 22px; letter-spacing: -.025em; }
+h3 { margin-bottom: 0; font-size: 18px; }
+.page-subtitle, .today { margin-bottom: 0; color: var(--muted); font-size: 14px; }
+.header-actions { display: flex; align-items: center; gap: 16px; }
+.primary-button, .secondary-button, .ghost-button, .danger-button, .icon-button { min-height: 44px; border: 0; border-radius: 8px; font-weight: 700; transition: 160ms ease-out; }
+.primary-button { padding: 0 20px; color: #fff; background: var(--red); box-shadow: 0 6px 14px rgba(200,22,46,.16); }
+.primary-button:hover { background: var(--red-hover); transform: translateY(-1px); }
+.secondary-button { padding: 0 16px; color: var(--petrol); background: #e9f0f2; }
+.ghost-button { min-height: 36px; padding: 0 10px; color: var(--petrol); background: transparent; }
+.ghost-button:hover { background: #f1f5f6; }
+.danger-button { padding: 0 16px; color: var(--red); background: var(--red-soft); }
+.icon-button { width: 40px; color: var(--muted); background: #eef3f4; font-size: 22px; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid rgba(200,22,46,.22); outline-offset: 2px; }
+.content { padding: 0 36px 44px; }
+.metric-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 18px; }
+.metric-card, .panel, .loading-card, .inventory-card { background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 2px 7px rgba(6,26,36,.05); }
+.metric-card { min-height: 132px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; }
+.metric-label { color: var(--muted); font-size: 13px; font-weight: 650; }
+.metric-value { font-size: 30px; line-height: 1; font-weight: 780; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+.metric-card.urgent { border-color: #efc8cf; }
+.metric-card.urgent .metric-value { color: var(--red); }
+.dashboard-grid { display: grid; grid-template-columns: 7fr 5fr; gap: 20px; margin-top: 20px; }
+.panel { padding: 26px; }
+.panel-header, .view-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 17px; }
+.task-list { display: grid; }
+.task-row { min-height: 64px; padding: 10px 4px; border-top: 1px solid var(--line-soft); display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 14px; }
+.task-row:first-child { border-top: 0; }
+.task-row strong { display: block; margin-bottom: 3px; font-size: 14px; }
+.task-row small { color: var(--muted); }
+.quick-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.quick-action { min-height: 75px; padding: 15px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: #fff; text-align: left; font-weight: 650; transition: 160ms ease-out; }
+.quick-action:hover { border-color: #b8c7cc; background: #f8fafb; transform: translateY(-1px); }
+.quick-action small { display: block; margin-top: 5px; color: var(--muted); font-weight: 450; }
+.view-toolbar { margin-bottom: 14px; }
+.search { width: min(420px, 100%); height: 44px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: #fff; }
+.table-wrap { overflow: auto; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+table { width: 100%; border-collapse: collapse; min-width: 850px; }
+th { padding: 13px 14px; color: var(--muted); background: #f8fafb; border-bottom: 1px solid var(--line); text-align: left; font-size: 11px; font-weight: 750; letter-spacing: .05em; text-transform: uppercase; }
+td { padding: 13px 14px; border-bottom: 1px solid var(--line-soft); font-size: 13px; vertical-align: middle; }
+tr:last-child td { border-bottom: 0; }
+tbody tr:hover td { background: #fafcfc; }
+.row-actions { display: flex; gap: 4px; white-space: nowrap; }
+.amount { font-weight: 750; font-variant-numeric: tabular-nums; }
+.pill { display: inline-flex; align-items: center; min-height: 25px; padding: 0 9px; border-radius: 5px; color: var(--blue); background: var(--blue-soft); font-size: 11px; font-weight: 700; }
+.pill.warning { color: var(--red); background: var(--red-soft); }
+.pill.success { color: var(--green); background: var(--green-soft); }
+.pill.neutral { color: #536168; background: #f0f2f3; }
+.empty-state { padding: 48px 20px; color: var(--muted); text-align: center; }
+.empty-state strong { display: block; margin-bottom: 6px; color: var(--ink); }
+.inventory-card { min-height: 260px; padding: 32px; display: grid; place-items: center; text-align: center; }
+.inventory-card p { max-width: 520px; margin: 10px auto 0; color: var(--muted); }
+.modal-backdrop { position: fixed; inset: 0; z-index: 100; padding: 24px; background: rgba(3,17,22,.62); display: grid; place-items: center; backdrop-filter: blur(5px); }
+.modal { width: min(1040px, 100%); max-height: calc(100vh - 48px); overflow: auto; border-radius: 14px; background: #fff; box-shadow: 0 28px 80px rgba(0,0,0,.25); }
+.modal-header { padding: 23px 26px 18px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+.form-grid { padding: 22px 26px 26px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+.field { display: grid; gap: 7px; }
+.field.full { grid-column: 1 / -1; }
+.field label { color: #4f5d62; font-size: 12px; font-weight: 750; }
+.field input, .field select, .field textarea { width: 100%; min-height: 43px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: #fff; }
+.field textarea { min-height: 86px; resize: vertical; }
+.form-actions { grid-column: 1 / -1; padding-top: 8px; display: flex; justify-content: flex-end; gap: 9px; }
+.line-items { grid-column: 1 / -1; display: grid; gap: 9px; }
+.line-item { display: grid; grid-template-columns: 1fr 105px 130px 44px; gap: 8px; align-items: end; padding: 12px; border: 1px solid var(--line-soft); border-radius: 9px; background: #fbfcfc; }
+.line-item.remit { grid-template-columns: 1fr 90px 190px 44px; }
+.section-label { grid-column: 1 / -1; margin: 5px 0 -3px; font-size: 14px; font-weight: 800; }
+.toast { position: fixed; top: 88px; right: 24px; z-index: 120; max-width: 360px; padding: 13px 16px; border-radius: 8px; color: #fff; background: var(--petrol); box-shadow: 0 12px 34px rgba(6,26,36,.20); font-size: 13px; font-weight: 700; }
+.toast.error { background: var(--red-hover); }
+.loading-card { min-height: 270px; display: grid; place-items: center; align-content: center; color: var(--muted); }
+.spinner { width: 34px; height: 34px; border: 3px solid #dce7e9; border-top-color: var(--petrol); border-radius: 50%; animation: spin .8s linear infinite; }
+.loading-card p { margin: 13px 0 0; }
+.hidden { display: none !important; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (max-width: 1120px) {
+  .metric-grid { grid-template-columns: repeat(2, 1fr); }
+  .dashboard-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 720px) {
+  .brandbar { padding: 0 18px; }
+  .profile { font-size: 0; }
+  .module-nav { padding: 0 8px; }
+  .nav-item { padding: 0 14px; }
+  .page-header { padding: 26px 17px 20px; align-items: flex-start; flex-direction: column; }
+  .header-actions { width: 100%; justify-content: space-between; }
+  .content { padding: 0 16px 32px; }
+  .metric-grid { grid-template-columns: 1fr; }
+  .quick-grid { grid-template-columns: 1fr; }
+  .form-grid { grid-template-columns: 1fr; padding: 19px; }
+  .field.full, .form-actions, .line-items, .section-label { grid-column: auto; }
+  .line-item, .line-item.remit { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
 </style>
-  </head>
-  <body>
-    <header class="brandbar">
-      <div class="brand">
-        <div class="brand-mark">BF</div>
-        <strong>Bio-Fix</strong><span>Gestión</span>
-      </div>
-      <div class="profile"><span class="profile-icon">●</span> Administración</div>
-    </header>
-    <nav class="module-nav" aria-label="Módulos">
-      <button class="nav-item active" data-view="inicio">Inicio</button>
-      <button class="nav-item" data-view="clientes">Clientes</button>
-      <button class="nav-item" data-view="pedidos">Pedidos</button>
-      <button class="nav-item" data-view="presupuestos">Presupuestos</button>
-      <button class="nav-item" data-view="remitos">Remitos</button>
-      <button class="nav-item" data-view="productos">Productos pedidos/remitos</button>
-      <button class="nav-item" data-view="inventario">Inventario</button>
-    </nav>
-    <main class="main">
-      <header class="page-header">
-        <div>
-          <p class="eyebrow">Bio-Fix · Administración</p>
-          <h1 id="pageTitle">Buen día, Administración</h1>
-          <p class="page-subtitle" id="pageSubtitle">Resumen de hoy</p>
-        </div>
-        <div class="header-actions">
-          <span class="today" id="today"></span>
-          <button class="primary-button" id="newButton">＋ Nuevo pedido</button>
-        </div>
-      </header>
-      <section id="appContent" class="content">
-        <div class="loading-card"><div class="spinner"></div><p>Cargando gestión Bio-Fix…</p></div>
-      </section>
-    </main>
-    <div class="modal-backdrop hidden" id="modalBackdrop">
-      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-        <header class="modal-header">
-          <div>
-            <p class="eyebrow" id="modalEyebrow">Nuevo registro</p>
-            <h2 id="modalTitle">Cargar información</h2>
-          </div>
-          <button class="icon-button" id="closeModal" aria-label="Cerrar">×</button>
-        </header>
-        <div id="modalContent"></div>
-      </section>
+</head>
+<body>
+<header class="brandbar">
+  <div class="brand">
+    <div class="brand-mark">BF</div>
+    <strong>Bio-Fix</strong><span>Gestión</span>
+  </div>
+  <div class="profile"><span class="profile-icon">●</span> Administración</div>
+</header>
+
+<nav class="module-nav" aria-label="Módulos">
+  <button class="nav-item active" data-view="inicio">Inicio</button>
+  <button class="nav-item" data-view="clientes">Clientes</button>
+  <button class="nav-item" data-view="pedidos">Pedidos</button>
+  <button class="nav-item" data-view="remitos">Remitos</button>
+  <button class="nav-item" data-view="productos">Productos pedidos/remitos</button>
+  <button class="nav-item" data-view="inventario">Inventario</button>
+</nav>
+
+<main class="main">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Bio-Fix · Administración</p>
+      <h1 id="pageTitle">Buen día, Administración</h1>
+      <p class="page-subtitle" id="pageSubtitle">Resumen de hoy</p>
     </div>
-    <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
-    <script>
-  var URL_API = 'https://script.google.com/macros/s/AKfycby9s1diT1eFqUePkmGdMWhnNw2H6jooClDuAw67V1my0LUSFBroh2p0WMNLJxsBEB_J/exec';
-  const state = {
-    view: 'inicio',
-    bootstrap: null,
-    products: [],
-    clients: [],
-    records: {},
-    currentOrder: null
-  };
-  const views = {
-    clientes: { title: 'Clientes', singular: 'cliente', columns: ['Cliente ID', 'Nombre completo', 'CUIL', 'Matrícula profesional', 'Localidad', 'Provincia', 'Estado'] },
-    productos: { title: 'Productos para pedidos y remitos', singular: 'producto detallado', columns: ['Producto', 'Categoría', 'Sistema', 'Precio', 'Activo'] },
-    pedidos: { title: 'Pedidos', singular: 'pedido', columns: ['Pedido ID', 'Fecha y hora', 'Cliente', 'Vendedor', 'Cantidad total', 'Forma de entrega', 'Estado'] },
-    presupuestos: { title: 'Presupuestos', singular: 'presupuesto', columns: ['Presupuesto ID', 'Fecha', 'Pedido ID', 'Cliente', 'Total', 'Estado'] },
-    remitos: { title: 'Remitos', singular: 'remito', columns: ['Remito ID', 'Fecha', 'Pedido ID', 'Cliente', 'Numero de Remito Via Cargo', 'Seguimiento', 'Estado', 'Origen', 'Revisión'] },
-  };
-  document.addEventListener('DOMContentLoaded', function () {
-    bindShell();
-    init();
+    <div class="header-actions">
+      <span class="today" id="today"></span>
+      <button class="primary-button" id="newButton">＋ Nuevo pedido</button>
+    </div>
+  </header>
+
+  <section id="appContent" class="content">
+    <div class="loading-card"><div class="spinner"></div><p>Cargando gestión Bio-Fix…</p></div>
+  </section>
+</main>
+
+<div class="modal-backdrop hidden" id="modalBackdrop">
+  <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <header class="modal-header">
+      <div>
+        <p class="eyebrow" id="modalEyebrow">Nuevo registro</p>
+        <h2 id="modalTitle">Cargar información</h2>
+      </div>
+      <button class="icon-button" id="closeModal" aria-label="Cerrar">×</button>
+    </header>
+    <div id="modalContent"></div>
+  </section>
+</div>
+
+<div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+<script>
+var URL_API = 'https://script.google.com/macros/s/AKfycby7-CqJqQ4331AColY2bKMhbdl7yh8uOum3jGnuJMQBKYOn8oko-TB8doz2E1PLwHe1/exec';
+
+const state = { view: 'inicio', bootstrap: null, products: [], clients: [], records: {}, currentOrder: null };
+
+const views = {
+  clientes: { title: 'Clientes', singular: 'cliente', columns: ['Cliente ID', 'Nombre completo', 'CUIL', 'Matrícula profesional', 'Localidad', 'Provincia', 'Estado'] },
+  productos: { title: 'Productos para pedidos y remitos', singular: 'producto detallado', columns: ['Producto', 'Categoría', 'Sistema', 'Precio', 'Activo'] },
+  pedidos: { title: 'Pedidos', singular: 'pedido', columns: ['Pedido ID', 'Fecha y hora', 'Cliente', 'Vendedor', 'Cantidad total', 'Forma de entrega', 'Estado'] },
+  remitos: { title: 'Remitos', singular: 'remito', columns: ['Remito ID', 'Fecha', 'Pedido ID', 'Cliente', 'Numero de Remito Via Cargo', 'Seguimiento', 'Estado', 'Origen', 'Revisión'] },
+};
+
+document.addEventListener('DOMContentLoaded', function () {
+  bindShell();
+  init();
+});
+
+function bindShell() {
+  document.querySelectorAll('.nav-item').forEach(function (button) {
+    button.addEventListener('click', function () { navigate(button.dataset.view); });
   });
-  function bindShell() {
-    document.querySelectorAll('.nav-item').forEach(function (button) {
-      button.addEventListener('click', function () { navigate(button.dataset.view); });
-    });
-    document.getElementById('newButton').addEventListener('click', handleNew);
-    document.getElementById('closeModal').addEventListener('click', closeModal);
-    document.getElementById('modalBackdrop').addEventListener('click', function (event) {
-      if (event.target === event.currentTarget) closeModal();
-    });
-    document.addEventListener('keydown', function (event) { if (event.key === 'Escape') closeModal(); });
-  }
-  function init() {
-    Promise.all([
-      server('getAdminBootstrap'),
-      server('getActiveProducts'),
-      server('listAdmin', 'clientes')
-    ]).then(function (results) {
-      state.bootstrap = results[0];
-      state.products = results[1];
-      state.clients = results[2];
-      document.getElementById('today').textContent = state.bootstrap.today;
-      renderCurrent();
-    }).catch(showError);
-  }
-  function refresh() {
-    return Promise.all([
-      server('getAdminBootstrap'),
-      server('getActiveProducts'),
-      server('listAdmin', 'clientes')
-    ]).then(function (results) {
-      state.bootstrap = results[0];
-      state.products = results[1];
-      state.clients = results[2];
-      renderCurrent();
-    });
-  }
-  function navigate(view) {
-    state.view = view;
-    document.querySelectorAll('.nav-item').forEach(function (button) {
-      button.classList.toggle('active', button.dataset.view === view);
-    });
+  document.getElementById('newButton').addEventListener('click', handleNew);
+  document.getElementById('closeModal').addEventListener('click', closeModal);
+  document.getElementById('modalBackdrop').addEventListener('click', function (event) {
+    if (event.target === event.currentTarget) closeModal();
+  });
+  document.addEventListener('keydown', function (event) { if (event.key === 'Escape') closeModal(); });
+}
+
+function init() {
+  Promise.all([
+    server('getAdminBootstrap'),
+    server('getActiveProducts'),
+    server('listAdmin', 'clientes')
+  ]).then(function (results) {
+    state.bootstrap = results[0];
+    state.products = results[1];
+    state.clients = results[2];
+    document.getElementById('today').textContent = state.bootstrap.today;
     renderCurrent();
-  }
-  function renderCurrent() {
-    if (!state.bootstrap) return;
-    const isHome = state.view === 'inicio';
-    const isInventory = state.view === 'inventario';
-    const meta = views[state.view];
-    document.getElementById('pageTitle').textContent = isHome ? 'Buen día, Administración' : isInventory ? 'Inventario' : meta.title;
-    document.getElementById('pageSubtitle').textContent = isHome ? 'Resumen de hoy' : isInventory ? 'Movimientos de stock' : 'Consulta y gestión de ' + meta.title.toLowerCase();
-    updateNewButton();
-    if (isHome) renderDashboard();
-    else if (isInventory) renderInventory();
-    else loadView(state.view);
-  }
-  function updateNewButton() {
-    const button = document.getElementById('newButton');
-    const labels = {
-      clientes: '＋ Nuevo cliente',
-      productos: '＋ Nuevo producto',
-      remitos: 'Ver presupuestos',
+  }).catch(showError);
+}
+
+function refresh() {
+  return Promise.all([
+    server('getAdminBootstrap'),
+    server('getActiveProducts'),
+    server('listAdmin', 'clientes')
+  ]).then(function (results) {
+    state.bootstrap = results[0];
+    state.products = results[1];
+    state.clients = results[2];
+    renderCurrent();
+  });
+}
+
+function navigate(view) {
+  state.view = view;
+  document.querySelectorAll('.nav-item').forEach(function (button) {
+    button.classList.toggle('active', button.dataset.view === view);
+  });
+  renderCurrent();
+}
+
+function renderCurrent() {
+  if (!state.bootstrap) return;
+  const isHome = state.view === 'inicio';
+  const isInventory = state.view === 'inventario';
+  const meta = views[state.view];
+  document.getElementById('pageTitle').textContent = isHome ? 'Buen día, Administración' : isInventory ? 'Inventario' : meta.title;
+  document.getElementById('pageSubtitle').textContent = isHome ? 'Resumen de hoy' : isInventory ? 'Movimientos de stock' : 'Consulta y gestión de ' + meta.title.toLowerCase();
+  updateNewButton();
+  if (isHome) renderDashboard();
+  else if (isInventory) renderInventory();
+  else loadView(state.view);
+}
+
+function updateNewButton() {
+  const button = document.getElementById('newButton');
+  const labels = {
+    clientes: '＋ Nuevo cliente',
+    productos: '＋ Nuevo producto',
+  };
+  // El botón rojo de arriba solo hace falta en Clientes y Productos: en
+  // Inicio el único acceso a "Nuevo pedido" queda en la tile de Accesos
+  // rápidos (redirige a Inventario › Apartado); Inventario, Pedidos y
+  // Remitos tienen sus propios botones/flujos (Apartado genera el remito
+  // solo, y desde un Pedido se genera con "Generar remito").
+  const oculto = ['inicio', 'inventario', 'pedidos', 'remitos'].includes(state.view);
+  button.classList.toggle('hidden', oculto);
+  button.textContent = labels[state.view] || '＋ Nuevo';
+}
+
+function handleNew() {
+  if (state.view === 'clientes') return openClientForm();
+  if (state.view === 'productos') return openProductForm();
+}
+
+function renderDashboard() {
+  const s = state.bootstrap.stats;
+  const tasks = state.bootstrap.recent || [];
+  document.getElementById('appContent').innerHTML = `
+    <section class="metric-grid">
+      ${metric('Pedidos recibidos', s.pedidosNuevos, s.pedidosNuevos > 0)}
+      ${metric('Remitos en borrador', s.remitosBorrador)}
+    </section>
+    <section class="dashboard-grid">
+      <article class="panel">
+        <div class="panel-header"><h3>Pedidos para revisar</h3><button class="ghost-button" data-go="pedidos">Ver todos</button></div>
+        <div class="task-list">
+          ${tasks.length ? tasks.map(function (r) {
+            return `<button class="task-row ghost-row" data-order="${attr(r['Pedido ID'])}">
+              <span><strong>${html(r['Cliente'])}</strong><small>${html(r['Pedido ID'])} · ${html(r['Fecha y hora'])}</small></span>
+              <span class="pill ${pillClass(r['Estado'])}">${html(r['Estado'])}</span>
+              <span>›</span>
+            </button>`;
+          }).join('') : empty('No hay pedidos pendientes.')}
+        </div>
+      </article>
+      <article class="panel">
+        <div class="panel-header"><h3>Accesos rápidos</h3></div>
+        <div class="quick-grid">
+          ${quick('cliente', 'Nuevo cliente', 'Registrar datos')}
+          ${quick('pedido', 'Nuevo pedido', 'Implantes: vía apartado en Inventario')}
+          ${quick('remitos', 'Remitos en borrador', 'Revisar, editar y emitir')}
+          ${quick('remitoManual', 'Emitir remito manual', 'Para un pedido sin apartado')}
+        </div>
+      </article>
+    </section>`;
+  document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => navigate(b.dataset.go));
+  document.querySelectorAll('[data-order]').forEach(b => b.onclick = () => openOrderById(b.dataset.order));
+  document.querySelectorAll('[data-quick]').forEach(function (b) {
+    b.onclick = function () {
+      const action = b.dataset.quick;
+      if (action === 'cliente') openClientForm();
+      if (action === 'pedido') { navigate('inventario'); invSetMov('apartado'); }
+      if (action === 'remitos') navigate('remitos');
+      if (action === 'remitoManual') navigate('pedidos');
     };
-    // El botón rojo de arriba se saca en: Inicio (el único acceso a "Nuevo
-    // pedido" queda en la tile de Accesos rápidos, que redirige a
-    // Inventario › Apartado), Inventario (tiene sus propios botones de
-    // movimiento), Presupuestos (ya tiene su propio botón "＋ Generar
-    // presupuesto" en la barra de la tabla) y Pedidos (los pedidos de
-    // implantes ya no se cargan a mano, salen del Apartado en Inventario).
-    const oculto = ['inicio', 'inventario', 'presupuestos', 'pedidos'].includes(state.view);
-    button.classList.toggle('hidden', oculto);
-    button.textContent = labels[state.view] || '＋ Nuevo';
-  }
-  function handleNew() {
-    if (state.view === 'clientes') return openClientForm();
-    if (state.view === 'productos') return openProductForm();
-    if (state.view === 'presupuestos') return openBudgetFromApartadoPicker();
-    if (state.view === 'remitos') return navigate('presupuestos');
-  }
-  function renderDashboard() {
-    const s = state.bootstrap.stats;
-    const tasks = state.bootstrap.recent || [];
-    document.getElementById('appContent').innerHTML = `
-      <section class="metric-grid">
-        ${metric('Pedidos recibidos', s.pedidosNuevos, s.pedidosNuevos > 0)}
-        ${metric('Presupuestos abiertos', s.presupuestosPendientes)}
-        ${metric('Remitos por emitir', s.remitosPendientes)}
-      </section>
-      <section class="dashboard-grid">
-        <article class="panel">
-          <div class="panel-header"><h3>Pedidos para revisar</h3><button class="ghost-button" data-go="pedidos">Ver todos</button></div>
-          <div class="task-list">
-            ${tasks.length ? tasks.map(function (r) {
-              return `<button class="task-row ghost-row" data-order="${attr(r['Pedido ID'])}">
-                <span><strong>${html(r['Cliente'])}</strong><small>${html(r['Pedido ID'])} · ${html(r['Fecha y hora'])}</small></span>
-                <span class="pill ${pillClass(r['Estado'])}">${html(r['Estado'])}</span>
-                <span>›</span>
-              </button>`;
-            }).join('') : empty('No hay pedidos pendientes.')}
-          </div>
-        </article>
-        <article class="panel">
-          <div class="panel-header"><h3>Accesos rápidos</h3></div>
-          <div class="quick-grid">
-            ${quick('cliente', 'Nuevo cliente', 'Registrar datos')}
-            ${quick('pedido', 'Nuevo pedido', 'Implantes: vía apartado en Inventario')}
-            ${quick('presupuesto', 'Crear presupuesto', 'Desde un pedido apartado')}
-            ${quick('remito', 'Emitir remito', 'Completar lotes')}
-          </div>
-        </article>
-      </section>`;
-    document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => navigate(b.dataset.go));
-    document.querySelectorAll('[data-order]').forEach(b => b.onclick = () => openOrderById(b.dataset.order));
-    document.querySelectorAll('[data-quick]').forEach(function (b) {
-      b.onclick = function () {
-        const action = b.dataset.quick;
-        if (action === 'cliente') openClientForm();
-        if (action === 'pedido') { navigate('inventario'); invSetMov('apartado'); }
-        if (action === 'presupuesto') openBudgetFromApartadoPicker();
-        if (action === 'remito') navigate('pedidos');
-      };
-    });
-  }
+  });
+}
+
 const STOCK_TIPOS = [
   { id: 'MP', nombre: 'Monopieza (MP)' },
   { id: 'HI', nombre: 'Hexágono Interno Montado - sin tetón (HI)' },
@@ -354,7 +342,9 @@ const STOCK_TIPOS = [
   { id: 'MBT', nombre: 'Monopieza Basal Tratado (MBT)' },
   { id: 'MBP', nombre: 'Monopieza Basal Pulido (MBP)' }
 ];
+
 const inv = { mov: 'deposito', stock: {}, medidas: {}, stockCargado: false, carrito: [], stockMax: 0 };
+
 function renderInventory() {
   document.getElementById('appContent').innerHTML = `
     <article class="panel">
@@ -373,19 +363,19 @@ function renderInventory() {
           <div id="invApartadosPendientesBox"></div>
         </div>
         <div id="invManualEntryWrap" style="display:contents">
-        <div class="field"><label>Tipo de implante</label>
-          <select id="invTipo"><option value="">— Seleccioná —</option>${STOCK_TIPOS.map(t => `<option value="${t.id}">${html(t.nombre)}</option>`).join('')}</select>
-        </div>
-        <div class="field"><label>Medida</label><select id="invMedida"><option value="">— Elegí tipo primero —</option></select></div>
-        <div class="field hidden" id="invLoteSelectWrap">
-          <label>Lote</label><select id="invLote"><option value="">—</option></select><small id="invStockHint"></small>
-        </div>
-        <div class="field hidden" id="invLoteTextoWrap">
-          <label>Lote</label><input type="text" id="invLoteTexto" placeholder="Ej: Lot-MP-0185">
-          <small>Un mismo lote se puede repetir en varias medidas: escribilo una vez, agregá cada medida con su cantidad y quedan todas bajo ese lote. Si ya existe, se suma la cantidad; si no existe, se crea nuevo.</small>
-        </div>
-        <div class="field"><label>Cantidad</label><input type="number" id="invCantidad" min="1"></div>
-        <button type="button" class="secondary-button hidden" id="invAddItem">＋ Agregar</button>
+          <div class="field"><label>Tipo de implante</label>
+            <select id="invTipo"><option value="">— Seleccioná —</option>${STOCK_TIPOS.map(t => `<option value="${t.id}">${html(t.nombre)}</option>`).join('')}</select>
+          </div>
+          <div class="field"><label>Medida</label><select id="invMedida"><option value="">— Elegí tipo primero —</option></select></div>
+          <div class="field hidden" id="invLoteSelectWrap">
+            <label>Lote</label><select id="invLote"><option value="">—</option></select><small id="invStockHint"></small>
+          </div>
+          <div class="field hidden" id="invLoteTextoWrap">
+            <label>Lote</label><input type="text" id="invLoteTexto" placeholder="Ej: Lot-MP-0185">
+            <small>Un mismo lote se puede repetir en varias medidas: escribilo una vez, agregá cada medida con su cantidad y quedan todas bajo ese lote. Si ya existe, se suma la cantidad; si no existe, se crea nuevo.</small>
+          </div>
+          <div class="field"><label>Cantidad</label><input type="number" id="invCantidad" min="1"></div>
+          <button type="button" class="secondary-button hidden" id="invAddItem">＋ Agregar</button>
         </div>
         <div class="field full hidden" id="invCartWrap">
           <p class="section-label" id="invCartLabel">Ítems</p>
@@ -394,12 +384,12 @@ function renderInventory() {
         <div class="field full hidden" id="invClienteWrap">
           <p class="section-label">Cliente</p>
           <div class="field full">
-          <div id="invApartadoBox" class="field full hidden" style="padding:10px;border:1px solid var(--line);border-radius:8px;background:#fbfcfc"></div>
+            <div id="invApartadoBox" class="field full hidden" style="padding:10px;border:1px solid var(--line);border-radius:8px;background:#fbfcfc"></div>
             <label>Buscar cliente</label>
             <input type="text" id="invClienteBuscar" placeholder="Escribí nombre, CUIL o localidad…" autocomplete="off">
             <input type="hidden" id="invClienteId" value="">
-<div id="invClienteResultados" class="table-wrap hidden" style="max-height:230px;overflow:auto;margin-top:6px"></div>
-</div>
+            <div id="invClienteResultados" class="table-wrap hidden" style="max-height:230px;overflow:auto;margin-top:6px"></div>
+          </div>
           <div class="form-grid" style="padding:0;margin-top:8px" id="invClienteNuevoFields">
             <div class="field"><label>Nombre</label><input id="invNombre"></div>
             <div class="field"><label>Apellido</label><input id="invApellido"></div>
@@ -423,6 +413,7 @@ function renderInventory() {
   document.getElementById('invClienteBuscar').oninput = invClienteBuscarInput;
   document.addEventListener('click', invClienteClickAfuera);
 }
+
 // Reinicia TODO el formulario al cambiar de modo, para que nada se traslade entre pestañas
 function invSetMov(mov) {
   inv.mov = mov;
@@ -441,9 +432,6 @@ function invSetMov(mov) {
   document.getElementById('invStockHint').textContent = '';
   document.getElementById('invLoteSelectWrap').classList.toggle('hidden', mov === 'deposito');
   document.getElementById('invLoteTextoWrap').classList.toggle('hidden', mov !== 'deposito');
-  // Depósito ahora también usa carrito: un mismo tipo + lote puede cargar
-  // varias medidas, cada una con su propia cantidad, en una sola operación.
-  // El cliente solo aplica a Salida/Apartado, nunca a Depósito.
   const usaCarrito = (mov === 'salida' || mov === 'apartado' || mov === 'deposito');
   document.getElementById('invAddItem').classList.toggle('hidden', !usaCarrito);
   document.getElementById('invCartWrap').classList.toggle('hidden', !usaCarrito);
@@ -454,41 +442,42 @@ function invSetMov(mov) {
   document.getElementById('invClienteResultados').classList.add('hidden');
   invClienteLimpiarCampos();
   inv.apartadoActivo = null;
-inv.usandoApartado = false;
-inv.pedidoPresupuestado = null;
-document.getElementById('invApartadoBox').classList.add('hidden');
+  inv.usandoApartado = false;
+  inv.pedidoConRemito = null;
+  document.getElementById('invApartadoBox').classList.add('hidden');
   invToggleManualVentaUI_(true); // vuelve a mostrar la carga manual al cambiar de pestaña
-  const labels = { deposito: 'Registrar movimiento', salida: 'Registrar venta y generar remito', apartado: 'Registrar apartado y generar presupuesto' };
+  const labels = {
+    deposito: 'Registrar movimiento',
+    salida: 'Registrar venta y generar remito',
+    apartado: 'Registrar apartado y generar remito'
+  };
   document.getElementById('invSubmit').textContent = labels[mov];
   invRenderCarrito();
   // Lista de apartados pendientes: en Salida sirve para elegir directo el
   // cliente que ya tiene algo apartado (sin tener que buscarlo a mano), y
-  // en Apartado sirve para reabrir/editar/imprimir el presupuesto de uno
-  // ya cargado.
+  // en Apartado sirve para reabrir/editar/emitir el remito de uno ya cargado.
   const mostrarPendientes = (mov === 'salida' || mov === 'apartado');
   document.getElementById('invApartadosPendientesWrap').classList.toggle('hidden', !mostrarPendientes);
   document.getElementById('invApartadosPendientesLabel').textContent = mov === 'apartado'
-    ? 'Apartados pendientes — tocá uno para editarlo o imprimirlo'
+    ? 'Apartados pendientes — tocá uno para editar o emitir su remito'
     : 'Apartados pendientes — tocá uno para cargarlo a la venta';
   if (mostrarPendientes) invRenderApartadosPendientes();
 }
-// En Salida (venta), cuando el cliente elegido ya tiene presupuesto, la
-// única forma de vender es el botón de siempre ("Registrar venta y generar
-// remito") — se oculta la carga manual (tipo/medida/lote/cantidad + su
-// botón de "＋ Agregar") para que no queden dos opciones juntas, pero el
-// botón de abajo se deja visible y pasa a emitir el remito de ese
-// presupuesto (los ítems ya se muestran arriba, cargados solos). Cuando el
-// remito ya se emitió no queda nada para registrar, así que ahí se oculta
-// también el botón de abajo. Se vuelve a mostrar todo apenas se cambia de
-// cliente/pestaña o el cliente no tiene presupuesto todavía.
+
+// En Salida (venta), cuando el cliente elegido ya tiene un remito, la única
+// forma de vender es revisarlo/emitirlo desde ahí — se oculta la carga
+// manual (tipo/medida/lote/cantidad + su botón de "＋ Agregar") para que no
+// queden dos opciones juntas. Se vuelve a mostrar todo apenas se cambia de
+// cliente/pestaña o el cliente no tiene remito todavía.
 function invToggleManualVentaUI_(mostrarManual, mostrarSubmit) {
   if (mostrarSubmit === undefined) mostrarSubmit = mostrarManual;
   document.getElementById('invManualEntryWrap').classList.toggle('hidden', !mostrarManual);
   document.getElementById('invSubmitWrap').classList.toggle('hidden', !mostrarSubmit);
 }
+
 // Lista todos los clientes con ítems apartados activos ahora mismo (sea o
-// no que ya tengan Pedido/Presupuesto generado), para no tener que buscar
-// cliente por cliente.
+// no que ya tengan Remito generado), para no tener que buscar cliente por
+// cliente.
 function invRenderApartadosPendientes() {
   const box = document.getElementById('invApartadosPendientesBox');
   box.innerHTML = '<p class="helper">Buscando apartados pendientes…</p>';
@@ -498,12 +487,8 @@ function invRenderApartadosPendientes() {
       box.innerHTML = '<p class="helper">No se pudo cargar la lista de apartados pendientes.</p>';
       return;
     }
-    // "Presupuestado" es el estado normal acá — apenas se aparta, el
-    // presupuesto se genera solo, así que casi todo lo que aparece en esta
-    // lista ya lo va a tener. Eso está bien: tocar el cliente lleva
-    // directo a emitir el remito con ese presupuesto. Lo que sí hay que
-    // sacar de "pendiente" es lo que YA se remitió/vendió (el remito ya se
-    // emitió, no tiene sentido ofrecerlo de nuevo acá).
+    // Lo que YA se remitió/vendió (el remito ya se emitió) se saca de
+    // "pendiente" — no tiene sentido ofrecerlo de nuevo acá.
     server('listAdmin', 'pedidos').then(function (pedidos) {
       const clientesYaRemitidos = new Set(
         pedidos.filter(p => ['Remitido', 'Vendido'].includes(p['Estado'])).map(p => p['Cliente ID'])
@@ -513,48 +498,42 @@ function invRenderApartadosPendientes() {
         .filter(p => !clientesYaRemitidos.has(p.clienteId));
       renderApartadosPendientesLista_(box, grupos);
     }).catch(function () {
-      // Si no se pudo traer Pedidos, mejor mostrar la lista sin filtrar
-      // que dejar la pantalla en blanco.
       renderApartadosPendientesLista_(box, (data.profesionales || []).filter(p => p.items && p.items.length));
     });
   });
 }
+
 function renderApartadosPendientesLista_(box, grupos) {
-    if (!grupos.length) {
-      box.innerHTML = '<p class="helper">No hay apartados pendientes ahora mismo.</p>';
-      return;
-    }
-    box.innerHTML = grupos.map(function (g) {
-      const cliente = state.clients.find(c => c['Cliente ID'] === g.clienteId);
-      const nombre = cliente ? cliente['Nombre completo'] : (g.profesional || g.clienteId || 'Cliente');
-      const resumen = g.items.map(it => `${it.tipo} ${it.medida} · ${it.cantidad}u`).join(', ');
-      // Cada ítem tiene su propia "✕" para eliminarlo puntualmente (la
-      // cantidad vuelve al depósito) sin tocar el resto del apartado del
-      // cliente — para el caso de "esto al final no se va a vender".
-      const itemsDetalle = g.items.map(function (it) {
-        return `<div class="task-row ghost-row" style="padding:6px 10px 6px 22px;font-size:12px">
-          <span style="color:var(--muted)">${html(it.tipo)} · ${html(it.medida)} · Lote ${html(it.lote)} · ${it.cantidad}u</span>
-          <button type="button" class="ghost-button" style="padding:2px 10px;font-size:11px"
-            data-del-apartado-cliente="${attr(g.clienteId || '')}" data-del-apartado-prof="${attr(g.profesional || '')}"
-            data-del-apartado-tipo="${attr(it.tipo)}" data-del-apartado-medida="${attr(it.medida)}" data-del-apartado-lote="${attr(it.lote)}"
-          >✕ Eliminar</button>
-        </div>`;
-      }).join('');
-      return `<div class="task-row ghost-row" style="cursor:pointer" data-apartado-cliente="${attr(g.clienteId || '')}">
-        <span><strong>${html(nombre)}</strong><small>${html(resumen)}</small></span>
-        <span class="pill warning">${g.items.length} ítem${g.items.length === 1 ? '' : 's'}</span>
-      </div>${itemsDetalle}`;
+  if (!grupos.length) {
+    box.innerHTML = '<p class="helper">No hay apartados pendientes ahora mismo.</p>';
+    return;
+  }
+  box.innerHTML = grupos.map(function (g) {
+    const cliente = state.clients.find(c => c['Cliente ID'] === g.clienteId);
+    const nombre = cliente ? cliente['Nombre completo'] : (g.profesional || g.clienteId || 'Cliente');
+    const resumen = g.items.map(it => `${it.tipo} ${it.medida} · ${it.cantidad}u`).join(', ');
+    const itemsDetalle = g.items.map(function (it) {
+      return `<div class="task-row ghost-row" style="padding:6px 10px 6px 22px;font-size:12px">
+        <span style="color:var(--muted)">${html(it.tipo)} · ${html(it.medida)} · Lote ${html(it.lote)} · ${it.cantidad}u</span>
+        <button type="button" class="ghost-button" style="padding:2px 10px;font-size:11px"
+          data-del-apartado-cliente="${attr(g.clienteId || '')}" data-del-apartado-prof="${attr(g.profesional || '')}"
+          data-del-apartado-tipo="${attr(it.tipo)}" data-del-apartado-medida="${attr(it.medida)}" data-del-apartado-lote="${attr(it.lote)}"
+        >✕ Eliminar</button>
+      </div>`;
     }).join('');
-    box.querySelectorAll('[data-apartado-cliente]').forEach(function (row) {
-      row.onclick = () => invSeleccionarApartadoPendiente(row.dataset.apartadoCliente);
-    });
-    box.querySelectorAll('[data-del-apartado-cliente]').forEach(function (btn) {
-      btn.onclick = function (event) {
-        event.stopPropagation();
-        invEliminarItemApartado(btn.dataset);
-      };
-    });
+    return `<div class="task-row ghost-row" style="cursor:pointer" data-apartado-cliente="${attr(g.clienteId || '')}">
+      <span><strong>${html(nombre)}</strong><small>${html(resumen)}</small></span>
+      <span class="pill warning">${g.items.length} ítem${g.items.length === 1 ? '' : 's'}</span>
+    </div>${itemsDetalle}`;
+  }).join('');
+  box.querySelectorAll('[data-apartado-cliente]').forEach(function (row) {
+    row.onclick = () => invSeleccionarApartadoPendiente(row.dataset.apartadoCliente);
+  });
+  box.querySelectorAll('[data-del-apartado-cliente]').forEach(function (btn) {
+    btn.onclick = function (event) { event.stopPropagation(); invEliminarItemApartado(btn.dataset); };
+  });
 }
+
 // Elimina (a 0) un ítem apartado puntual: la cantidad vuelve al depósito
 // (mismo mecanismo de ajustarApartado que ya usa el sistema al bajar una
 // cantidad), para cuando esas unidades al final no se van a vender.
@@ -562,13 +541,8 @@ function invEliminarItemApartado(ds) {
   const detalle = ds.delApartadoTipo + ' ' + ds.delApartadoMedida + ' · Lote ' + ds.delApartadoLote;
   if (!window.confirm('¿Eliminar este ítem apartado (' + detalle + ')? La cantidad vuelve al depósito.')) return;
   jsonp({
-    accion: 'ajustarApartado',
-    profesional: ds.delApartadoProf || '',
-    clienteId: ds.delApartadoCliente || '',
-    tipo_imp: ds.delApartadoTipo,
-    medida: ds.delApartadoMedida,
-    lote_sel: ds.delApartadoLote,
-    nueva_cantidad: 0
+    accion: 'ajustarApartado', profesional: ds.delApartadoProf || '', clienteId: ds.delApartadoCliente || '',
+    tipo_imp: ds.delApartadoTipo, medida: ds.delApartadoMedida, lote_sel: ds.delApartadoLote, nueva_cantidad: 0
   }, (err, data) => {
     if (err || !(data && data.ok)) {
       return showError(new Error(data ? (data.error || data.mensaje) : (err ? err.message : 'No se pudo eliminar el ítem.')));
@@ -578,43 +552,34 @@ function invEliminarItemApartado(ds) {
     invRenderApartadosPendientes();
   });
 }
+
 function invSeleccionarApartadoPendiente(clienteId) {
-  if (!clienteId) return showError(new Error('Este apartado no tiene un Cliente ID válido — abrilo desde Presupuestos.'));
-  if (inv.mov === 'salida') {
-    invClienteSeleccionar(clienteId);
-    return;
-  }
-  if (inv.mov === 'apartado') {
-    invAbrirApartadoParaEditar(clienteId);
-  }
+  if (!clienteId) return showError(new Error('Este apartado no tiene un Cliente ID válido — abrilo desde Remitos.'));
+  if (inv.mov === 'salida') { invClienteSeleccionar(clienteId); return; }
+  if (inv.mov === 'apartado') { invAbrirApartadoParaEditar(clienteId); }
 }
-// Desde la pestaña Apartado: si el cliente ya tiene presupuesto generado
-// para su apartado, lo abre para editar/reimprimir. Si todavía no lo
-// tiene (el auto-generado falló o es un apartado viejo), ofrece armarlo.
+
+// Desde la pestaña Apartado: si el cliente ya tiene un Remito generado para
+// su apartado (borrador o entregado), lo abre para editar/emitir. Si
+// todavía no lo tiene, avisa que hay que generarlo desde el botón de abajo.
 function invAbrirApartadoParaEditar(clienteId) {
-  showToast('Buscando presupuesto de este apartado…');
-  server('getPedidoPresupuestadoPorCliente', clienteId).then(function (pedido) {
-    if (pedido && pedido.numero) {
-      return server('getDocumentData', 'presupuesto', pedido.numero).then(function (doc) {
-        openEditBudget(Object.assign({}, doc.header, { items: doc.items }));
+  showToast('Buscando el remito de este apartado…');
+  server('getPedidoConRemitoPorCliente', clienteId).then(function (pedido) {
+    if (pedido && pedido.remitoId) {
+      return server('getDocumentData', 'remito', pedido.remitoId).then(function (doc) {
+        openEditRemit(Object.assign({}, doc.header, { items: doc.items }));
       });
     }
-    openBudgetFromApartadoPicker(clienteId);
+    showToast('Este apartado todavía no tiene remito — generalo desde el botón de abajo.');
   }).catch(showError);
 }
+
 // Llamada JSONP directa al doGet del archivo de Stock (acciones que NO
 // están registradas en FUNCIONES_PANEL, así que no se puede usar server()).
 function jsonp(params, cb) {
   var cbName = 'jscbInv_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
   var script = document.createElement('script');
   var done = false;
-  // Si el Web App no contesta (deployment viejo, sin conexión, error de
-  // permisos que devuelve HTML en vez del callback JS), antes esto se
-  // quedaba esperando para siempre sin avisar nada. Se corta a los 55s y se
-  // avisa el error en vez de dejar todo colgado en blanco (subido de 25s a
-  // 55s: operaciones que tocan hojas grandes — como emitir remito, que
-  // ahora además cierra el apartado — pueden tardar más de 25s en Apps
-  // Script sin que sea un error real).
   var timeoutId = setTimeout(function () {
     if (done) return;
     done = true;
@@ -639,23 +604,23 @@ function jsonp(params, cb) {
     cb(new Error('No se pudo conectar con el servidor.'), null);
   };
   var qs = '?callback=' + cbName;
-  Object.keys(params).forEach(function (k) {
-    qs += '&' + k + '=' + encodeURIComponent(params[k]);
-  });
+  Object.keys(params).forEach(function (k) { qs += '&' + k + '=' + encodeURIComponent(params[k]); });
   script.src = URL_API + qs;
   document.body.appendChild(script);
 }
+
 function invCargarStock() {
   jsonp({ accion: 'obtenerTodoElStock' }, (err, data) => {
-    if (data && data.ok && data.stock) { inv.stock = data.stock; inv.stockCargado = true; }
+    if (data && data.ok && data.stock) {
+      inv.stock = data.stock;
+      inv.stockCargado = true;
+    }
   });
-  // Catálogo completo de medidas por tipo (no filtra por stock > 0) — se
-  // usa para el desplegable de Depósito, para que aparezcan también las
-  // medidas todavía sin stock cargado.
   jsonp({ accion: 'obtenerMedidasPorTipo' }, (err, data) => {
     if (data && data.ok && data.medidas) { inv.medidas = data.medidas; }
   });
 }
+
 function invOnTipo() {
   const tipo = document.getElementById('invTipo').value;
   const selMed = document.getElementById('invMedida');
@@ -663,30 +628,21 @@ function invOnTipo() {
   document.getElementById('invLote').innerHTML = '<option value="">—</option>';
   document.getElementById('invLoteTexto').value = '';
   document.getElementById('invStockHint').textContent = '';
-  // Cambiar de tipo de implante a mitad de una carga de depósito invalida
-  // las medidas ya agregadas (pertenecen a la hoja del tipo anterior), así
-  // que se reinicia el carrito para no mezclar tipos en una misma carga.
   if (inv.mov === 'deposito' && inv.carrito.length) {
     inv.carrito = [];
     invRenderCarrito();
   }
   if (!tipo) return;
   if (inv.mov === 'deposito') {
-    // Depósito: se listan TODAS las medidas del catálogo de este tipo,
-    // tengan o no stock cargado — para poder recibir una medida nueva o
-    // que hoy está en cero. El texto se ve formateado ("Ø3,30 X 8,5mm")
-    // pero el valor que viaja al servidor es el crudo (el que matchea la
-    // fila real de la hoja).
     const medidas = (inv.medidas && inv.medidas[tipo]) || [];
     medidas.forEach(m => selMed.insertAdjacentHTML('beforeend', `<option value="${attr(m.value)}">${html(m.label)}</option>`));
     return;
   }
-  // Salida/Apartado: solo medidas que hoy tienen stock disponible en
-  // algún lote (no tendría sentido ofrecer una medida sin nada para vender/apartar).
   if (!inv.stock[tipo]) return;
   const medidasConStock = [...new Set(inv.stock[tipo].map(i => i.medida))];
   medidasConStock.forEach(m => selMed.insertAdjacentHTML('beforeend', `<option value="${attr(m)}">${html(m)}</option>`));
 }
+
 function invStockDisponible(tipo, medida, lote) {
   const item = (inv.stock[tipo] || []).find(i => i.medida === medida && i.lote === lote);
   const stockOriginal = item ? item.stock : 0;
@@ -695,7 +651,7 @@ function invStockDisponible(tipo, medida, lote) {
     .reduce((a, it) => a + it.cantidad, 0);
   return stockOriginal - yaEnCarrito;
 }
-// Solo se usa en Salida/Apartado (Depósito usa el campo de texto libre, no este select)
+
 function invOnMedida() {
   const tipo = document.getElementById('invTipo').value;
   const medida = document.getElementById('invMedida').value;
@@ -707,6 +663,7 @@ function invOnMedida() {
     selLote.insertAdjacentHTML('beforeend', `<option value="${attr(i.lote)}">${html(i.lote)} (Disp: ${disp})</option>`);
   });
 }
+
 function invOnLote() {
   const tipo = document.getElementById('invTipo').value;
   const medida = document.getElementById('invMedida').value;
@@ -715,13 +672,11 @@ function invOnLote() {
   inv.stockMax = invStockDisponible(tipo, medida, lote);
   document.getElementById('invStockHint').textContent = `Disponible: ${inv.stockMax} u.`;
 }
+
 function invAgregarItem() {
   const tipo = document.getElementById('invTipo').value;
   const medida = document.getElementById('invMedida').value;
   const cant = Number(document.getElementById('invCantidad').value) || 0;
-  // Depósito: el lote es el campo de texto libre (compartido por todas las
-  // medidas de esta carga) y no hay tope de stock — se está agregando
-  // stock nuevo, no descontándolo.
   if (inv.mov === 'deposito') {
     const lote = document.getElementById('invLoteTexto').value.trim();
     if (!tipo || !medida) return showError(new Error('Elegí tipo y medida.'));
@@ -743,12 +698,20 @@ function invAgregarItem() {
   document.getElementById('invLote').value = '';
   document.getElementById('invStockHint').textContent = '';
 }
+
 function invRenderCarrito() {
   document.getElementById('invCartList').innerHTML = inv.carrito.length
-    ? inv.carrito.map((it, idx) => `<div class="pill neutral" style="margin:3px 6px 3px 0;display:inline-flex">${html(it.tipo_imp)} · ${html(it.medida)} · ${html(it.lote_sel)} · ${it.cantidad}u <button type="button" style="border:none;background:none;color:#c0392b;font-weight:800;margin-left:6px;cursor:pointer" onclick="invQuitarItem(${idx})">×</button></div>`).join('')
+    ? inv.carrito.map((it, idx) => `<div class="pill neutral" style="margin:3px 6px 3px 0;display:inline-flex">${html(it.tipo_imp)} · ${html(it.medida)} · ${html(it.lote_sel)} · ${it.cantidad}u
+        <button type="button" style="border:none;background:none;color:#c0392b;font-weight:800;margin-left:6px;cursor:pointer" onclick="invQuitarItem(${idx})">×</button></div>`).join('')
     : empty('Sin ítems todavía.');
 }
-function invQuitarItem(idx) { inv.carrito.splice(idx, 1); invRenderCarrito(); invOnMedida(); }
+
+function invQuitarItem(idx) {
+  inv.carrito.splice(idx, 1);
+  invRenderCarrito();
+  invOnMedida();
+}
+
 function invClienteBuscarInput() {
   document.getElementById('invClienteId').value = '';
   invClienteLimpiarCampos();
@@ -756,9 +719,7 @@ function invClienteBuscarInput() {
   const box = document.getElementById('invClienteResultados');
   if (!q) { box.classList.add('hidden'); box.innerHTML = ''; return; }
   const matches = state.clients.filter(c =>
-    normalize(c['Nombre completo']).includes(q) ||
-    normalize(c['CUIL']).includes(q) ||
-    normalize(c['Localidad']).includes(q)
+    normalize(c['Nombre completo']).includes(q) || normalize(c['CUIL']).includes(q) || normalize(c['Localidad']).includes(q)
   ).slice(0, 8);
   box.innerHTML = matches.length
     ? matches.map(c => `<div class="task-row ghost-row" style="cursor:pointer" data-cliente="${attr(c['Cliente ID'])}">
@@ -766,10 +727,9 @@ function invClienteBuscarInput() {
       </div>`).join('')
     : `<div class="task-row"><span>Sin coincidencias — se va a cargar como cliente nuevo.</span></div>`;
   box.classList.remove('hidden');
-  box.querySelectorAll('[data-cliente]').forEach(row => {
-    row.onclick = () => invClienteSeleccionar(row.dataset.cliente);
-  });
+  box.querySelectorAll('[data-cliente]').forEach(row => { row.onclick = () => invClienteSeleccionar(row.dataset.cliente); });
 }
+
 function invClienteSeleccionar(id) {
   const client = state.clients.find(c => c['Cliente ID'] === id);
   if (!client) return;
@@ -782,62 +742,54 @@ function invClienteSeleccionar(id) {
   document.getElementById('invLocalidad').value = client['Localidad'] || '';
   if (inv.mov === 'salida') invBuscarApartadoCliente(id);
 }
+
 function invBuscarApartadoCliente(clienteId) {
   const box = document.getElementById('invApartadoBox');
   box.innerHTML = '<p>Buscando apartados de este cliente…</p>';
   box.classList.remove('hidden');
-  inv.pedidoPresupuestado = null;
-  // Primero: ¿este cliente ya tiene un presupuesto generado para su
-  // apartado (o ya remitido)? Si es así, no repetimos el circuito.
-  server('getPedidoPresupuestadoPorCliente', clienteId).then(function (pedido) {
+  inv.pedidoConRemito = null;
+  // Primero: ¿este cliente ya tiene un Remito para su apartado (borrador o
+  // ya emitido)? Si es así, no repetimos el circuito.
+  server('getPedidoConRemitoPorCliente', clienteId).then(function (pedido) {
     if (pedido) {
       inv.apartadoActivo = null;
       inv.usandoApartado = false;
-      const yaRemitido = pedido.estado === 'Remitido' || pedido.estado === 'Vendido';
-      if (yaRemitido) {
-        // Ya no queda nada para registrar acá — se oculta todo (carga
-        // manual y botón de abajo) y se deja solo un link para ver/reimprimir.
+      const yaVendido = pedido.remitoEstado === 'Entregado';
+      if (yaVendido) {
+        // Ya no queda nada para registrar acá — se oculta todo y se deja
+        // solo un link para ver/reimprimir.
         invToggleManualVentaUI_(false, false);
         document.getElementById('invCartList').innerHTML = empty('El remito de este cliente ya se emitió.');
         box.innerHTML = `
-          <div class="pill warning" style="margin-bottom:8px">Este cliente ya está presupuestado${pedido.numero ? ' (N° ' + html(pedido.numero) + ')' : ''}${pedido.total ? ' por ' + money(pedido.total) : ''} — el remito ya se emitió</div>
-          <button type="button" class="secondary-button" id="invIrARemito">Ver pedido / remito</button>`;
+          <div class="pill warning" style="margin-bottom:8px">Este cliente ya está vendido (Remito ${html(pedido.remitoId)})</div>
+          <button type="button" class="secondary-button" id="invIrARemito">Ver remito</button>`;
         document.getElementById('invIrARemito').onclick = () => openOrderById(pedido.orderId);
         return;
       }
-      // Todavía no se emitió el remito: se cargan solos los ítems del
-      // presupuesto en la lista de "Ítems de la venta" (se ocultan la
-      // carga manual, pero el botón de abajo queda visible y pasa a
-      // emitir el remito + registrar la venta de este mismo presupuesto).
-      inv.pedidoPresupuestado = pedido;
-      invToggleManualVentaUI_(false, true);
-      box.innerHTML = `<div class="pill warning">Este cliente ya está presupuestado${pedido.numero ? ' (N° ' + html(pedido.numero) + ')' : ''}${pedido.total ? ' por ' + money(pedido.total) : ''} — los ítems ya están cargados abajo, apretá "Registrar venta y generar remito" para emitirlo.</div>`;
-      document.getElementById('invCartList').innerHTML = '<p class="helper">Cargando ítems del presupuesto…</p>';
-      const cargarItemsDelPresupuesto = pedido.numero
-        ? server('getDocumentData', 'presupuesto', pedido.numero).then(function (doc) { return doc.items || []; })
-        : Promise.resolve([]);
-      cargarItemsDelPresupuesto.then(function (items) {
-        if (inv.pedidoPresupuestado !== pedido) return; // el usuario ya cambió de cliente mientras cargaba
-        document.getElementById('invCartList').innerHTML = items.length
-          ? items.map(i => `<div class="pill neutral" style="margin:3px 6px 3px 0;display:inline-flex">${html(i['Producto'] || '')} · ${html(i['Cantidad'])}u${i['Lote'] ? ' · Lote ' + html(i['Lote']) : ''}</div>`).join('')
+      // Todavía hay un Remito en Borrador: se muestran sus ítems y se
+      // ofrece ir a revisarlo/emitirlo desde Remitos.
+      invToggleManualVentaUI_(false, false);
+      box.innerHTML = `<div class="pill warning">Este cliente ya tiene un remito en borrador (${html(pedido.remitoId)}) — revisalo/emitilo desde ahí.</div>
+        <button type="button" class="secondary-button" id="invIrARemitoBorrador" style="margin-top:8px">Ver / emitir remito</button>`;
+      document.getElementById('invCartList').innerHTML = '<p class="helper">Cargando ítems del remito…</p>';
+      server('getDocumentData', 'remito', pedido.remitoId).then(function (doc) {
+        if (inv.pedidoConRemito !== null && inv.pedidoConRemito !== pedido) return;
+        document.getElementById('invCartList').innerHTML = (doc.items || []).length
+          ? doc.items.map(i => `<div class="pill neutral" style="margin:3px 6px 3px 0;display:inline-flex">${html(i['Producto'] || '')} · ${html(i['Cantidad'])}u${i['Lote'] ? ' · Lote ' + html(i['Lote']) : ''}</div>`).join('')
           : empty('Sin ítems.');
+        document.getElementById('invIrARemitoBorrador').onclick = () => openEditRemit(Object.assign({}, doc.header, { items: doc.items }));
       }).catch(function () {
-        if (inv.pedidoPresupuestado !== pedido) return;
-        document.getElementById('invCartList').innerHTML = '<p class="helper">No se pudieron cargar los ítems del presupuesto.</p>';
+        document.getElementById('invCartList').innerHTML = '<p class="helper">No se pudieron cargar los ítems del remito.</p>';
       });
+      inv.pedidoConRemito = pedido;
       return;
     }
     invBuscarApartadoCrudo(clienteId, box);
-  }).catch(function () { invBuscarApartadoCrudo(clienteId, box); });
+  }).catch(function () {
+    invBuscarApartadoCrudo(clienteId, box);
+  });
 }
-function irAEmitirRemitoPorPedidoId_(orderId) {
-  const cached = findRecord('pedidos', 'Pedido ID', orderId);
-  const load = cached ? Promise.resolve(cached) : server('listAdmin', 'pedidos').then(rows => rows.find(r => r['Pedido ID'] === orderId));
-  load.then(function (order) {
-    if (!order) return showError(new Error('Pedido no encontrado.'));
-    return prepararItemsRemitoDesdeOrder_(order).then(function (items) { openEmitirRemitoForm(order, items); });
-  }).catch(showError);
-}
+
 function invBuscarApartadoCrudo(clienteId, box) {
   jsonp({ accion: 'obtenerApartadosPorProfesional' }, (err, data) => {
     const grupo = (data && data.ok) ? data.profesionales.find(p => p.clienteId === clienteId) : null;
@@ -846,7 +798,7 @@ function invBuscarApartadoCrudo(clienteId, box) {
       box.innerHTML = '';
       inv.apartadoActivo = null;
       inv.usandoApartado = false;
-      inv.pedidoPresupuestado = null;
+      inv.pedidoConRemito = null;
       // Este cliente no tiene ningún apartado activo: acá sí corresponde
       // la carga manual (venta directa de stock, sin apartado de por medio).
       invToggleManualVentaUI_(true);
@@ -854,29 +806,52 @@ function invBuscarApartadoCrudo(clienteId, box) {
       return;
     }
     inv.apartadoActivo = grupo;
-    inv.pedidoPresupuestado = null;
-    // Ya no hay atajo para "cargar directo a la venta": el circuito
-    // siempre pasa por generar el presupuesto primero — recién desde ahí
-    // (o desde Remitos) se emite el remito y se registra la venta. Se
-    // oculta la carga manual acá también, y también el botón de abajo (no
-    // hay nada para "registrar" todavía, primero hay que generar el
-    // presupuesto), para no dejar caminos a medio armar.
+    inv.pedidoConRemito = null;
+    // Todavía no hay Remito: el circuito pasa por generarlo primero.
     invToggleManualVentaUI_(false, false);
-    document.getElementById('invCartList').innerHTML = grupo.items.map(it => `<div class="pill neutral" style="margin:3px 6px 3px 0;display:inline-flex">${html(it.tipo)} · ${html(it.medida)} · ${html(it.lote)} · ${it.cantidad}u</div>`).join('');
+    document.getElementById('invCartList').innerHTML = grupo.items.map(it =>
+      `<div class="pill neutral" style="margin:3px 6px 3px 0;display:inline-flex">${html(it.tipo)} · ${html(it.medida)} · ${html(it.lote)} · ${it.cantidad}u</div>`).join('');
     box.innerHTML = `
-      <div class="pill warning" style="margin-bottom:8px">Este cliente tiene un apartado activo — todavía sin presupuesto. Los ítems ya se muestran abajo; generá el presupuesto para poder emitir el remito y registrar la venta.</div>
+      <div class="pill warning" style="margin-bottom:8px">Este cliente tiene un apartado activo — todavía sin remito. Los ítems ya se muestran abajo; generá el remito para poder emitirlo y registrar la venta.</div>
       <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
-        <button type="button" class="primary-button" id="invGenerarPresupuesto">Generar presupuesto para este apartado</button>
+        <button type="button" class="primary-button" id="invGenerarRemito">Generar remito para este apartado</button>
       </div>`;
-    document.getElementById('invGenerarPresupuesto').onclick = () => openBudgetFromApartadoPicker(clienteId);
+    document.getElementById('invGenerarRemito').onclick = () => invGenerarRemitoParaApartado_(clienteId);
   });
 }
+
+// Genera el Remito Borrador del apartado activo de este cliente
+// (buscando primero su Pedido) y lo abre para revisar/editar/emitir.
+function invGenerarRemitoParaApartado_(clienteId) {
+  const btn = document.getElementById('invGenerarRemito');
+  if (btn) { btn.disabled = true; btn.textContent = 'Generando…'; }
+  server('listAdmin', 'pedidos').then(function (pedidos) {
+    const pedido = pedidos.find(p => p['Cliente ID'] === clienteId && p['Estado'] === 'Apartado');
+    if (!pedido) throw new Error('No se encontró el pedido apartado de este cliente.');
+    return server('crearRemitoBorradorDesdeApartado', { orderId: pedido['Pedido ID'] });
+  }).then(function () {
+    return server('getPedidoConRemitoPorCliente', clienteId);
+  }).then(function (pedidoConRemito) {
+    if (!pedidoConRemito || !pedidoConRemito.remitoId) throw new Error('El remito se generó pero no se pudo abrir. Buscalo desde Remitos.');
+    return server('getDocumentData', 'remito', pedidoConRemito.remitoId);
+  }).then(function (doc) {
+    showToast('Remito generado en borrador.');
+    inv.stockCargado = false;
+    refresh();
+    openEditRemit(Object.assign({}, doc.header, { items: doc.items }));
+  }).catch(function (err) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Generar remito para este apartado'; }
+    showError(err);
+  });
+}
+
 function invClienteLimpiarCampos() {
   ['invNombre', 'invApellido', 'invCuil', 'invLocalidad'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
 }
+
 function invClienteClickAfuera(event) {
   const box = document.getElementById('invClienteResultados');
   const input = document.getElementById('invClienteBuscar');
@@ -884,45 +859,23 @@ function invClienteClickAfuera(event) {
   if (event.target === input || box.contains(event.target)) return;
   box.classList.add('hidden');
 }
+
 function invSubmit() {
   if (inv.mov === 'deposito') return invSubmitDeposito();
   if (inv.mov === 'apartado') return invSubmitApartado();
-  // Cliente con presupuesto ya generado (a partir de su apartado): el
-  // mismo botón de siempre pasa a emitir el remito de ese presupuesto —
-  // createRemitFromOrder ya deja la venta registrada y el pedido marcado
-  // como vendido, así que "emitir remito" y "registrar venta" quedan en
-  // un solo click.
-  if (inv.mov === 'salida' && inv.pedidoPresupuestado) return irAEmitirRemitoPorPedidoId_(inv.pedidoPresupuestado.orderId);
-  if (inv.mov === 'salida' && inv.usandoApartado) return invSubmitVentaDesdeApartado();
   return invSubmitVenta();
 }
-function invSubmitVentaDesdeApartado() {
-  const clientId = document.getElementById('invClienteId').value;
-  document.getElementById('invSubmit').disabled = true;
-  server('venderApartadoConRemito', { clienteId: clientId }).then(function (result) {
-    document.getElementById('invSubmit').disabled = false;
-    showToast('Apartado vendido. Remito ' + result.numeroRemito + '.');
-    inv.stockCargado = false;
-    renderInventory();
-  }).catch(function (err) {
-    document.getElementById('invSubmit').disabled = false;
-    showError(err);
-  });
-}
+
 function invSubmitDeposito() {
   const tipo = document.getElementById('invTipo').value;
   if (!tipo) return showError(new Error('Elegí el tipo de implante.'));
-  // Si quedó una medida + cantidad cargada sin apretar "＋ Agregar", se
-  // suma sola al carrito — así una carga de una sola medida no obliga a
-  // tocar el botón aparte.
   const medidaSuelta = document.getElementById('invMedida').value;
   const cantSuelta = Number(document.getElementById('invCantidad').value) || 0;
   if (medidaSuelta && cantSuelta > 0) invAgregarItem();
   if (!inv.carrito.length) return showError(new Error('Agregá al menos una medida con su cantidad y su lote.'));
   document.getElementById('invSubmit').disabled = true;
   jsonp({
-    accion: 'registrarDepositoMultiple',
-    tipo_imp: tipo,
+    accion: 'registrarDepositoMultiple', tipo_imp: tipo,
     items_json: JSON.stringify(inv.carrito.map(it => ({ medida: it.medida, lote: it.lote_sel, cantidad: it.cantidad }))),
     profesional: '', observacion: 'Cargado desde Panel'
   }, (err, data) => {
@@ -937,6 +890,7 @@ function invSubmitDeposito() {
     }
   });
 }
+
 function invSubmitVenta() {
   if (!inv.carrito.length) return showError(new Error('Agregá al menos un ítem.'));
   const clientId = document.getElementById('invClienteId').value;
@@ -947,10 +901,8 @@ function invSubmitVenta() {
     const nombre = document.getElementById('invNombre').value.trim();
     if (!nombre) return showError(new Error('Elegí un cliente existente o cargá los datos de uno nuevo.'));
     payload.cliente = {
-      'Nombre': nombre,
-      'Apellido': document.getElementById('invApellido').value.trim(),
-      'CUIL': document.getElementById('invCuil').value.trim(),
-      'Localidad': document.getElementById('invLocalidad').value.trim()
+      'Nombre': nombre, 'Apellido': document.getElementById('invApellido').value.trim(),
+      'CUIL': document.getElementById('invCuil').value.trim(), 'Localidad': document.getElementById('invLocalidad').value.trim()
     };
   }
   document.getElementById('invSubmit').disabled = true;
@@ -964,22 +916,16 @@ function invSubmitVenta() {
     showError(err);
   });
 }
+
 // Registra el apartado y, automáticamente (sin pasos intermedios), genera
-// el presupuesto de ese apartado y lo abre listo para imprimir. La
-// ventana de impresión se abre YA, en el mismo click, para que el
-// navegador no la bloquee — recién se completa cuando el presupuesto
-// está listo. Si algo del presupuesto falla, el apartado igual queda
-// registrado: se avisa y se puede generar el presupuesto a mano después
-// desde Presupuestos (donde también se puede editar y reimprimir las
-// veces que haga falta).
+// el Remito Borrador de ese apartado y lo abre para revisar/editar. Si algo
+// del remito falla, el apartado igual queda registrado: se avisa y se puede
+// generar el remito a mano después desde Inventario > Apartado o desde el
+// Pedido correspondiente.
 function invSubmitApartado() {
   if (!inv.carrito.length) return showError(new Error('Agregá al menos un ítem.'));
   const clientId = document.getElementById('invClienteId').value;
-  const params = {
-    accion: 'registrarApartadoMultiple',
-    items_json: JSON.stringify(inv.carrito),
-    observacion: 'Cargado desde Panel'
-  };
+  const params = { accion: 'registrarApartadoMultiple', items_json: JSON.stringify(inv.carrito), observacion: 'Cargado desde Panel' };
   if (clientId) {
     params.clienteId = clientId;
     const client = state.clients.find(c => c['Cliente ID'] === clientId);
@@ -988,22 +934,14 @@ function invSubmitApartado() {
     const nombre = document.getElementById('invNombre').value.trim();
     if (!nombre) return showError(new Error('Elegí un cliente existente o cargá los datos de uno nuevo.'));
     params.cliente_json = JSON.stringify({
-      'Nombre': nombre,
-      'Apellido': document.getElementById('invApellido').value.trim(),
-      'CUIL': document.getElementById('invCuil').value.trim(),
-      'Localidad': document.getElementById('invLocalidad').value.trim()
+      'Nombre': nombre, 'Apellido': document.getElementById('invApellido').value.trim(),
+      'CUIL': document.getElementById('invCuil').value.trim(), 'Localidad': document.getElementById('invLocalidad').value.trim()
     });
   }
   document.getElementById('invSubmit').disabled = true;
   jsonp(params, (err, data) => {
-    // Todo el manejo de la respuesta va en try/catch: si algo inesperado
-    // tira una excepción acá, antes se perdía en silencio. Ahora se avisa
-    // el error directamente, sin ventana de impresión de por medio.
     try {
-      if (err) {
-        document.getElementById('invSubmit').disabled = false;
-        return showError(err);
-      }
+      if (err) { document.getElementById('invSubmit').disabled = false; return showError(err); }
       if (!(data && data.ok)) {
         document.getElementById('invSubmit').disabled = false;
         return showError(new Error(data ? (data.error || data.mensaje) : 'No hubo respuesta.'));
@@ -1011,24 +949,15 @@ function invSubmitApartado() {
       showToast('Apartado registrado.');
       inv.stockCargado = false;
       const orderId = data.orderId;
-      if (!orderId) {
-        renderInventory();
-        return;
-      }
-      // El presupuesto se genera solo, pero NO se imprime en el momento:
-      // el usuario lo revisa/ajusta (por ejemplo aplica un descuento, o
-      // corrige un lote) desde Presupuestos y recién ahí imprime/genera
-      // el PDF cuando ya está todo ok — ese PDF es el que queda guardado
-      // en Drive junto con el remito y el comprobante de esa misma venta.
-      server('crearPresupuestoDesdeApartado', { orderId: orderId })
+      if (!orderId) { renderInventory(); return; }
+      server('crearRemitoBorradorDesdeApartado', { orderId: orderId })
         .then(function () {
-          showToast('Presupuesto generado. Revisalo, aplicá descuentos si hace falta e imprimilo desde Presupuestos cuando esté listo.');
+          showToast('Remito generado en borrador. Revisalo, corregí lotes/cantidades si hace falta desde Remitos, y emitilo cuando esté listo para vender.');
           renderInventory();
           refresh();
         })
         .catch(function (err2) {
-          showToast('El apartado se registró, pero no se pudo generar el presupuesto automáticamente: ' +
-            (err2 && err2.message ? err2.message : err2) + '. Podés generarlo manualmente desde Presupuestos.', true);
+          showToast('El apartado se registró, pero no se pudo generar el remito automáticamente: ' + (err2 && err2.message ? err2.message : err2) + '. Podés generarlo manualmente desde el Pedido, en Pedidos.', true);
           renderInventory();
           refresh();
         });
@@ -1038,1034 +967,724 @@ function invSubmitApartado() {
     }
   });
 }
-  function loadView(moduleKey) {
-    document.getElementById('appContent').innerHTML = loading();
-    server('listAdmin', moduleKey).then(function (records) {
-      state.records[moduleKey] = records;
+
+function loadView(moduleKey) {
+  document.getElementById('appContent').innerHTML = loading();
+  server('listAdmin', moduleKey).then(function (records) {
+    state.records[moduleKey] = records;
+    renderTable(moduleKey, records);
+  }).catch(showError);
+}
+
+// Pedidos "cerrados": ya terminaron su circuito (vendidos) o se
+// cancelaron. Por defecto la pestaña de Pedidos solo muestra los
+// activos — hay un botón para ver los cerrados sin perderlos de vista.
+const CLOSED_ORDER_STATES = ['Vendido', 'Cancelado'];
+
+function renderTable(moduleKey, records) {
+  const meta = views[moduleKey];
+  const isPedidos = moduleKey === 'pedidos';
+  if (isPedidos && state.mostrarPedidosCerrados === undefined) state.mostrarPedidosCerrados = false;
+  const closedCount = isPedidos ? records.filter(r => CLOSED_ORDER_STATES.includes(r['Estado'])).length : 0;
+  const toggleClosedButton = (isPedidos && closedCount)
+    ? `<button class="ghost-button" id="togglePedidosCerrados">${state.mostrarPedidosCerrados ? 'Ver solo activos' : 'Ver cerrados (' + closedCount + ')'}</button>`
+    : '';
+  const visibleRecords = (isPedidos && !state.mostrarPedidosCerrados)
+    ? records.filter(r => !CLOSED_ORDER_STATES.includes(r['Estado']))
+    : records;
+  document.getElementById('appContent').innerHTML = `
+    <div class="view-toolbar">
+      <input class="search" id="searchInput" type="search" placeholder="Buscar en ${html(meta.title.toLowerCase())} …">
+      ${toggleClosedButton}
+      <span class="pill neutral">${visibleRecords.length} registro${visibleRecords.length === 1 ? '' : 's'}</span>
+    </div>
+    <div id="tableContent">${tableHtml(moduleKey, visibleRecords)}</div>`;
+  if (isPedidos && closedCount) {
+    document.getElementById('togglePedidosCerrados').onclick = function () {
+      state.mostrarPedidosCerrados = !state.mostrarPedidosCerrados;
       renderTable(moduleKey, records);
-    }).catch(showError);
+    };
   }
-  // Pedidos "cerrados": ya terminaron su circuito (vendidos) o se
-  // cancelaron. Por defecto la pestaña de Pedidos solo muestra los
-  // activos — hay un botón para ver los cerrados sin perderlos de vista.
-  const CLOSED_ORDER_STATES = ['Vendido', 'Cancelado'];
-  function renderTable(moduleKey, records) {
-    const meta = views[moduleKey];
-    const createBudgetButton = moduleKey === 'presupuestos' ? '<button class="primary-button" id="createBudgetButton">＋ Generar presupuesto</button>' : '';
-    const isPedidos = moduleKey === 'pedidos';
-    if (isPedidos && state.mostrarPedidosCerrados === undefined) state.mostrarPedidosCerrados = false;
-    const closedCount = isPedidos ? records.filter(r => CLOSED_ORDER_STATES.includes(r['Estado'])).length : 0;
-    const toggleClosedButton = (isPedidos && closedCount)
-      ? `<button class="ghost-button" id="togglePedidosCerrados">${state.mostrarPedidosCerrados ? 'Ver solo activos' : 'Ver cerrados (' + closedCount + ')'}</button>`
-      : '';
-    const visibleRecords = (isPedidos && !state.mostrarPedidosCerrados)
-      ? records.filter(r => !CLOSED_ORDER_STATES.includes(r['Estado']))
-      : records;
-    document.getElementById('appContent').innerHTML = `
-  <div class="view-toolbar">
-    <input class="search" id="searchInput" type="search" placeholder="Buscar en ${html(meta.title.toLowerCase())} …">
-    ${createBudgetButton}
-    ${toggleClosedButton}
-    <span class="pill neutral">${visibleRecords.length} registro${visibleRecords.length === 1 ? '' : 's'}</span>
-  </div>
-  <div id="tableContent">${tableHtml(moduleKey, visibleRecords)}</div>`;
-    if (moduleKey === 'presupuestos') {
-      document.getElementById('createBudgetButton').onclick = openBudgetFromApartadoPicker;
-    }
-    if (isPedidos && closedCount) {
-      document.getElementById('togglePedidosCerrados').onclick = function () {
-        state.mostrarPedidosCerrados = !state.mostrarPedidosCerrados;
-        renderTable(moduleKey, records);
-      };
-    }
-    document.getElementById('searchInput').addEventListener('input', function (event) {
-      const query = normalize(event.target.value);
-      const filtered = visibleRecords.filter(r => normalize(JSON.stringify(r)).includes(query));
-      document.getElementById('tableContent').innerHTML = tableHtml(moduleKey, filtered);
-      bindRows(moduleKey);
-    });
+  document.getElementById('searchInput').addEventListener('input', function (event) {
+    const query = normalize(event.target.value);
+    const filtered = visibleRecords.filter(r => normalize(JSON.stringify(r)).includes(query));
+    document.getElementById('tableContent').innerHTML = tableHtml(moduleKey, filtered);
     bindRows(moduleKey);
-  }
-  function tableHtml(moduleKey, records) {
-    const meta = views[moduleKey];
-    if (!records.length) return empty('Todavía no hay ' + meta.title.toLowerCase() + '.');
-    return `<div class="table-wrap"><table>
-      <thead><tr>${meta.columns.map(c => `<th>${html(c)}</th>`).join('')}<th>Acciones</th></tr></thead>
-      <tbody>${records.map(function (r) {
-        return `<tr>${meta.columns.map(c => `<td>${cell(c, r[c])}</td>`).join('')}<td>${rowActions(moduleKey, r)}</td></tr>`;
-      }).join('')}</tbody>
-    </table></div>`;
-  }
-  function rowActions(moduleKey, r) {
-    if (moduleKey === 'clientes') return `<div class="row-actions"><button class="ghost-button" data-edit-client="${attr(r['Cliente ID'])}">Editar</button></div>`;
-    if (moduleKey === 'productos') return `<div class="row-actions"><button class="ghost-button" data-edit-product="${attr(r['Producto ID'])}">Editar</button></div>`;
-    if (moduleKey === 'pedidos') return `<div class="row-actions"><button class="ghost-button" data-open-order="${attr(r['Pedido ID'])}">Abrir</button><button class="ghost-button" data-edit-order="${attr(r['Pedido ID'])}">Editar</button></div>`;
-    // Ya no hay botón para crear la venta directo desde acá: la venta se
-    // genera sola al emitir el remito. "Emitir remito" solo aparece si el
-    // presupuesto tiene un Pedido asociado — si ese pedido ya tiene remito,
-    // createRemitFromOrder avisa cuál es en vez de duplicarlo.
-    if (moduleKey === 'presupuestos') return `<div class="row-actions"><button class="ghost-button" data-edit-budget="${attr(r['Presupuesto ID'])}">Editar</button><button class="ghost-button" data-print-budget="${attr(r['Presupuesto ID'])}">Generar PDF</button>${r['Pedido ID'] ? `<button class="primary-button" data-emit-remit-budget="${attr(r['Pedido ID'])}">Emitir remito</button>` : ''}</div>`;
-    if (moduleKey === 'remitos') return `<div class="row-actions"><button class="ghost-button" data-edit-remit="${attr(r['Remito ID'])}">Editar</button><button class="ghost-button" data-print-remit="${attr(r['Remito ID'])}">Imprimir</button>${r['Estado'] === 'Entregado' ? '<span class="pill success">Vendido</span>' : `<button class="primary-button" data-sold-remit="${attr(r['Remito ID'])}">Marcar vendido</button>`}</div>`;
-    return '';
-  }
-  function bindRows(moduleKey) {
-    document.querySelectorAll('[data-edit-client]').forEach(b => b.onclick = () => openClientForm(findRecord('clientes', 'Cliente ID', b.dataset.editClient)));
-    document.querySelectorAll('[data-edit-product]').forEach(b => b.onclick = () => openProductForm(findRecord('productos', 'Producto ID', b.dataset.editProduct)));
-    document.querySelectorAll('[data-open-order]').forEach(b => b.onclick = () => openOrderById(b.dataset.openOrder));
-    document.querySelectorAll('[data-edit-order]').forEach(b => b.onclick = () => openEditOrder(findRecord('pedidos', 'Pedido ID', b.dataset.editOrder)));
-    document.querySelectorAll('[data-edit-budget]').forEach(b => b.onclick = () => openEditBudget(findRecord('presupuestos', 'Presupuesto ID', b.dataset.editBudget)));
-    document.querySelectorAll('[data-edit-remit]').forEach(b => b.onclick = () => openEditRemit(findRecord('remitos', 'Remito ID', b.dataset.editRemit)));
-    document.querySelectorAll('[data-print-budget]').forEach(b => b.onclick = () => printDocument('presupuesto', b.dataset.printBudget));
-    document.querySelectorAll('[data-emit-remit-budget]').forEach(b => b.onclick = () => irAEmitirRemitoPorPedidoId_(b.dataset.emitRemitBudget));
-    document.querySelectorAll('[data-print-remit]').forEach(b => b.onclick = () => printDocument('remito', b.dataset.printRemit));
-    document.querySelectorAll('[data-sold-remit]').forEach(b => b.onclick = () => confirmRemitSold(b.dataset.soldRemit));
-  }
-  function openClientForm(record) {
-    record = record || {};
-    openModal(record['Cliente ID'] ? 'Editar cliente' : 'Nuevo cliente', `
-      <form class="form-grid" id="clientForm">
-        ${hidden('Cliente ID', record['Cliente ID'])}
-        ${field('Nombre', record['Nombre'], true)}
-        ${field('Apellido', record['Apellido'])}
-        ${field('CUIL', record['CUIL'], true)}
-        ${field('DNI', record['DNI'])}
-        ${field('Matrícula profesional', record['Matrícula profesional'])}
-        ${field('Empresa', record['Empresa'], false, false, 'text', 'Nombre de la empresa')}
-        ${field('Teléfono', record['Teléfono'])}
-        ${field('Email', record['Email'], false, false, 'email')}
-        ${field('Localidad', record['Localidad'])}
-        ${field('Código postal', record['Código postal'])}
-        ${selectField('Provincia', provinces(), record['Provincia'])}
-        ${selectField('Estado', ['Activo', 'Inactivo'], record['Estado'] || 'Activo')}
-        ${actions()}
-      </form>`);
-    document.getElementById('clientForm').onsubmit = function (event) {
-      event.preventDefault();
-      submit('saveClient', formObject(event.target));
-    };
-  }
-  function openProductForm(record) {
-    record = record || {};
-    openModal(record['Producto ID'] ? 'Editar producto' : 'Nuevo producto', `
-      <form class="form-grid" id="productForm">
-        ${hidden('Producto ID', record['Producto ID'])}
-        ${field('Producto', record['Producto'], true, true)}
-        ${selectField('Categoría', ['IMPLANTE', 'PROTESICO', 'INSTRUMENTAL', 'DIGITAL'], record['Categoría'])}
-        ${selectField('Sistema', ['MP', 'HI', 'HE', 'CMU', 'CMU3', 'CMHI', 'IB', 'IBT', 'MU'], record['Sistema'])}
-        ${field('Precio', record['Precio'], false, false, 'number', 'Precio en pesos argentinos')}
-        ${selectField('Activo', ['Sí', 'No'], record['Activo'] || 'Sí')}
-        ${actions()}
-      </form>`);
-    document.getElementById('productForm').onsubmit = function (event) {
-      event.preventDefault();
-      submit('saveProduct', formObject(event.target));
-    };
-  }
-  function openManualOrderForm() {
-    openModal('Nuevo pedido manual', `<form class="form-grid" id="manualOrderForm">
-      <p class="section-label">Cliente</p>
-      ${selectField('clientId', state.clients.map(c => ({value:c['Cliente ID'], label:c['Nombre completo']})), '', true, true, 'Seleccionar cliente…')}
-      ${field('vendedor', 'Administración')}
-      ${selectField('formaEntrega', ['Retiro por sucursal Via Cargo', 'Retiro en Fábrica'], '')}
-      ${field('direccionEntrega', '', false, true)}
-      ${textareaField('observaciones', '')}
-      <p class="section-label">Productos</p>
-      <div class="line-items" id="manualItems"></div>
-      <button type="button" class="secondary-button" id="addManualItem">＋ Agregar producto</button>
+  });
+  bindRows(moduleKey);
+}
+
+function tableHtml(moduleKey, records) {
+  const meta = views[moduleKey];
+  if (!records.length) return empty('Todavía no hay ' + meta.title.toLowerCase() + '.');
+  return `<div class="table-wrap"><table>
+    <thead><tr>${meta.columns.map(c => `<th>${html(c)}</th>`).join('')}<th>Acciones</th></tr></thead>
+    <tbody>${records.map(function (r) {
+      return `<tr>${meta.columns.map(c => `<td>${cell(c, r[c])}</td>`).join('')}<td>${rowActions(moduleKey, r)}</td></tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
+}
+
+function rowActions(moduleKey, r) {
+  if (moduleKey === 'clientes') return `<div class="row-actions"><button class="ghost-button" data-edit-client="${attr(r['Cliente ID'])}">Editar</button></div>`;
+  if (moduleKey === 'productos') return `<div class="row-actions"><button class="ghost-button" data-edit-product="${attr(r['Producto ID'])}">Editar</button></div>`;
+  if (moduleKey === 'pedidos') return `<div class="row-actions"><button class="ghost-button" data-open-order="${attr(r['Pedido ID'])}">Abrir</button><button class="ghost-button" data-edit-order="${attr(r['Pedido ID'])}">Editar</button></div>`;
+  if (moduleKey === 'remitos') return `<div class="row-actions">
+    <button class="ghost-button" data-edit-remit="${attr(r['Remito ID'])}">Editar</button>
+    ${r['Estado'] === 'Entregado'
+      ? `<button class="ghost-button" data-print-remit="${attr(r['Remito ID'])}">Imprimir</button><span class="pill success">Vendido</span>`
+      : (r['Estado'] === 'Cancelado' ? `<span class="pill neutral">Cancelado</span>` : `<button class="primary-button" data-emit-remit="${attr(r['Remito ID'])}">Emitir remito</button>`)}
+  </div>`;
+  return '';
+}
+
+function bindRows(moduleKey) {
+  document.querySelectorAll('[data-edit-client]').forEach(b => b.onclick = () => openClientForm(findRecord('clientes', 'Cliente ID', b.dataset.editClient)));
+  document.querySelectorAll('[data-edit-product]').forEach(b => b.onclick = () => openProductForm(findRecord('productos', 'Producto ID', b.dataset.editProduct)));
+  document.querySelectorAll('[data-open-order]').forEach(b => b.onclick = () => openOrderById(b.dataset.openOrder));
+  document.querySelectorAll('[data-edit-order]').forEach(b => b.onclick = () => openEditOrder(findRecord('pedidos', 'Pedido ID', b.dataset.editOrder)));
+  document.querySelectorAll('[data-edit-remit]').forEach(b => b.onclick = () => openEditRemit(findRecord('remitos', 'Remito ID', b.dataset.editRemit)));
+  document.querySelectorAll('[data-print-remit]').forEach(b => b.onclick = () => printDocument('remito', b.dataset.printRemit));
+  document.querySelectorAll('[data-emit-remit]').forEach(b => b.onclick = () => confirmEmitirRemito(b.dataset.emitRemit));
+}
+
+function openClientForm(record) {
+  record = record || {};
+  openModal(record['Cliente ID'] ? 'Editar cliente' : 'Nuevo cliente', `
+    <form class="form-grid" id="clientForm">
+      ${hidden('Cliente ID', record['Cliente ID'])}
+      ${field('Nombre', record['Nombre'], true)}
+      ${field('Apellido', record['Apellido'])}
+      ${field('CUIL', record['CUIL'], true)}
+      ${field('DNI', record['DNI'])}
+      ${field('Matrícula profesional', record['Matrícula profesional'])}
+      ${field('Empresa', record['Empresa'], false, false, 'text', 'Nombre de la empresa')}
+      ${field('Teléfono', record['Teléfono'])}
+      ${field('Email', record['Email'], false, false, 'email')}
+      ${field('Localidad', record['Localidad'])}
+      ${field('Código postal', record['Código postal'])}
+      ${selectField('Provincia', provinces(), record['Provincia'])}
+      ${selectField('Estado', ['Activo', 'Inactivo'], record['Estado'] || 'Activo')}
       ${actions()}
     </form>`);
-    addLine('manualItems', 'order');
-    wireDeliveryAddressAutoFill_('manualOrderForm', 'formaEntrega', 'direccionEntrega');
-    document.getElementById('addManualItem').onclick = () => addLine('manualItems', 'order');
-    document.getElementById('manualOrderForm').onsubmit = function (event) {
-      event.preventDefault();
-      const raw = formObject(event.target);
-      const client = state.clients.find(c => c['Cliente ID'] === raw.clientId);
-      if (!client) return showError(new Error('Seleccioná un cliente.'));
-      submit('saveManualOrder', {
-        client: client,
-        vendedor: raw.vendedor,
-        formaEntrega: raw.formaEntrega,
-        direccionEntrega: raw.direccionEntrega,
-        observaciones: raw.observaciones,
-        items: collectLines('manualItems', 'order')
-      });
-    };
-  }
-  function openEditOrder(order) {
-    if (!order) return showError(new Error('Pedido no encontrado.'));
-    openModal('Editar pedido ' + order['Pedido ID'], `<form class="form-grid" id="editOrderForm">
-      <p class="section-label">Cliente y entrega</p>
-      ${selectField('clientId', state.clients.map(c => ({value:c['Cliente ID'], label:c['Nombre completo']})), order['Cliente ID'], true, true, 'Cliente')}
-      ${field('vendedor', order['Vendedor'], false, false, 'text', 'Vendedor')}
-      ${selectField('formaEntrega', ['Retiro por sucursal Via Cargo', 'Retiro en Fábrica'], order['Forma de entrega'], false, false, 'Forma de entrega')}
-      ${field('direccionEntrega', order['Dirección de entrega'], false, true, 'text', 'Dirección de entrega')}
-      ${selectField('estado', ['Recibido', 'En revisión', 'Apartado', 'Presupuestado', 'Remitido', 'Vendido', 'Cancelado'], order['Estado'], true, false, 'Estado')}
-      ${textareaField('observaciones', order['Observaciones'], true, 'Observaciones')}
-      <p class="section-label">Productos</p>
-      <div class="line-items" id="editOrderItems"></div>
-      <button type="button" class="secondary-button" id="addEditOrderItem">＋ Agregar producto</button>
-      ${actions('Guardar cambios')}
+  document.getElementById('clientForm').onsubmit = function (event) {
+    event.preventDefault();
+    submit('saveClient', formObject(event.target));
+  };
+}
+
+function openProductForm(record) {
+  record = record || {};
+  openModal(record['Producto ID'] ? 'Editar producto' : 'Nuevo producto', `
+    <form class="form-grid" id="productForm">
+      ${hidden('Producto ID', record['Producto ID'])}
+      ${field('Producto', record['Producto'], true, true)}
+      ${selectField('Categoría', ['IMPLANTE', 'PROTESICO', 'INSTRUMENTAL', 'DIGITAL'], record['Categoría'])}
+      ${selectField('Sistema', ['MP', 'HI', 'HE', 'CMU', 'CMU3', 'CMHI', 'IB', 'IBT', 'MU'], record['Sistema'])}
+      ${field('Precio', record['Precio'], false, false, 'number', 'Precio en pesos argentinos')}
+      ${selectField('Activo', ['Sí', 'No'], record['Activo'] || 'Sí')}
+      ${actions()}
     </form>`);
-    (order.items || []).forEach(i => addLine('editOrderItems', 'order', i));
-    wireDeliveryAddressAutoFill_('editOrderForm', 'formaEntrega', 'direccionEntrega');
-    document.getElementById('addEditOrderItem').onclick = () => addLine('editOrderItems', 'order');
-    document.getElementById('editOrderForm').onsubmit = function (event) {
-      event.preventDefault();
-      const raw = formObject(event.target);
-      submit('updateOrder', {
-        orderId: order['Pedido ID'],
-        clientId: raw.clientId,
-        vendedor: raw.vendedor,
-        formaEntrega: raw.formaEntrega,
-        direccionEntrega: raw.direccionEntrega,
-        estado: raw.estado,
-        observaciones: raw.observaciones,
-        items: collectLines('editOrderItems', 'order')
-      }, 'Pedido actualizado.');
-    };
-  }
-  function openOrderById(id) {
-    const cached = findRecord('pedidos', 'Pedido ID', id);
-    const load = cached ? Promise.resolve(cached) : server('listAdmin', 'pedidos').then(rows => rows.find(r => r['Pedido ID'] === id));
-    load.then(openOrder);
-  }
-  function openOrder(order) {
-    if (!order) return showError(new Error('Pedido no encontrado.'));
-    state.currentOrder = order;
-    // El remito se emite recién cuando el pedido ya tiene presupuesto
-    // (circuito pedido -> presupuesto -> remito, que directamente queda vendido).
-    const puedeEmitirRemito = order['Estado'] === 'Presupuestado' || order['Estado'] === 'Remitido' || order['Estado'] === 'Vendido';
-    openModal('Pedido ' + order['Pedido ID'], `
-      <div class="form-grid">
-        <div class="field"><label>Cliente</label><strong>${html(order['Cliente'])}</strong></div>
-        <div class="field"><label>Fecha</label><span>${html(order['Fecha y hora'])}</span></div>
-        <div class="field"><label>Origen</label><span>${html(order['Origen'])}</span></div>
-        <div class="field"><label>Estado</label><span class="pill ${pillClass(order['Estado'])}">${html(order['Estado'])}</span></div>
-        <div class="field full"><label>Entrega</label><span>${html(order['Forma de entrega'])} ${order['Dirección de entrega'] ? '· ' + html(order['Dirección de entrega']) : ''}</span></div>
-        <div class="field full"><label>Productos</label>
-          <div class="table-wrap"><table><thead><tr><th>Producto</th><th>Cantidad</th></tr></thead><tbody>
-            ${(order.items || []).map(i => `<tr><td>${html(i['Producto'])}</td><td>${html(i['Cantidad'])}</td></tr>`).join('')}
-          </tbody></table></div>
-        </div>
-        ${puedeEmitirRemito ? '' : '<div class="field full"><p style="color:var(--muted);font-size:12px">Para emitir el remito, primero generá el presupuesto de este pedido.</p></div>'}
-        <div class="form-actions">
-          <button class="secondary-button" type="button" id="editOrder">Editar pedido</button>
-          <button class="primary-button" type="button" id="remitFromOrder" ${puedeEmitirRemito ? '' : 'disabled'}>Emitir remito</button>
-        </div>
-      </div>`);
-    document.getElementById('editOrder').onclick = () => openEditOrder(order);
-    document.getElementById('remitFromOrder').onclick = function () {
-      const btn = document.getElementById('remitFromOrder');
-      btn.disabled = true;
-      prepararItemsRemitoDesdeOrder_(order).then(function (items) {
-        openEmitirRemitoForm(order, items);
-      }).catch(function (err) { btn.disabled = false; showError(err); });
-    };
-  }
-  // Arma los ítems del remito (producto, cantidad y lote) a partir del
-  // Presupuesto vinculado a este pedido, NO de Pedido Detalle: el remito
-  // debe reflejar exactamente lo que quedó en el presupuesto — incluidos
-  // componentes/instrumental que no tienen control de stock por lote (no
-  // aparecen en Inventario > Apartado). Si el pedido no tiene presupuesto
-  // (circuito viejo/manual, por ejemplo un remito armado antes de este
-  // cambio), se arma igual como antes, a partir de Pedido Detalle.
-  function prepararItemsRemitoDesdeOrder_(order) {
-    return server('listAdmin', 'presupuestos').then(function (presupuestos) {
-      const delPedido = presupuestos.filter(b => b['Pedido ID'] === order['Pedido ID']);
-      const presupuesto = delPedido.length ? delPedido[0] : null; // listAdmin devuelve el más reciente primero
-      if (!presupuesto) {
-        return (order.items || []).map(function (i) {
-          return { productId: i['Producto ID'], codigo: i['Código'], producto: i['Producto'], quantity: toNumber(i['Cantidad']), lot: i['Lote'] || '' };
-        });
-      }
-      return server('getDocumentData', 'presupuesto', presupuesto['Presupuesto ID']).then(function (doc) {
-        return (doc.items || []).map(function (i) {
-          return { productId: i['Producto ID'], codigo: i['Código'], producto: i['Producto'], quantity: toNumber(i['Cantidad']), lot: i['Lote'] || '' };
-        });
-      });
+  document.getElementById('productForm').onsubmit = function (event) {
+    event.preventDefault();
+    submit('saveProduct', formObject(event.target));
+  };
+}
+
+function openManualOrderForm() {
+  openModal('Nuevo pedido manual', `<form class="form-grid" id="manualOrderForm">
+    <p class="section-label">Cliente</p>
+    ${selectField('clientId', state.clients.map(c => ({value: c['Cliente ID'], label: c['Nombre completo']})), '', true, true, 'Seleccionar cliente…')}
+    ${field('vendedor', 'Administración')}
+    ${selectField('formaEntrega', ['Retiro por sucursal Via Cargo', 'Retiro en Fábrica'], '')}
+    ${field('direccionEntrega', '', false, true)}
+    ${textareaField('observaciones', '')}
+    <p class="section-label">Productos</p>
+    <div class="line-items" id="manualItems"></div>
+    <button type="button" class="secondary-button" id="addManualItem">＋ Agregar producto</button>
+    ${actions()}
+  </form>`);
+  addLine('manualItems', 'order');
+  wireDeliveryAddressAutoFill_('manualOrderForm', 'formaEntrega', 'direccionEntrega');
+  document.getElementById('addManualItem').onclick = () => addLine('manualItems', 'order');
+  document.getElementById('manualOrderForm').onsubmit = function (event) {
+    event.preventDefault();
+    const raw = formObject(event.target);
+    const client = state.clients.find(c => c['Cliente ID'] === raw.clientId);
+    if (!client) return showError(new Error('Seleccioná un cliente.'));
+    submit('saveManualOrder', {
+      client: client, vendedor: raw.vendedor, formaEntrega: raw.formaEntrega,
+      direccionEntrega: raw.direccionEntrega, observaciones: raw.observaciones,
+      items: collectLines('manualItems', 'order')
     });
-  }
-  // Crear presupuesto: lista los Pedidos armados desde un apartado
-  // (Inventario > Apartado los crea/actualiza solos vía
-  // sincronizarPedidoDesdeApartado_), autocompleta cliente/tipo de cliente
-  // y precio sugerido + lote por implante, deja tocar el precio y el lote
-  // a mano, permite descuento (porcentaje o importe fijo) + observaciones,
-  // y muestra el total final en vivo. Se usa como generador manual/de
-  // respaldo — el flujo normal (Inventario > Apartado) ya genera e
-  // imprime el presupuesto solo; esta pantalla sirve para pedidos de
-  // apartado viejos o si el paso automático falló, y para presupuestos de
-  // otros productos.
-  function openBudgetFromApartadoPicker(preselectClienteId) {
-    openModal('Nuevo presupuesto', loading());
-    server('getPedidosApartadoPendientes').then(function (pedidos) {
-      if (!pedidos.length) {
-        document.getElementById('modalContent').innerHTML = `
-          <div class="form-grid">
-            <div class="field full"><p>Todavía no hay pedidos armados desde un apartado. Generá uno en Inventario › Apartado (el presupuesto se genera solo), o cargá un presupuesto para otro producto.</p></div>
-            <div class="form-actions"><button type="button" class="secondary-button" onclick="closeModal()">Cerrar</button><button type="button" class="primary-button" id="goManualBudget">Presupuesto manual</button></div>
-          </div>`;
-        document.getElementById('goManualBudget').onclick = openManualBudgetForm;
-        return;
-      }
-      document.getElementById('modalContent').innerHTML = `
-        <form class="form-grid" id="apartadoBudgetForm">
-          <div class="field full">
-            <label>Pedido (armado desde apartado)</label>
-            <select id="apartadoOrderSelect" required>
-              <option value="">Seleccioná un pedido…</option>
-              ${pedidos.map(p => `<option value="${attr(p.orderId)}">${html(p.cliente)} · ${html(p.orderId)} · ${p.items.length} ítem(s)</option>`).join('')}
-            </select>
-          </div>
-          <div id="apartadoBudgetBody"></div>
-        </form>
-        <p style="padding:0 26px 20px"><button type="button" class="ghost-button" id="goManualBudgetLink">¿Presupuesto para otro producto (no implantes)? Cargarlo manualmente</button></p>`;
-      document.getElementById('goManualBudgetLink').onclick = function () { closeModal(); openManualBudgetForm(); };
-      document.getElementById('apartadoOrderSelect').onchange = function () {
-        renderApartadoBudgetBody(pedidos.find(p => p.orderId === this.value));
-      };
-      if (preselectClienteId) {
-        const preseleccionado = pedidos.find(p => p.clienteId === preselectClienteId);
-        if (preseleccionado) {
-          document.getElementById('apartadoOrderSelect').value = preseleccionado.orderId;
-          renderApartadoBudgetBody(preseleccionado);
-        }
-      }
-      document.getElementById('apartadoBudgetForm').onsubmit = function (event) {
-        event.preventDefault();
-        const orderId = document.getElementById('apartadoOrderSelect').value;
-        const pedido = pedidos.find(p => p.orderId === orderId);
-        if (!pedido) return showError(new Error('Seleccioná un pedido.'));
-        const raw = formObject(event.target);
-        const prices = Array.from(document.querySelectorAll('.apartado-item-price')).map(i => Number(i.value) || 0);
-        const lotes = Array.from(document.querySelectorAll('.apartado-item-lote')).map(i => i.value.trim());
-        const items = pedido.items.map((it, idx) => ({
-          productId: it.productId,
-          codigo: it.codigo,
-          producto: it.producto,
-          quantity: it.cantidad,
-          price: prices[idx] || 0,
-          lot: lotes[idx] || ''
-        }));
-        submit('crearPresupuestoDesdeApartado', {
-          orderId: orderId,
-          items: items,
-          discountType: raw.discountType,
-          discountValue: raw.discountValue,
-          notes: raw.notes
-        }, 'Presupuesto generado.');
-      };
-    }).catch(showError);
-  }
-  function renderApartadoBudgetBody(pedido) {
-    const body = document.getElementById('apartadoBudgetBody');
-    if (!pedido) { body.innerHTML = ''; return; }
-    const client = state.clients.find(c => c['Cliente ID'] === pedido.clienteId);
-    body.innerHTML = `
-      <div class="field"><label>Cliente</label><strong>${html(pedido.cliente)}</strong></div>
-      <div class="field"><label>Tipo de cliente</label><span class="pill neutral">${html((client && client['Tipo']) || '—')}</span></div>
-      <p class="section-label">Ítems · precio sugerido editable — el lote es el que ya está apartado en Inventario (no se edita acá)</p>
-      <div class="line-items" id="apartadoBudgetItems">
-        ${pedido.items.map(function (it) { return `
-          <div class="line-item" style="grid-template-columns:2fr 1fr 1fr 1fr">
-            <div class="field"><label>Producto</label><input type="text" value="${attr(it.producto)}" readonly></div>
-            <div class="field"><label>Cantidad</label><input type="number" class="apartado-item-qty" value="${attr(it.cantidad)}" disabled></div>
-            <div class="field"><label>Precio unitario (ARS)</label><input type="number" min="0" step="0.01" class="apartado-item-price" value="${attr(it.precioSugerido || 0)}"></div>
-            <div class="field"><label>Lote (automático, del apartado)</label><input type="text" class="apartado-item-lote" value="${attr(it.lote || '')}" readonly></div>
-          </div>`; }).join('')}
-      </div>
-      ${selectField('discountType', ['Porcentaje', 'Importe'], 'Porcentaje', false, false, 'Tipo de descuento')}
-      ${field('discountValue', 0, false, false, 'number', 'Descuento')}
-      ${textareaField('notes', '', false, 'Observaciones')}
-      <div class="field full"><label>Total final</label><strong id="apartadoBudgetTotal" style="font-size:20px">${money(0)}</strong></div>
-      ${actions('Generar presupuesto')}`;
-    body.addEventListener('input', updateApartadoBudgetTotal);
-    updateApartadoBudgetTotal();
-  }
-  function updateApartadoBudgetTotal() {
-    const totalEl = document.getElementById('apartadoBudgetTotal');
-    if (!totalEl) return;
-    const qtys = Array.from(document.querySelectorAll('.apartado-item-qty')).map(i => Number(i.value) || 0);
-    const prices = Array.from(document.querySelectorAll('.apartado-item-price')).map(i => Number(i.value) || 0);
-    const subtotal = qtys.reduce((sum, qty, idx) => sum + qty * (prices[idx] || 0), 0);
-    const discountType = document.querySelector('#apartadoBudgetBody select[name="discountType"]');
-    const discountValue = document.querySelector('#apartadoBudgetBody input[name="discountValue"]');
-    const dType = discountType ? discountType.value : 'Porcentaje';
-    const dValue = discountValue ? Number(discountValue.value) || 0 : 0;
-    const discountAmount = dType === 'Importe' ? Math.min(dValue, subtotal) : subtotal * Math.min(dValue, 100) / 100;
-    totalEl.textContent = money(Math.max(0, subtotal - discountAmount));
-  }
-  function openManualBudgetForm() {
-    openModal('Nuevo presupuesto', `<form class="form-grid" id="budgetForm">
-      ${selectField('clientId', state.clients.map(c => ({value:c['Cliente ID'], label:c['Nombre completo']})), '', true, true, 'Cliente')}
-      ${field('date', todayIso(), true, false, 'date', 'Fecha')}
-      <p class="section-label">Productos y precios — el lote es manual solo para componentes/instrumental; los implantes lo toman del apartado</p>
-      <div class="line-items" id="budgetItems"></div>
-      <button type="button" class="secondary-button" id="addBudgetItem">＋ Agregar producto</button>
-      ${selectField('discountType', ['Porcentaje', 'Importe'], 'Porcentaje', false, false, 'Tipo de descuento')}
-      ${field('discountValue', 0, false, false, 'number', 'Descuento')}
-      ${textareaField('notes', '', false, 'Observaciones')}
-      ${actions('Generar presupuesto')}
-    </form>`);
-    addLine('budgetItems', 'budget');
-    document.getElementById('addBudgetItem').onclick = () => addLine('budgetItems', 'budget');
-    document.getElementById('budgetForm').onsubmit = function (event) {
-      event.preventDefault();
-      const raw = formObject(event.target);
-      submit('createManualBudget', {
-        clientId: raw.clientId,
-        date: raw.date,
-        discountType: raw.discountType,
-        discountValue: raw.discountValue,
-        notes: raw.notes,
-        items: collectLines('budgetItems', 'budget')
-      }, 'Presupuesto generado.');
-    };
-  }
-  function openEditBudget(budget) {
-    if (!budget) return showError(new Error('Presupuesto no encontrado.'));
-    openModal('Editar presupuesto ' + budget['Presupuesto ID'], `<form class="form-grid" id="editBudgetForm">
-      ${selectField('clientId', state.clients.map(c => ({value:c['Cliente ID'], label:c['Nombre completo']})), budget['Cliente ID'], true, true, 'Cliente')}
-      ${field('date', inputDate(budget['Fecha']), true, false, 'date', 'Fecha')}
-      <p class="section-label">Productos y precios — el lote es manual solo para componentes/instrumental; los implantes lo toman del apartado</p>
-      <div class="line-items" id="editBudgetItems"></div>
-      <button type="button" class="secondary-button" id="addEditBudgetItem">＋ Agregar producto</button>
-      ${selectField('discountType', ['Porcentaje', 'Importe'], budget['Descuento tipo'] || 'Porcentaje', false, false, 'Tipo de descuento')}
-      ${field('discountValue', toNumber(budget['Descuento valor']), false, false, 'number', 'Descuento')}
-      ${textareaField('notes', budget['Observaciones'], false, 'Observaciones')}
-      <div class="form-actions">
-        <button type="button" class="ghost-button" id="printEditBudget">Imprimir</button>
-        <button type="button" class="secondary-button" onclick="closeModal()">Cancelar</button>
-        <button type="submit" class="primary-button">Guardar presupuesto</button>
-      </div>
-    </form>`);
-    // Si este presupuesto viene de un pedido apartado, se trae el lote
-    // ACTUAL de cada implante en ese apartado — así, si se agrega un
-    // implante nuevo mientras se edita, también toma su lote real en vez
-    // de quedar en blanco. Los ítems que ya tenían "Lote" guardado de
-    // antes lo conservan tal cual (renderLoteFieldBudget_ le da prioridad).
-    cargarLotesApartadoDePedido_(budget['Pedido ID']).then(function (lotesMap) {
-      (budget.items || []).forEach(i => addLine('editBudgetItems', 'budget', i, lotesMap));
-      document.getElementById('addEditBudgetItem').onclick = () => addLine('editBudgetItems', 'budget', {}, lotesMap);
-    });
-    document.getElementById('printEditBudget').onclick = () => printDocument('presupuesto', budget['Presupuesto ID']);
-    document.getElementById('editBudgetForm').onsubmit = function (event) {
-      event.preventDefault();
-      const raw = formObject(event.target);
-      submit('updateBudget', {
-        budgetId: budget['Presupuesto ID'],
-        clientId: raw.clientId,
-        date: raw.date,
-        discountType: raw.discountType,
-        discountValue: raw.discountValue,
-        notes: raw.notes,
-        items: collectLines('editBudgetItems', 'budget')
-      }, 'Presupuesto actualizado.');
-    };
-  }
-  // Número de remito Via Cargo: prefijo de agencia (4 dígitos, entre 5090 y
-  // 9090, elegible de una lista) + el resto del número, que se escribe a
-  // mano — es un dato DISTINTO del número de seguimiento (que es un campo
-  // libre aparte). Estos helpers arman/leen/parsean ese par de campos y se
-  // reusan en "Emitir remito" y en "Editar remito".
-  const VIA_CARGO_PREFIJOS_ = ['5090','9090'];
-  function viaCargoCamposHtml_(prefijoActual, restoActual) {
-    const prefijoConocido = VIA_CARGO_PREFIJOS_.indexOf(prefijoActual) !== -1;
-    const prefijoManual = !!prefijoActual && !prefijoConocido;
-    return `<div class="field full">
-      <label>Número de remito Via Cargo (opcional)</label>
-      <div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap">
-        <div style="flex:0 0 130px">
-          <select id="viaCargoPrefijo">
-            <option value="">— Prefijo —</option>
-            ${VIA_CARGO_PREFIJOS_.map(p => `<option value="${p}" ${p === prefijoActual ? 'selected' : ''}>${p}</option>`).join('')}
-            <option value="__otro__" ${prefijoManual ? 'selected' : ''}>Otro…</option>
-          </select>
-          <input type="text" id="viaCargoPrefijoManual" class="${prefijoManual ? '' : 'hidden'}" value="${attr(prefijoManual ? prefijoActual : '')}" maxlength="4" placeholder="Ej: 5090" style="margin-top:4px;width:100%">
-        </div>
-        <input type="text" id="viaCargoResto" value="${attr(restoActual || '')}" placeholder="Resto del número" style="flex:1;min-width:140px">
-      </div>
-      <small style="color:var(--muted)">Prefijo de agencia (entre 5090 y 9090) + el resto del número, a mano.</small>
-    </div>`;
-  }
-  function wireViaCargoCampos_() {
-    const select = document.getElementById('viaCargoPrefijo');
-    const manual = document.getElementById('viaCargoPrefijoManual');
-    if (!select) return;
-    select.onchange = function () {
-      if (select.value === '__otro__') { manual.classList.remove('hidden'); manual.focus(); }
-      else { manual.classList.add('hidden'); manual.value = ''; }
-    };
-  }
-  function leerViaCargoNumero_() {
-    const select = document.getElementById('viaCargoPrefijo');
-    if (!select) return '';
-    const manual = document.getElementById('viaCargoPrefijoManual');
-    const resto = document.getElementById('viaCargoResto');
-    const prefijo = select.value === '__otro__' ? (manual ? manual.value.trim() : '') : select.value;
-    const restoVal = resto ? resto.value.trim() : '';
-    return (prefijo || '') + restoVal;
-  }
-  function parseViaCargoNumero_(valor) {
-    valor = String(valor || '').trim();
-    if (!valor) return { prefijo: '', resto: '' };
-    const prefijo4 = valor.slice(0, 4);
-    if (VIA_CARGO_PREFIJOS_.indexOf(prefijo4) !== -1) return { prefijo: prefijo4, resto: valor.slice(4) };
-    // Prefijo no reconocido (remito viejo, u otro formato): se deja todo
-    // en "resto" en vez de inventar un corte que capaz no corresponde.
-    return { prefijo: '', resto: valor };
-  }
-  // Emitir remito: parte de un Pedido ya presupuestado. Cliente/fecha se
-  // autocompletan desde el pedido, y los PRODUCTOS (producto, cantidad y
-  // lote) se autocompletan desde el PRESUPUESTO de ese pedido —
-  // prepararItemsRemitoDesdeOrder_ ya los resolvió antes de abrir este
-  // modal, y acá no se pueden agregar/quitar/editar: ese paso se hace en
-  // el Presupuesto (o en el Apartado, en Inventario), nunca al emitir o
-  // editar el remito. Deja "Forma de entrega" y "Aclaración" para
-  // completar a mano, y al confirmar: genera el remito con número
-  // correlativo único, arma el PDF con la plantilla Bio-Fix (RemitoPDF.gs)
-  // y lo guarda en la carpeta de Drive "Ventas Bio-Fix" — además lo abre
-  // en una pestaña nueva para poder imprimirlo al toque. En el mismo paso
-  // el remito y el pedido quedan marcados como VENDIDO y el stock que
-  // corresponda se descuenta — emitir el remito ya es "vender".
-  function openEmitirRemitoForm(order, items) {
-    items = (items || (order.items || []).map(function (i) {
-      return { productId: i['Producto ID'], codigo: i['Código'], producto: i['Producto'], quantity: toNumber(i['Cantidad']), lot: i['Lote'] || '' };
-    }));
-    openModal('Emitir remito · Pedido ' + order['Pedido ID'], `<form class="form-grid" id="emitirRemitoForm">
+  };
+}
+
+function openEditOrder(order) {
+  if (!order) return showError(new Error('Pedido no encontrado.'));
+  openModal('Editar pedido ' + order['Pedido ID'], `<form class="form-grid" id="editOrderForm">
+    <p class="section-label">Cliente y entrega</p>
+    ${selectField('clientId', state.clients.map(c => ({value: c['Cliente ID'], label: c['Nombre completo']})), order['Cliente ID'], true, true, 'Cliente')}
+    ${field('vendedor', order['Vendedor'], false, false, 'text', 'Vendedor')}
+    ${selectField('formaEntrega', ['Retiro por sucursal Via Cargo', 'Retiro en Fábrica'], order['Forma de entrega'], false, false, 'Forma de entrega')}
+    ${field('direccionEntrega', order['Dirección de entrega'], false, true, 'text', 'Dirección de entrega')}
+    ${selectField('estado', ['Recibido', 'En revisión', 'Apartado', 'Remitido', 'Vendido', 'Cancelado'], order['Estado'], true, false, 'Estado')}
+    ${textareaField('observaciones', order['Observaciones'], true, 'Observaciones')}
+    <p class="section-label">Productos</p>
+    <div class="line-items" id="editOrderItems"></div>
+    <button type="button" class="secondary-button" id="addEditOrderItem">＋ Agregar producto</button>
+    ${actions('Guardar cambios')}
+  </form>`);
+  (order.items || []).forEach(i => addLine('editOrderItems', 'order', i));
+  wireDeliveryAddressAutoFill_('editOrderForm', 'formaEntrega', 'direccionEntrega');
+  document.getElementById('addEditOrderItem').onclick = () => addLine('editOrderItems', 'order');
+  document.getElementById('editOrderForm').onsubmit = function (event) {
+    event.preventDefault();
+    const raw = formObject(event.target);
+    submit('updateOrder', {
+      orderId: order['Pedido ID'], clientId: raw.clientId, vendedor: raw.vendedor,
+      formaEntrega: raw.formaEntrega, direccionEntrega: raw.direccionEntrega, estado: raw.estado,
+      observaciones: raw.observaciones, items: collectLines('editOrderItems', 'order')
+    }, 'Pedido actualizado.');
+  };
+}
+
+function openOrderById(id) {
+  const cached = findRecord('pedidos', 'Pedido ID', id);
+  const load = cached ? Promise.resolve(cached) : server('listAdmin', 'pedidos').then(rows => rows.find(r => r['Pedido ID'] === id));
+  load.then(openOrder);
+}
+
+// "Generar remito" arma el Remito en Borrador de este pedido (con los
+// ítems de Pedido Detalle) y lo abre para revisar/editar antes de emitir —
+// mismo circuito Borrador -> Emitir que usan los pedidos de Apartado. Si el
+// pedido ya tiene un remito, el botón dice "Ver remito" y va directo a
+// abrirlo (editable si sigue en Borrador, de solo lectura si ya se emitió).
+function openOrder(order) {
+  if (!order) return showError(new Error('Pedido no encontrado.'));
+  state.currentOrder = order;
+  const yaRemitado = order['Estado'] === 'Remitido' || order['Estado'] === 'Vendido';
+  openModal('Pedido ' + order['Pedido ID'], `
+    <div class="form-grid">
       <div class="field"><label>Cliente</label><strong>${html(order['Cliente'])}</strong></div>
-      <div class="field"><label>Fecha</label><strong>${html(todayIso())}</strong></div>
-      ${selectField('delivery', ['Retiro por sucursal Via Cargo', 'Retiro en Fábrica'], '', true, false, 'Tipo de entrega')}
-      ${viaCargoCamposHtml_('', '')}
-      ${field('tracking', '', false, false, 'text', 'Número de seguimiento (opcional)')}
-      ${textareaField('notes', '', true, 'Aclaración (opcional) — texto libre, no se completa solo con los productos')}
-      <p class="section-label">Productos · tomados del presupuesto (no se pueden editar acá)</p>
-      <div class="table-wrap field full"><table><thead><tr><th>Producto</th><th>Cantidad</th><th>Lote</th></tr></thead><tbody id="emitirRemitoItemsBody">
-        ${items.map(i => `<tr><td>${html(i.producto)}</td><td>${html(i.quantity)}</td><td>${html(i.lot || '—')}</td></tr>`).join('')}
-      </tbody></table></div>
-      <div class="field full"><p style="color:var(--muted);font-size:12px">El número de remito se genera solo y no se repite. Si un producto, cantidad o lote está mal, corregilo en el Presupuesto (o en el Apartado, en Inventario) y volvé a emitir el remito. Si cargás el número de Via Cargo, queda guardado en el remito y también en el historial de Movimientos. Al confirmar se guarda el PDF en Drive (carpeta "Ventas Bio-Fix"), se abre para imprimir, y el remito/pedido quedan marcados como Vendido con el stock ya descontado.</p></div>
-      ${actions('Emitir remito')}
-    </form>`);
-    wireViaCargoCampos_();
-    // Red de seguridad: si algún ítem quedó sin lote en el presupuesto
-    // (por ejemplo porque se generó antes de este cambio, o el usuario lo
-    // dejó en blanco a propósito), se intenta completar contra el
-    // apartado ACTUAL del cliente (getLotesApartadoPorPedido,
-    // PedidosApartadoSync.gs) matcheado por Producto ID. Solo completa lo
-    // que esté vacío — nunca pisa un lote que ya vino del presupuesto.
-    jsonp({ accion: 'getLotesApartadoPorPedidoDirecto', orderId: order['Pedido ID'] }, function (err, data) {
-      if (err || !data || !data.ok || !data.lotes) return;
-      let huboCambios = false;
-      items.forEach(function (i) {
-        if (!i.lot && i.productId && data.lotes[i.productId]) { i.lot = data.lotes[i.productId]; huboCambios = true; }
-      });
-      if (huboCambios) {
-        document.getElementById('emitirRemitoItemsBody').innerHTML =
-          items.map(i => `<tr><td>${html(i.producto)}</td><td>${html(i.quantity)}</td><td>${html(i.lot || '—')}</td></tr>`).join('');
-      }
-    });
-    document.getElementById('emitirRemitoForm').onsubmit = function (event) {
-      event.preventDefault();
-      const raw = formObject(event.target);
-      if (!raw.delivery) return showError(new Error('Elegí el tipo de entrega.'));
-      const submitButton = event.target.querySelector('button[type="submit"]');
-      submitButton.disabled = true;
-      submitButton.textContent = 'Emitiendo…';
-      const trackingVal = (raw.tracking || '').trim();
-      const viaCargoVal = leerViaCargoNumero_();
-      server('createRemitFromOrder', { orderId: order['Pedido ID'], date: todayIso(), viaCargoRemito: viaCargoVal, tracking: trackingVal, notes: raw.notes, items: items })
-        .then(function (created) {
-          // createRemitFromOrder trae "Forma de entrega" del Pedido; acá la
-          // pisamos con lo que se completó a mano al emitir el remito. El
-          // número de remito Via Cargo cargado acá es lo que updateRemit
-          // propaga a la columna "Remito Via Cargo" de Movimientos
-          // (sincronizarViaCargoEnMovimientos_, BackendPanel.gs) — solo si
-          // el tipo de entrega es Via Cargo. El número de seguimiento es
-          // un dato aparte, no se usa para eso. No se mandan "items" acá:
-          // updateRemit ya no los acepta (ver openEditRemit más abajo).
-          return server('updateRemit', {
-            remitId: created.id, date: todayIso(), delivery: raw.delivery, address: suggestedAddressForDelivery_(raw.delivery),
-            viaCargoRemito: viaCargoVal, tracking: trackingVal, notes: raw.notes
-          }).then(function () { return created; });
-        })
-        .then(function (created) {
-          return server('generarRemitoPDF', created.id).then(function (pdf) { return { created: created, pdf: pdf }; });
-        })
-        .then(function (result) {
-          closeModal();
-          showToast('Remito ' + result.created.id + ' emitido y marcado como vendido.');
-          if (result.pdf && result.pdf.url) window.open(result.pdf.url, '_blank');
-          refresh();
-        })
-        .catch(function (err) {
-          submitButton.disabled = false;
-          submitButton.textContent = 'Emitir remito';
-          showError(err);
-        });
-    };
-  }
-  // Bloquea los renglones de producto/cantidad/lote de una lista de ítems
-  // ya cargada (deshabilita selects/inputs/botón de quitar) — se usa en
-  // "Editar remito": los productos y lotes del remito se fijan una única
-  // vez al emitirlo (tomados del presupuesto/apartado) y ya no se pueden
-  // tocar desde acá bajo ningún estado del pedido.
-  function deshabilitarLineas_(containerId) {
-    document.querySelectorAll('#' + containerId + ' .line-item').forEach(function (row) {
-      row.querySelectorAll('select, input, button').forEach(function (el) { el.disabled = true; });
-    });
-  }
-  function openEditRemit(remit) {
-    if (!remit) return showError(new Error('Remito no encontrado.'));
-    // Los productos y lotes del remito NUNCA se pueden agregar/quitar/
-    // editar desde acá — ese paso se hace únicamente al Generar apartado o
-    // en el Presupuesto; el remito toma esos valores tal cual al emitirse
-    // (ver openEmitirRemitoForm / createRemitFromOrder). Acá solo se
-    // pueden corregir los datos de envío: fecha, forma de entrega,
-    // dirección, número de Via Cargo/seguimiento, origen y observaciones.
-    const viaCargoActual = parseViaCargoNumero_(remit['Numero de Remito Via Cargo']);
-    openModal('Editar remito ' + remit['Remito ID'], `<form class="form-grid" id="editRemitForm">
-      ${field('date', inputDate(remit['Fecha']), true, false, 'date', 'Fecha')}
-      ${selectField('delivery', ['Retiro por sucursal Via Cargo', 'Retiro en Fábrica'], remit['Forma de entrega'], false, false, 'Forma de entrega')}
-      ${field('address', remit['Dirección de entrega'], false, true, 'text', 'Dirección de entrega')}
-      ${viaCargoCamposHtml_(viaCargoActual.prefijo, viaCargoActual.resto)}
-      ${field('tracking', remit['Seguimiento'], false, false, 'text', 'Número de seguimiento')}
-      ${selectField('origen', ['Formulario', 'Histórico'], remit['Origen'] || 'Formulario', false, false, 'Origen')}
-      ${textareaField('notes', remit['Observaciones'], false, 'Observaciones')}
-      <p class="section-label">Productos y lotes — se definen en el Presupuesto o al generar el Apartado; acá no se pueden modificar</p>
-      <div class="line-items" id="editRemitItems"></div>
-      ${actions('Guardar remito')}
-    </form>`);
-    wireViaCargoCampos_();
-    (remit.items || []).forEach(i => addLine('editRemitItems', 'remit', i));
-    deshabilitarLineas_('editRemitItems');
-    wireDeliveryAddressAutoFill_('editRemitForm', 'delivery', 'address');
-    document.getElementById('editRemitForm').onsubmit = function (event) {
-      event.preventDefault();
-      const raw = formObject(event.target);
-      submit('updateRemit', {
-        remitId: remit['Remito ID'],
-        date: raw.date,
-        delivery: raw.delivery,
-        address: raw.address,
-        viaCargoRemito: leerViaCargoNumero_(),
-        tracking: raw.tracking,
-        origen: raw.origen,
-        notes: raw.notes
-        // Sin "items": editar el remito no toca productos/lotes (ver comentario arriba).
-      }, 'Remito actualizado.');
-    };
-  }
-  // Confirmar la entrega/venta de un remito que por algún motivo no quedó
-  // marcado como "Entregado" al emitirse (por ejemplo, remitos viejos
-  // cargados antes de este cambio). Simplemente marca el remito como
-  // Entregado, el pedido como Vendido, y descuenta stock si hace falta —
-  // sin pedir nada más (ya no hay cobros ni saldos que revisar).
-  function confirmRemitSold(remitId) {
-    const remit = findRecord('remitos', 'Remito ID', remitId) || {};
-    openModal('Confirmar venta y entrega', `
-      <div class="form-grid">
-        <div class="field"><label>Remito</label><strong>${html(remitId)}</strong></div>
-        <div class="field"><label>Cliente</label><strong>${html(remit['Cliente'] || '')}</strong></div>
-        <div class="field full"><p>Esta acción marcará el remito como <strong>Entregado</strong> y el pedido como <strong>Vendido</strong>.</p></div>
-        <div class="form-actions"><button type="button" class="secondary-button" onclick="closeModal()">Cancelar</button><button type="button" class="primary-button" id="confirmarVendidoBtn">Confirmar vendido</button></div>
-      </div>`);
-    document.getElementById('confirmarVendidoBtn').onclick = function () {
-      const btn = document.getElementById('confirmarVendidoBtn');
-      btn.disabled = true; btn.textContent = 'Confirmando…';
-      server('markRemitAsSold', remitId)
-        .then(function () { closeModal(); showToast('Remito entregado.'); refresh(); })
-        .catch(function (err) { btn.disabled = false; btn.textContent = 'Confirmar vendido'; showError(err); });
-    };
-  }
-  // Sugiere la Dirección de entrega según la Forma de entrega elegida
-  // (Via Cargo -> sucursal, Fábrica -> San Pedro 4929).
-  const DELIVERY_ADDRESS_SUGGESTIONS = { 'Retiro por sucursal Via Cargo': 'Sucursal Via Cargo', 'Retiro en Fábrica': 'San Pedro 4929' };
-  function suggestedAddressForDelivery_(delivery) { return DELIVERY_ADDRESS_SUGGESTIONS[delivery] || ''; }
-  // No pisa lo que el usuario ya haya escrito a mano, solo completa/actualiza al cambiar.
-  function wireDeliveryAddressAutoFill_(formId, deliveryName, addressName) {
-    const form = document.getElementById(formId);
-    if (!form) return;
-    const select = form.querySelector('[name="' + deliveryName + '"]');
-    const address = form.querySelector('[name="' + addressName + '"]');
-    if (!select || !address) return;
-    select.addEventListener('change', function () {
-      const suggestion = suggestedAddressForDelivery_(select.value);
-      if (suggestion) address.value = suggestion;
-    });
-  }
-  // Un implante SIEMPRE toma el lote que ya tiene apartado en Inventario —
-  // no se puede escribir a mano (evita que el remito termine con un lote
-  // inventado que no coincide con lo que se descontó del depósito). Para
-  // componentes/instrumental (que no llevan control de stock por lote) sí
-  // se carga a mano, tal como se pidió.
-  function esProductoImplante_(product) {
-    return !!(product && String(product.categoria || '').toUpperCase() === 'IMPLANTE');
-  }
-  function renderLoteFieldBudget_(source, matchedProduct, lotesApartadoMap) {
-    const esImplante = esProductoImplante_(matchedProduct);
-    const productId = matchedProduct ? matchedProduct.id : '';
-    const loteGuardado = source['Lote'] ?? source.lot;
-    const lote = (loteGuardado !== undefined && loteGuardado !== null && loteGuardado !== '')
-      ? loteGuardado
-      : (esImplante && productId ? ((lotesApartadoMap || {})[productId] || '') : '');
-    return `<div class="field"><label>Lote${esImplante ? ' (automático, del apartado)' : ' (opcional)'}</label><input class="line-lot" type="text" value="${attr(lote)}" ${esImplante ? 'readonly' : ''} placeholder="${esImplante ? 'Se completa solo' : 'Carga manual'}"></div>`;
-  }
-  // Se llama cada vez que cambia el producto elegido en una línea de
-  // presupuesto: si pasa a ser un implante, bloquea el campo Lote y lo
-  // completa con el lote del apartado (si se conoce); si deja de serlo
-  // (componente/instrumental, o texto libre), lo vuelve a habilitar para
-  // carga manual.
-  function actualizarLoteCampo_(row, matchedProduct, lotesApartadoMap) {
-    const loteField = row.querySelector('.line-lot');
-    if (!loteField) return;
-    const label = loteField.previousElementSibling;
-    const esImplante = esProductoImplante_(matchedProduct);
-    const productId = matchedProduct ? matchedProduct.id : '';
-    loteField.readOnly = esImplante;
-    loteField.placeholder = esImplante ? 'Se completa solo' : 'Carga manual';
-    if (label && label.tagName === 'LABEL') label.textContent = 'Lote' + (esImplante ? ' (automático, del apartado)' : ' (opcional)');
-    if (esImplante) {
-      loteField.value = (productId && lotesApartadoMap && lotesApartadoMap[productId]) || loteField.value || '';
-    }
-  }
-  // Trae { <Producto ID>: <Lote> } del apartado ACTUAL del cliente de este
-  // pedido (getLotesApartadoPorPedidoDirecto, Codigo.gs) — se usa para
-  // prellenar/bloquear el lote de los implantes al editar un presupuesto.
-  function cargarLotesApartadoDePedido_(orderId) {
-    if (!orderId) return Promise.resolve({});
-    return new Promise(function (resolve) {
-      jsonp({ accion: 'getLotesApartadoPorPedidoDirecto', orderId: orderId }, function (err, data) {
-        resolve((!err && data && data.ok && data.lotes) || {});
-      });
-    });
-  }
-  function addLine(containerId, type, source, lotesApartadoMap) {
-    source = source || {};
-    lotesApartadoMap = lotesApartadoMap || {};
-    const container = document.getElementById(containerId);
-    const row = document.createElement('div');
-    row.className = 'line-item ' + type;
-    const sourceId = source['Producto ID'] || source.productId || '';
-    const sourceCode = source['Código'] || source.codigo || '';
-    const sourceName = source['Producto'] || source.producto || '';
-    const catalog = state.products;
-    const matchedProduct = catalog.find(function (p) {
-      return (sourceId && p.id === sourceId)
-        || (sourceCode && normalize(p.codigo) === normalize(sourceCode))
-        || (sourceName && normalize(p.producto) === normalize(sourceName));
-    });
-    const productId = matchedProduct ? matchedProduct.id : '';
-    const quantity = source['Cantidad'] || source.quantity || 1;
-    const manualSelected = !matchedProduct && !!sourceName;
-    const options = catalog.map(p => `<option value="${attr(p.id)}" ${p.id === productId ? 'selected' : ''}>${html(p.producto)}</option>`).join('');
-    // El campo "Producto" es UNA sola columna: o muestra la lista (select) o
-    // muestra el texto libre (input), nunca los dos a la vez ni en columnas
-    // separadas — se togglean entre sí en el mismo lugar.
-    row.innerHTML = `
-      <div class="field line-product-field${type === 'budget' ? ' budget-producto' : ''}">
-        <label>Producto</label>
-        <select class="line-product" ${manualSelected ? 'hidden' : ''} required><option value="">Seleccionar…</option><option value="__manual__" ${manualSelected ? 'selected' : ''}>Escribir producto o descripción</option>${options}</select>
-        <input class="line-custom-product ${manualSelected ? '' : 'hidden'}" type="text" value="${attr(sourceName)}" placeholder="Escribir producto o descripción">
-        <button type="button" class="line-toggle-mode ${manualSelected ? '' : 'hidden'}" style="background:none;border:none;padding:2px 0;margin-top:2px;font-size:11px;color:var(--petrol);text-decoration:underline;cursor:pointer">← Elegir de la lista</button>
+      <div class="field"><label>Fecha</label><span>${html(order['Fecha y hora'])}</span></div>
+      <div class="field"><label>Origen</label><span>${html(order['Origen'])}</span></div>
+      <div class="field"><label>Estado</label><span class="pill ${pillClass(order['Estado'])}">${html(order['Estado'])}</span></div>
+      <div class="field full"><label>Entrega</label><span>${html(order['Forma de entrega'])} ${order['Dirección de entrega'] ? '· ' + html(order['Dirección de entrega']) : ''}</span></div>
+      <div class="field full"><label>Productos</label>
+        <div class="table-wrap"><table><thead><tr><th>Producto</th><th>Cantidad</th></tr></thead><tbody>
+          ${(order.items || []).map(i => `<tr><td>${html(i['Producto'])}</td><td>${html(i['Cantidad'])}</td></tr>`).join('')}
+        </tbody></table></div>
       </div>
-      <div class="field"><label>Cantidad</label><input class="line-quantity" type="number" min="1" step="1" value="${attr(quantity)}" required></div>
-      ${type === 'budget' ? `<div class="field"><label>Precio unitario (ARS)</label><input class="line-price" type="number" min="0" step="0.01" value="${attr(budgetLinePrice(source, matchedProduct))}"></div>` : ''}
-      ${type === 'remit' ? `<div class="field"><label>Lote</label><input class="line-lot" type="text" value="${attr(source['Lote'] ?? source.lot ?? '')}" placeholder="Carga manual"></div>` : ''}
-      ${type === 'budget' ? renderLoteFieldBudget_(source, matchedProduct, lotesApartadoMap) : ''}
-      <button type="button" class="icon-button line-remove" aria-label="Quitar">×</button>`;
-    container.appendChild(row);
-    const select = row.querySelector('.line-product');
-    const customInput = row.querySelector('.line-custom-product');
-    const backButton = row.querySelector('.line-toggle-mode');
-    const showManual = function () {
-      select.hidden = true;
-      select.required = false;
-      customInput.classList.remove('hidden');
-      customInput.required = true;
-      backButton.classList.remove('hidden');
-      customInput.focus();
-      if (type === 'budget') actualizarLoteCampo_(row, null, lotesApartadoMap);
-    };
-    const showList = function () {
-      select.hidden = false;
-      select.required = true;
-      select.value = '';
-      customInput.classList.add('hidden');
-      customInput.required = false;
-      customInput.value = '';
-      backButton.classList.add('hidden');
-      if (type === 'budget') actualizarLoteCampo_(row, null, lotesApartadoMap);
-    };
-    select.addEventListener('change', function () {
-      if (select.value === '__manual__') showManual();
-    });
-    backButton.addEventListener('click', showList);
-    if (manualSelected) showManual();
-    if (type === 'budget') {
-      const setPrice = function () {
-        const p = state.products.find(x => x.id === select.value);
-        if (p) row.querySelector('.line-price').value = p.precio;
-      };
-      select.addEventListener('change', setPrice);
-      if (source['Precio unitario'] === undefined && source.price === undefined) setPrice();
-      // El campo Lote se bloquea/desbloquea según si el producto elegido
-      // es un implante o no (ver esProductoImplante_ más arriba).
-      select.addEventListener('change', function () {
-        const p = state.products.find(x => x.id === select.value);
-        actualizarLoteCampo_(row, p || null, lotesApartadoMap);
-      });
-      actualizarLoteCampo_(row, matchedProduct, lotesApartadoMap); // estado inicial
-    }
-    row.querySelector('.line-remove').onclick = () => row.remove();
-  }
-  function collectLines(containerId, type) {
-    return Array.from(document.querySelectorAll('#' + containerId + ' .line-item')).map(function (row) {
-      const selectedValue = row.querySelector('.line-product').value;
-      const catalog = state.products;
-      const product = catalog.find(p => p.id === selectedValue) || {};
-      const manualName = row.querySelector('.line-custom-product').value.trim();
-      const loteInput = row.querySelector('.line-lot');
-      return {
-        productId: product.id || '',
-        codigo: product.codigo || '',
-        producto: selectedValue === '__manual__' ? manualName : product.producto || '',
-        quantity: row.querySelector('.line-quantity').value,
-        price: type === 'budget' ? row.querySelector('.line-price').value : undefined,
-        lot: (type === 'remit' || type === 'budget') ? (loteInput ? loteInput.value.trim() : '') : undefined
-      };
-    });
-  }
-  function submit(method, payload, successMessage) {
-    const submitButton = document.querySelector('#modalContent button[type="submit"]');
-    if (submitButton) { submitButton.disabled = true; submitButton.textContent = 'Guardando…'; }
-    server(method, payload).then(function (result) {
-      closeModal();
-      showToast(successMessage || 'Registro guardado.');
-      return refresh();
-    }).catch(showError);
-  }
-  function done() { closeModal(); showToast('Estado actualizado.'); refresh(); }
-  // Popula una ventana YA ABIERTA (window.open llamado de antemano, en el
-  // mismo click que dispara todo, para no chocar con el bloqueador de
-  // pop-ups) con el presupuesto indicado, y dispara la impresión. Se usa
-  // tanto desde "Generar PDF" en la tabla de Presupuestos como desde el
-  // apartado→presupuesto automático.
-  function imprimirPresupuestoEnPopup_(popup, budgetId) {
-    if (popup) popup.document.write('<p style="font-family:Arial;padding:30px">Preparando presupuesto…</p>');
-    return server('getDocumentData', 'presupuesto', budgetId).then(function (data) {
-      if (popup) {
-        popup.document.open();
-        popup.document.write(documentTemplate(data));
-        popup.document.close();
-        setTimeout(function () { popup.focus(); popup.print(); }, 450);
-      }
-      // Además de mostrarlo para imprimir, asegura que el PDF quede
-      // guardado/actualizado en Drive — por si en algún momento eso falló
-      // (por ejemplo, un timeout al guardar el presupuesto). No bloquea la
-      // impresión si esto falla.
-      server('generarPresupuestoPDF', budgetId).catch(function () {});
-      return data;
-    });
-  }
-  function printDocument(type, id) {
-    const popup = window.open('', '_blank', 'width=980,height=760');
-    if (!popup) return showError(new Error('El navegador bloqueó la ventana de impresión.'));
-    if (type === 'presupuesto') {
-      imprimirPresupuestoEnPopup_(popup, id).catch(function (error) { popup.close(); showError(error); });
+      <div class="form-actions">
+        <button class="secondary-button" type="button" id="editOrder">Editar pedido</button>
+        <button class="primary-button" type="button" id="remitFromOrder">${yaRemitado ? 'Ver remito' : 'Generar remito'}</button>
+      </div>
+    </div>`);
+  document.getElementById('editOrder').onclick = () => openEditOrder(order);
+  document.getElementById('remitFromOrder').onclick = function () {
+    const btn = document.getElementById('remitFromOrder');
+    btn.disabled = true;
+    if (yaRemitado) {
+      server('listAdmin', 'remitos').then(function (remitos) {
+        const remito = remitos.find(r => r['Pedido ID'] === order['Pedido ID']);
+        btn.disabled = false;
+        if (!remito) return showError(new Error('No se encontró el remito de este pedido.'));
+        openEditRemit(remito);
+      }).catch(function (err) { btn.disabled = false; showError(err); });
       return;
     }
-    popup.document.write('<p style="font-family:Arial;padding:30px">Preparando documento…</p>');
-    server('getDocumentData', type, id).then(function (data) {
-      popup.document.open();
-      // El remito usa SU PROPIA plantilla (remitoTemplateHtml_), calcada
-      // de la que arma el PDF que se guarda en Drive (generarRemitoPDF,
-      // RemitoPDF.gs) — así lo que se ve al imprimir desde acá es
-      // exactamente el mismo diseño que queda guardado: logo arriba a la
-      // derecha, "Información del Cliente <número>", Nombre, Fecha, Tipo
-      // de entrega, Aclaración, y la tabla de Detalles (producto,
-      // cantidad y lote) con el total de implantes al pie.
-      popup.document.write(type === 'remito' ? remitoTemplateHtml_(data) : documentTemplate(data));
-      popup.document.close();
-      // Mismo motivo que arriba: garantiza que el remito quede guardado en
-      // Drive cada vez que se imprime, aunque la generación original haya
-      // fallado (por ejemplo, por un timeout al emitirlo).
-      if (type === 'remito') server('generarRemitoPDF', id).catch(function () {});
-    }).catch(function (error) { popup.close(); showError(error); });
+    prepararItemsRemitoDesdeOrder_(order).then(function (items) {
+      return server('createRemitFromOrder', { orderId: order['Pedido ID'], date: todayIso(), items: items, estadoInicial: 'Borrador' });
+    }).then(function () {
+      return refresh().then(function () { return server('listAdmin', 'remitos'); });
+    }).then(function (remitos) {
+      btn.disabled = false;
+      closeModal();
+      const remito = remitos.find(r => r['Pedido ID'] === order['Pedido ID']);
+      if (remito) openEditRemit(remito);
+    }).catch(function (err) { btn.disabled = false; showError(err); });
+  };
+}
+
+// Arma los ítems del remito (producto, cantidad y lote) a partir de Pedido
+// Detalle — ya no hay Presupuesto del que leerlos.
+function prepararItemsRemitoDesdeOrder_(order) {
+  return Promise.resolve((order.items || []).map(function (i) {
+    return { productId: i['Producto ID'], codigo: i['Código'], producto: i['Producto'], quantity: toNumber(i['Cantidad']), lot: i['Lote'] || '' };
+  }));
+}
+
+// Número de remito Via Cargo: prefijo de agencia (4 dígitos, entre 5090 y
+// 9090, elegible de una lista) + el resto del número, que se escribe a
+// mano — es un dato DISTINTO del número de seguimiento (que es un campo
+// libre aparte).
+const VIA_CARGO_PREFIJOS_ = ['5090', '9090'];
+function viaCargoCamposHtml_(prefijoActual, restoActual) {
+  const prefijoConocido = VIA_CARGO_PREFIJOS_.indexOf(prefijoActual) !== -1;
+  const prefijoManual = !!prefijoActual && !prefijoConocido;
+  return `<div class="field full">
+    <label>Número de remito Via Cargo (opcional)</label>
+    <div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap">
+      <div style="flex:0 0 130px">
+        <select id="viaCargoPrefijo">
+          <option value="">— Prefijo —</option>
+          ${VIA_CARGO_PREFIJOS_.map(p => `<option value="${p}" ${p === prefijoActual ? 'selected' : ''}>${p}</option>`).join('')}
+          <option value="__otro__" ${prefijoManual ? 'selected' : ''}>Otro…</option>
+        </select>
+        <input type="text" id="viaCargoPrefijoManual" class="${prefijoManual ? '' : 'hidden'}" value="${attr(prefijoManual ? prefijoActual : '')}" maxlength="4" placeholder="Ej: 5090" style="margin-top:4px;width:100%">
+      </div>
+      <input type="text" id="viaCargoResto" value="${attr(restoActual || '')}" placeholder="Resto del número" style="flex:1;min-width:140px">
+    </div>
+    <small style="color:var(--muted)">Prefijo de agencia (entre 5090 y 9090) + el resto del número, a mano.</small>
+  </div>`;
+}
+function wireViaCargoCampos_() {
+  const select = document.getElementById('viaCargoPrefijo');
+  const manual = document.getElementById('viaCargoPrefijoManual');
+  if (!select) return;
+  select.onchange = function () {
+    if (select.value === '__otro__') { manual.classList.remove('hidden'); manual.focus(); }
+    else { manual.classList.add('hidden'); manual.value = ''; }
+  };
+}
+function leerViaCargoNumero_() {
+  const select = document.getElementById('viaCargoPrefijo');
+  if (!select) return '';
+  const manual = document.getElementById('viaCargoPrefijoManual');
+  const resto = document.getElementById('viaCargoResto');
+  const prefijo = select.value === '__otro__' ? (manual ? manual.value.trim() : '') : select.value;
+  const restoVal = resto ? resto.value.trim() : '';
+  return (prefijo || '') + restoVal;
+}
+function parseViaCargoNumero_(valor) {
+  valor = String(valor || '').trim();
+  if (!valor) return { prefijo: '', resto: '' };
+  const prefijo4 = valor.slice(0, 4);
+  if (VIA_CARGO_PREFIJOS_.indexOf(prefijo4) !== -1) return { prefijo: prefijo4, resto: valor.slice(4) };
+  return { prefijo: '', resto: valor };
+}
+
+// Bloquea los renglones de producto/cantidad/lote de una lista de ítems ya
+// cargada (deshabilita selects/inputs/botón de quitar) — se usa en "Editar
+// remito" cuando ya está Entregado: los productos y lotes quedan fijos.
+function deshabilitarLineas_(containerId) {
+  document.querySelectorAll('#' + containerId + ' .line-item').forEach(function (row) {
+    row.querySelectorAll('select, input, button').forEach(function (el) { el.disabled = true; });
+  });
+}
+
+// Ventana de "Emitir remito" desde la tabla de Remitos: confirma y, si el
+// usuario prefiere revisar antes, manda a abrir el editor en vez de emitir
+// directo.
+function confirmEmitirRemito(remitId) {
+  openModal('Emitir remito', `
+    <div class="form-grid">
+      <div class="field full"><p>Se va a marcar el remito <strong>${html(remitId)}</strong> como vendido, cerrar el apartado si corresponde y generar el PDF. Después de emitido no se pueden editar los productos ni los lotes.</p></div>
+      <div class="form-actions">
+        <button type="button" class="secondary-button" onclick="closeModal()">Cancelar</button>
+        <button type="button" class="ghost-button" id="revisarAntesBtn">Revisar remito primero</button>
+        <button type="button" class="primary-button" id="confirmarEmitirBtn">Emitir remito</button>
+      </div>
+    </div>`);
+  document.getElementById('revisarAntesBtn').onclick = function () {
+    closeModal();
+    openEditRemit(findRecord('remitos', 'Remito ID', remitId));
+  };
+  document.getElementById('confirmarEmitirBtn').onclick = function () {
+    const btn = document.getElementById('confirmarEmitirBtn');
+    btn.disabled = true; btn.textContent = 'Emitiendo…';
+    server('emitirRemito', remitId)
+      .then(() => server('generarRemitoPDF', remitId))
+      .then(function (pdf) {
+        closeModal();
+        showToast('Remito ' + remitId + ' emitido y marcado como vendido.');
+        if (pdf && pdf.url) window.open(pdf.url, '_blank');
+        refresh();
+      })
+      .catch(function (err) { btn.disabled = false; btn.textContent = 'Emitir remito'; showError(err); });
+  };
+}
+
+// Editar un remito: mientras está en Borrador se pueden tocar productos,
+// cantidades y lotes (editar el remito ES editar el apartado), además de
+// entrega/observaciones/número de presupuesto manual, y hay un botón
+// "Emitir remito" que guarda los cambios y, en el mismo paso, confirma la
+// venta y genera el PDF. Ya Entregado, los productos/lotes quedan fijos.
+function openEditRemit(remit) {
+  if (!remit) return showError(new Error('Remito no encontrado.'));
+  const esBorrador = remit['Estado'] === 'Borrador';
+  const viaCargoActual = parseViaCargoNumero_(remit['Numero de Remito Via Cargo']);
+  openModal('Editar remito ' + remit['Remito ID'], `<form class="form-grid" id="editRemitForm">
+    ${field('date', inputDate(remit['Fecha']), true, false, 'date', 'Fecha')}
+    ${selectField('delivery', ['Retiro por sucursal Via Cargo', 'Retiro en Fábrica'], remit['Forma de entrega'], false, false, 'Forma de entrega')}
+    ${field('address', remit['Dirección de entrega'], false, true, 'text', 'Dirección de entrega')}
+    ${viaCargoCamposHtml_(viaCargoActual.prefijo, viaCargoActual.resto)}
+    ${field('tracking', remit['Seguimiento'], false, false, 'text', 'Número de seguimiento')}
+    ${field('numeroPresupuesto', remit['Numero de Presupuesto'], false, false, 'text', 'Número de presupuesto (opcional, manual — tu talonario en papel)')}
+    ${selectField('origen', ['Formulario', 'Histórico'], remit['Origen'] || 'Formulario', false, false, 'Origen')}
+    ${textareaField('notes', remit['Observaciones'], false, 'Observaciones')}
+    <p class="section-label">Productos y lotes${esBorrador ? ' — editar el remito es editar el apartado' : ' — ya se emitió, quedan fijos'}</p>
+    <div class="line-items" id="editRemitItems"></div>
+    ${esBorrador ? '<button type="button" class="secondary-button" id="addEditRemitItem">＋ Agregar producto</button>' : ''}
+    <div class="form-actions">
+      <button type="button" class="secondary-button" onclick="closeModal()">Cancelar</button>
+      ${esBorrador ? '<button type="button" class="primary-button" id="emitirRemitoBtn">Emitir remito</button>' : ''}
+      <button type="submit" class="secondary-button">Guardar remito</button>
+    </div>
+  </form>`);
+  wireViaCargoCampos_();
+  (remit.items || []).forEach(i => addLine('editRemitItems', 'remit', i));
+  if (!esBorrador) {
+    deshabilitarLineas_('editRemitItems');
+  } else {
+    document.getElementById('addEditRemitItem').onclick = () => addLine('editRemitItems', 'remit');
   }
-  // Solo los números del Cliente ID (ej: "CLI-006" -> "006"), igual
-  // criterio que soloNumeros_ en RemitoPDF.gs — así "Información del
-  // Cliente" se ve igual en el remito impreso y en el PDF guardado.
-  function soloNumerosCliente_(clienteId) {
-    const digitos = String(clienteId || '').replace(/\D+/g, '');
-    return digitos || String(clienteId || '');
+  wireDeliveryAddressAutoFill_('editRemitForm', 'delivery', 'address');
+
+  function payloadDesdeForm() {
+    const raw = formObject(document.getElementById('editRemitForm'));
+    const payload = {
+      remitId: remit['Remito ID'], date: raw.date, delivery: raw.delivery, address: raw.address,
+      viaCargoRemito: leerViaCargoNumero_(), tracking: raw.tracking, numeroPresupuesto: raw.numeroPresupuesto,
+      origen: raw.origen, notes: raw.notes
+    };
+    if (esBorrador) payload.items = collectLines('editRemitItems', 'remit');
+    return payload;
   }
-  // Plantilla del remito para imprimir desde el navegador — es el MISMO
-  // diseño que arma generarRemitoPDF (RemitoPDF.gs) para el PDF que queda
-  // guardado en Drive: logo/marca arriba a la derecha, bloque
-  // "Información del Cliente <número>" con Nombre/Fecha/Tipo de
-  // entrega/Aclaración arriba a la izquierda, y abajo la tabla de
-  // Detalles (producto, cantidad, lote — el lote viene del presupuesto,
-  // no se toca acá) con el total de implantes entregados al pie. Si se
-  // cambia esta plantilla, hay que cambiar la de RemitoPDF.gs junto con
-  // ella para que ambas sigan viéndose igual.
-  function remitoTemplateHtml_(data) {
-    const h = data.header, c = data.client, s = data.settings || {};
-    const items = data.items || [];
-    const totalCantidad = items.reduce(function (sum, it) { return sum + toNumber(it['Cantidad']); }, 0);
-    const filasItems = items.map(function (it) {
-      return `<tr><td>${html(it['Producto'])}</td><td class="centro">${toNumber(it['Cantidad'])}</td><td class="centro">${html(it['Lote'] || '')}</td></tr>`;
-    }).join('');
-    return `<!doctype html><html><head><meta charset="UTF-8"><title>Remito ${html(h['Remito ID'])}</title><style>
-      body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#111;margin:0;padding:24px}
-      table{border-collapse:collapse;width:100%;}
-      .encabezado{width:100%;margin-bottom:10px;}
-      .info td{border:1px solid #000;padding:4px 6px;}
-      .marca{font-size:22px;font-weight:bold;text-align:right;vertical-align:top;padding-left:14px;}
-      .marca small{display:block;font-weight:normal;font-size:9px;}
-      .seccion{background:#08242c;color:#fff;text-align:center;padding:4px;font-weight:bold;}
-      .items th{background:#9fc5e8;color:#000;font-weight:bold;padding:4px 6px;border:1px solid #000;}
-      .items td{border:1px solid #000;padding:4px 6px;}
-      .centro{text-align:center;}
-      .total td{font-weight:bold;border:1px solid #000;padding:4px 6px;}
-      .print{position:fixed;right:20px;top:20px}
-      @media print{.print{display:none}body{padding:8px}}
-      </style></head><body>
-      <button class="print" onclick="window.print()">Imprimir remito</button>
-      <table class="encabezado"><tr>
-      <td style="width:60%;vertical-align:top">
-        <table class="info">
-          <tr><td colspan="2">Información del Cliente ${html(soloNumerosCliente_(c['Cliente ID']))}</td></tr>
-          <tr><td colspan="2"><strong>NOMBRE:</strong> ${html(c['Nombre completo'] || '')}</td></tr>
-          <tr><td colspan="2"><strong>FECHA:</strong> ${html(h['Fecha'])}</td></tr>
-          <tr><td colspan="2"><strong>TIPO DE ENTREGA:</strong> ${html(h['Forma de entrega'] || '')}</td></tr>
-          <tr><td colspan="2"><strong>ACLARACIÓN:</strong> ${html(h['Observaciones'] || '')}</td></tr>
-        </table>
-      </td>
-      <td style="width:40%" class="marca">${s['Logo URL'] ? `<img src="${attr(s['Logo URL'])}" style="max-height:44px;max-width:200px">` : 'BIO-FIX'}<small>SISTEMA DE IMPLANTES DENTALES</small></td>
-      </tr></table>
-      <div class="seccion">Detalles</div>
-      <table class="items">
-        <tr><th>IMPLANTES ENTREGADOS</th><th>CANTIDAD</th><th>LOTE</th></tr>
-        ${filasItems}
-        <tr class="total"><td>TOTAL DE PRODUCTOS</td><td class="centro">${totalCantidad}</td><td></td></tr>
+
+  document.getElementById('editRemitForm').onsubmit = function (event) {
+    event.preventDefault();
+    submit('updateRemit', payloadDesdeForm(), 'Remito actualizado.');
+  };
+
+  if (esBorrador) {
+    document.getElementById('emitirRemitoBtn').onclick = function () {
+      const btn = document.getElementById('emitirRemitoBtn');
+      btn.disabled = true; btn.textContent = 'Emitiendo…';
+      server('updateRemit', payloadDesdeForm())
+        .then(() => server('emitirRemito', remit['Remito ID']))
+        .then(() => server('generarRemitoPDF', remit['Remito ID']))
+        .then(function (pdf) {
+          closeModal();
+          showToast('Remito ' + remit['Remito ID'] + ' emitido y marcado como vendido.');
+          if (pdf && pdf.url) window.open(pdf.url, '_blank');
+          refresh();
+        })
+        .catch(function (err) { btn.disabled = false; btn.textContent = 'Emitir remito'; showError(err); });
+    };
+  }
+}
+
+// Sugiere la Dirección de entrega según la Forma de entrega elegida
+// (Via Cargo -> sucursal, Fábrica -> San Pedro 4929).
+const DELIVERY_ADDRESS_SUGGESTIONS = {
+  'Retiro por sucursal Via Cargo': 'Sucursal Via Cargo',
+  'Retiro en Fábrica': 'San Pedro 4929'
+};
+function suggestedAddressForDelivery_(delivery) { return DELIVERY_ADDRESS_SUGGESTIONS[delivery] || ''; }
+function wireDeliveryAddressAutoFill_(formId, deliveryName, addressName) {
+  const form = document.getElementById(formId);
+  if (!form) return;
+  const select = form.querySelector('[name="' + deliveryName + '"]');
+  const address = form.querySelector('[name="' + addressName + '"]');
+  if (!select || !address) return;
+  select.addEventListener('change', function () {
+    const suggestion = suggestedAddressForDelivery_(select.value);
+    if (suggestion) address.value = suggestion;
+  });
+}
+
+function addLine(containerId, type, source, lotesApartadoMap) {
+  source = source || {};
+  const container = document.getElementById(containerId);
+  const row = document.createElement('div');
+  row.className = 'line-item ' + type;
+  const sourceId = source['Producto ID'] || source.productId || '';
+  const sourceCode = source['Código'] || source.codigo || '';
+  const sourceName = source['Producto'] || source.producto || '';
+  const catalog = state.products;
+  const matchedProduct = catalog.find(function (p) {
+    return (sourceId && p.id === sourceId) || (sourceCode && normalize(p.codigo) === normalize(sourceCode)) || (sourceName && normalize(p.producto) === normalize(sourceName));
+  });
+  const productId = matchedProduct ? matchedProduct.id : '';
+  const quantity = source['Cantidad'] || source.quantity || 1;
+  const manualSelected = !matchedProduct && !!sourceName;
+  const options = catalog.map(p => `<option value="${attr(p.id)}" ${p.id === productId ? 'selected' : ''}>${html(p.producto)}</option>`).join('');
+  // El campo "Producto" es UNA sola columna: o muestra la lista (select) o
+  // muestra el texto libre (input), nunca los dos a la vez.
+  row.innerHTML = `
+    <div class="field line-product-field">
+      <label>Producto</label>
+      <select class="line-product" ${manualSelected ? 'hidden' : ''} required><option value="">Seleccionar…</option><option value="__manual__" ${manualSelected ? 'selected' : ''}>Escribir producto o descripción</option>${options}</select>
+      <input class="line-custom-product ${manualSelected ? '' : 'hidden'}" type="text" value="${attr(sourceName)}" placeholder="Escribir producto o descripción">
+      <button type="button" class="line-toggle-mode ${manualSelected ? '' : 'hidden'}" style="background:none;border:none;padding:2px 0;margin-top:2px;font-size:11px;color:var(--petrol);text-decoration:underline;cursor:pointer">← Elegir de la lista</button>
+    </div>
+    <div class="field"><label>Cantidad</label><input class="line-quantity" type="number" min="1" step="1" value="${attr(quantity)}" required></div>
+    ${type === 'remit' ? `<div class="field"><label>Lote</label><input class="line-lot" type="text" value="${attr(source['Lote'] ?? source.lot ?? '')}" placeholder="Carga manual"></div>` : ''}
+    <button type="button" class="icon-button line-remove" aria-label="Quitar">×</button>`;
+  container.appendChild(row);
+
+  const select = row.querySelector('.line-product');
+  const customInput = row.querySelector('.line-custom-product');
+  const backButton = row.querySelector('.line-toggle-mode');
+  const showManual = function () {
+    select.hidden = true; select.required = false;
+    customInput.classList.remove('hidden'); customInput.required = true;
+    backButton.classList.remove('hidden'); customInput.focus();
+  };
+  const showList = function () {
+    select.hidden = false; select.required = true; select.value = '';
+    customInput.classList.add('hidden'); customInput.required = false; customInput.value = '';
+    backButton.classList.add('hidden');
+  };
+  select.addEventListener('change', function () { if (select.value === '__manual__') showManual(); });
+  backButton.addEventListener('click', showList);
+  if (manualSelected) showManual();
+
+  row.querySelector('.line-remove').onclick = () => row.remove();
+}
+
+function collectLines(containerId, type) {
+  return Array.from(document.querySelectorAll('#' + containerId + ' .line-item')).map(function (row) {
+    const selectedValue = row.querySelector('.line-product').value;
+    const catalog = state.products;
+    const product = catalog.find(p => p.id === selectedValue) || {};
+    const manualName = row.querySelector('.line-custom-product').value.trim();
+    const loteInput = row.querySelector('.line-lot');
+    return {
+      productId: product.id || '',
+      codigo: product.codigo || '',
+      producto: selectedValue === '__manual__' ? manualName : product.producto || '',
+      quantity: row.querySelector('.line-quantity').value,
+      lot: (type === 'remit') ? (loteInput ? loteInput.value.trim() : '') : undefined
+    };
+  });
+}
+
+function submit(method, payload, successMessage) {
+  const submitButton = document.querySelector('#modalContent button[type="submit"]');
+  if (submitButton) { submitButton.disabled = true; submitButton.textContent = 'Guardando…'; }
+  server(method, payload).then(function (result) {
+    closeModal();
+    showToast(successMessage || 'Registro guardado.');
+    return refresh();
+  }).catch(showError);
+}
+
+function done() {
+  closeModal();
+  showToast('Estado actualizado.');
+  refresh();
+}
+
+function printDocument(type, id) {
+  const popup = window.open('', '_blank', 'width=980,height=760');
+  if (!popup) return showError(new Error('El navegador bloqueó la ventana de impresión.'));
+  popup.document.write('<p style="font-family:Arial;padding:30px">Preparando documento…</p>');
+  server('getDocumentData', type, id).then(function (data) {
+    popup.document.open();
+    popup.document.write(remitoTemplateHtml_(data));
+    popup.document.close();
+    // Garantiza que el remito quede guardado en Drive cada vez que se
+    // imprime, aunque la generación original haya fallado (por ejemplo,
+    // por un timeout al emitirlo).
+    server('generarRemitoPDF', id).catch(function () {});
+  }).catch(function (error) {
+    popup.close();
+    showError(error);
+  });
+}
+
+// Solo los números del Cliente ID (ej: "CLI-006" -> "006"), igual criterio
+// que soloNumeros_ en RemitoPDF.gs — así "Información del Cliente" se ve
+// igual en el remito impreso y en el PDF guardado.
+function soloNumerosCliente_(clienteId) {
+  const digitos = String(clienteId || '').replace(/\D+/g, '');
+  return digitos || String(clienteId || '');
+}
+
+// Plantilla del remito para imprimir desde el navegador — es el MISMO
+// diseño que arma generarRemitoPDF (RemitoPDF.gs) para el PDF que queda
+// guardado en Drive.
+function remitoTemplateHtml_(data) {
+  const h = data.header, c = data.client, s = data.settings || {};
+  const items = data.items || [];
+  const totalCantidad = items.reduce(function (sum, it) { return sum + toNumber(it['Cantidad']); }, 0);
+  const filasItems = items.map(function (it) {
+    return `<tr><td>${html(it['Producto'])}</td><td class="centro">${toNumber(it['Cantidad'])}</td><td class="centro">${html(it['Lote'] || '')}</td></tr>`;
+  }).join('');
+  return `<!doctype html><html><head><meta charset="UTF-8"><title>Remito ${html(h['Remito ID'])}</title><style>
+    body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#111;margin:0;padding:24px}
+    table{border-collapse:collapse;width:100%;}
+    .encabezado{width:100%;margin-bottom:10px;}
+    .info td{border:1px solid #000;padding:4px 6px;}
+    .marca{font-size:22px;font-weight:bold;text-align:right;vertical-align:top;padding-left:14px;}
+    .marca small{display:block;font-weight:normal;font-size:9px;}
+    .seccion{background:#08242c;color:#fff;text-align:center;padding:4px;font-weight:bold;}
+    .items th{background:#9fc5e8;color:#000;font-weight:bold;padding:4px 6px;border:1px solid #000;}
+    .items td{border:1px solid #000;padding:4px 6px;}
+    .centro{text-align:center;}
+    .total td{font-weight:bold;border:1px solid #000;padding:4px 6px;}
+    .print{position:fixed;right:20px;top:20px}
+    @media print{.print{display:none}body{padding:8px}}
+  </style></head><body>
+  <button class="print" onclick="window.print()">Imprimir remito</button>
+  <table class="encabezado"><tr>
+    <td style="width:60%;vertical-align:top">
+      <table class="info">
+        <tr><td colspan="2">Información del Cliente ${html(soloNumerosCliente_(c['Cliente ID']))}</td></tr>
+        <tr><td colspan="2"><strong>NOMBRE:</strong> ${html(c['Nombre completo'] || '')}</td></tr>
+        <tr><td colspan="2"><strong>FECHA:</strong> ${html(h['Fecha'])}</td></tr>
+        <tr><td colspan="2"><strong>TIPO DE ENTREGA:</strong> ${html(h['Forma de entrega'] || '')}</td></tr>
+        <tr><td colspan="2"><strong>ACLARACIÓN:</strong> ${html(h['Observaciones'] || '')}</td></tr>
       </table>
-      </body></html>`;
+    </td>
+    <td style="width:40%" class="marca">${s['Logo URL'] ? `<img src="${attr(s['Logo URL'])}" style="max-height:44px;max-width:200px">` : 'BIO-FIX'}<small>SISTEMA DE IMPLANTES DENTALES</small></td>
+  </tr></table>
+  <div class="seccion">Detalles</div>
+  <table class="items">
+    <tr><th>IMPLANTES ENTREGADOS</th><th>CANTIDAD</th><th>LOTE</th></tr>
+    ${filasItems}
+    <tr class="total"><td>TOTAL DE PRODUCTOS</td><td class="centro">${totalCantidad}</td><td></td></tr>
+  </table>
+  </body></html>`;
+}
+
+function openModal(title, body) {
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalContent').innerHTML = body;
+  document.getElementById('modalBackdrop').classList.remove('hidden');
+}
+
+function closeModal() {
+  document.getElementById('modalBackdrop').classList.add('hidden');
+  document.getElementById('modalContent').innerHTML = '';
+}
+
+function field(name, value, required, full, type, label) {
+  return `<div class="field ${full ? 'full' : ''}"><label>${html(label || name)}${required ? ' *' : ''}</label><input name="${attr(name)}" type="${type || 'text'}" value="${attr(value || '')}" ${required ? 'required' : ''} ${type === 'number' ? 'min="0" step="0.01"' : ''}></div>`;
+}
+
+function hidden(name, value) {
+  return `<input type="hidden" name="${attr(name)}" value="${attr(value || '')}">`;
+}
+
+function textareaField(name, value, full, label) {
+  return `<div class="field ${full === false ? '' : 'full'}"><label>${html(label || name)}</label><textarea name="${attr(name)}">${html(value || '')}</textarea></div>`;
+}
+
+function selectField(name, options, selected, required, full, label) {
+  const normalized = options.map(o => typeof o === 'string' ? { value: o, label: o } : o);
+  return `<div class="field ${full ? 'full' : ''}"><label>${html(label || name)}${required ? ' *' : ''}</label><select name="${attr(name)}" ${required ? 'required' : ''}><option value="">Seleccionar…</option>${normalized.map(o => `<option value="${attr(o.value)}" ${String(o.value) === String(selected) ? 'selected' : ''}>${html(o.label)}</option>`).join('')}</select></div>`;
+}
+
+function actions(label) {
+  return `<div class="form-actions"><button type="button" class="secondary-button" onclick="closeModal()">Cancelar</button><button type="submit" class="primary-button">${html(label || 'Guardar')}</button></div>`;
+}
+
+function formObject(form) { return Object.fromEntries(new FormData(form).entries()); }
+
+function metric(label, value, urgent) {
+  return `<article class="metric-card ${urgent ? 'urgent' : ''}"><span class="metric-label">${html(label)}</span><strong class="metric-value">${html(value)}</strong></article>`;
+}
+
+function quick(action, title, subtitle) {
+  return `<button class="quick-action" data-quick="${action}">${html(title)}<small>${html(subtitle)}</small></button>`;
+}
+
+function empty(message) {
+  return `<div class="empty-state"><strong>${html(message)}</strong><span>El sistema se actualizará cuando haya movimientos.</span></div>`;
+}
+
+function loading() { return '<div class="loading-card"><div class="spinner"></div><p>Cargando información…</p></div>'; }
+
+function findRecord(moduleKey, fieldName, id) {
+  return (state.records[moduleKey] || state.clients || []).find(r => String(r[fieldName]) === String(id));
+}
+
+function cell(column, value) {
+  if (/Precio|Importe|Subtotal|Total/.test(column)) return `<span class="amount">${money(value)}</span>`;
+  if (column === 'Estado' || column === 'Revisión' || column === 'Activo') return `<span class="pill ${pillClass(value)}">${html(value || '-')}</span>`;
+  const text = String(value || '-');
+  return html(text.length > 95 ? text.slice(0, 95) + '…' : text);
+}
+
+function pillClass(value) {
+  const v = normalize(value);
+  if (['recibido', 'en revision', 'borrador', 'apartado', 'pendiente', 'pendiente de pago'].includes(v) || v.includes('revisar')) return 'warning';
+  if (['aprobado', 'remitido', 'entregado', 'vendido', 'saldado', 'activo', 'si'].includes(v)) return 'success';
+  return 'neutral';
+}
+
+function money(value) {
+  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 2 }).format(toNumber(value));
+}
+
+function toNumber(value) {
+  if (typeof value === 'number') return value;
+  let t = String(value || '').replace(/\$/g, '').replace(/\s/g, '');
+  if (!t) return 0;
+  const hasComma = t.includes(',');
+  const hasDot = t.includes('.');
+  if (hasComma && hasDot) {
+    t = t.lastIndexOf(',') > t.lastIndexOf('.') ? t.replace(/\./g, '').replace(',', '.') : t.replace(/,/g, '');
+  } else if (hasComma) {
+    t = /^-?\d{1,3}(,\d{3})+$/.test(t) ? t.replace(/,/g, '') : t.replace(',', '.');
+  } else if (hasDot && /^-?\d{1,3}(\.\d{3})+$/.test(t)) {
+    t = t.replace(/\./g, '');
   }
-  function documentTemplate(data) {
-    const h = data.header, c = data.client, s = data.settings;
-    const isBudget = data.type === 'presupuesto';
-    const subtotalAfterDiscount = isBudget
-      ? Math.max(0, toNumber(h['Subtotal']) - toNumber(h['Descuento importe']))
-      : 0;
-    const title = isBudget ? 'PRESUPUESTO' : 'REMITO';
-    const number = h[isBudget ? 'Presupuesto ID' : 'Remito ID'];
-    const rows = data.items.map(function (i) {
-      return `<tr><td>${html(i['Producto'])}</td><td>${html(i['Cantidad'])}</td>${isBudget ? `<td>${money(i['Precio unitario'])}</td><td>${money(i['Total'])}</td>` : `<td>${html(i['Lote'] || '')}</td>`}</tr>`;
-    }).join('');
-    return `<!doctype html><html><head><meta charset="UTF-8"><title>${title} ${html(number)}</title><style>
-      body{font-family:Arial,sans-serif;color:#24313a;margin:0;padding:40px}header{display:flex;justify-content:space-between;border-bottom:2px solid #245d6b;padding-bottom:18px}
-      h1{color:#245d6b;margin:0;font-size:25px}.company{text-align:right;font-size:13px}.info{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin:25px 0}
-      .label{color:#317c91;font-size:12px}.box{padding:15px;border:1px solid #dbe7ea}.box p{margin:6px 0}table{width:100%;border-collapse:collapse}th{background:#245d6b;color:white;padding:9px;text-align:left;font-size:12px}td{padding:9px;border:1px solid #9bb6bf;font-size:12px}
-      .totals{width:330px;margin:24px 0 0 auto}.totals p{display:flex;justify-content:space-between;margin:0;padding:8px;border:1px solid #9bb6bf;border-top:0}.totals p:first-child{border-top:1px solid #9bb6bf}.grand{font-weight:bold;font-size:16px;background:#edf4f6}
-      .notes{margin-top:26px;min-height:75px}.print{position:fixed;right:20px;top:20px}@media print{.print{display:none}body{padding:16px}}</style></head><body>
-      <button class="print" onclick="window.print()">${isBudget ? 'Guardar presupuesto en PDF' : 'Imprimir remito'}</button>
-      <header><div>${s['Logo URL'] ? `<img src="${attr(s['Logo URL'])}" alt="Bio-Fix" style="max-height:48px;max-width:220px;display:block;margin-bottom:6px">` : `<span class="label" style="font-size:20px;font-weight:bold;color:#245d6b">${html(s.Empresa || 'Bio-Fix')}</span>`}<h1>${title} N.º ${html(number)}</h1></div><div class="company"><strong>${html(s['Razón social'] || 'Grado Cuatro S.R.L.')}</strong><br>${html(s['Dirección'] || '')}<br>${html(s['Localidad'] || '')}</div></header>
-      <section class="info"><div class="box"><span class="label">Información del cliente</span><p><strong>${html(h['Cliente'])}</strong></p>${isBudget && c['Empresa'] ? `<p>${html(c['Empresa'])}</p>` : ''}<p>CUIL: ${html(c['CUIL'] || '')}</p><p>${html(c['Localidad'] || '')} · ${html(c['Provincia'] || '')}</p>${isBudget ? `<p>${html(c['Teléfono'] || '')} ${c['Teléfono'] && c['Email'] ? '·' : ''} ${html(c['Email'] || '')}</p>` : ''}</div>
-      <div class="box"><span class="label">${isBudget ? 'Enviar a' : 'Entrega'}</span><p><strong>${html(h['Dirección de entrega'] || '')}</strong></p><p>${html(c['Localidad'] || '')} ${html(c['Código postal'] || '')}</p><p>${html(c['Provincia'] || '')}</p>${isBudget ? `<p>${html(c['Teléfono'] || '')} ${c['Teléfono'] && c['Email'] ? '·' : ''} ${html(c['Email'] || '')}</p>` : ''}</div>
-      <div class="box"><span class="label">Fecha</span><p><strong>${html(h['Fecha'])}</strong></p>${isBudget ? '' : `<p>Pedido: ${html(h['Pedido ID'] || '')}</p>`}</div>
-      ${isBudget ? '' : `<div class="box"><span class="label">N.° remito Via Cargo</span><p>${html(h['Numero de Remito Via Cargo'] || '')}</p></div><div class="box"><span class="label">N.° de seguimiento</span><p>${html(h['Seguimiento'] || '')}</p></div>`}</section>
-      <table><thead><tr><th>Descripción</th><th>Cantidad</th>${isBudget ? '<th>Precio unitario</th><th>Total</th>' : '<th>Lote</th>'}</tr></thead><tbody>${rows}</tbody></table>
-      ${isBudget ? `<div class="totals"><p><span>Subtotal</span><strong>${money(h['Subtotal'])}</strong></p><p><span>Descuento</span><strong>${money(h['Descuento importe'])}</strong></p><p><span>Subtotal menos descuento</span><strong>${money(subtotalAfterDiscount)}</strong></p><p class="grand"><span>Total</span><strong>${money(h['Total'])}</strong></p></div><p style="text-align:right;color:#5f7076;font-size:11px">Importes expresados en pesos argentinos (ARS).</p>` : ''}
-      <div class="box notes"><span class="label">Observaciones / notas</span><p>${html(h['Observaciones'] || '')}</p></div>
-      </body></html>`;
-  }
-  function openModal(title, body) {
-    document.getElementById('modalTitle').textContent = title;
-    document.getElementById('modalContent').innerHTML = body;
-    document.getElementById('modalBackdrop').classList.remove('hidden');
-  }
-  function closeModal() { document.getElementById('modalBackdrop').classList.add('hidden'); document.getElementById('modalContent').innerHTML = ''; }
-  function field(name, value, required, full, type, label) {
-    return `<div class="field ${full ? 'full' : ''}"><label>${html(label || name)}${required ? ' *' : ''}</label><input name="${attr(name)}" type="${type || 'text'}" value="${attr(value || '')}" ${required ? 'required' : ''} ${type === 'number' ? 'min="0" step="0.01"' : ''}></div>`;
-  }
-  function hidden(name, value) { return `<input type="hidden" name="${attr(name)}" value="${attr(value || '')}">`; }
-  function textareaField(name, value, full, label) { return `<div class="field ${full === false ? '' : 'full'}"><label>${html(label || name)}</label><textarea name="${attr(name)}">${html(value || '')}</textarea></div>`; }
-  function selectField(name, options, selected, required, full, label) {
-    const normalized = options.map(o => typeof o === 'string' ? {value:o,label:o} : o);
-    return `<div class="field ${full ? 'full' : ''}"><label>${html(label || name)}${required ? ' *' : ''}</label><select name="${attr(name)}" ${required ? 'required' : ''}><option value="">Seleccionar…</option>${normalized.map(o => `<option value="${attr(o.value)}" ${String(o.value) === String(selected) ? 'selected' : ''}>${html(o.label)}</option>`).join('')}</select></div>`;
-  }
-  function actions(label) { return `<div class="form-actions"><button type="button" class="secondary-button" onclick="closeModal()">Cancelar</button><button type="submit" class="primary-button">${html(label || 'Guardar')}</button></div>`; }
-  function formObject(form) { return Object.fromEntries(new FormData(form).entries()); }
-  function metric(label, value, urgent) { return `<article class="metric-card ${urgent ? 'urgent' : ''}"><span class="metric-label">${html(label)}</span><strong class="metric-value">${html(value)}</strong></article>`; }
-  function quick(action, title, subtitle) { return `<button class="quick-action" data-quick="${action}">${html(title)}<small>${html(subtitle)}</small></button>`; }
-  function empty(message) { return `<div class="empty-state"><strong>${html(message)}</strong><span>El sistema se actualizará cuando haya movimientos.</span></div>`; }
-  function loading() { return '<div class="loading-card"><div class="spinner"></div><p>Cargando información…</p></div>'; }
-  function findRecord(moduleKey, fieldName, id) { return (state.records[moduleKey] || state.clients || []).find(r => String(r[fieldName]) === String(id)); }
-  function cell(column, value) {
-    if (/Precio|Importe|Subtotal|Total/.test(column)) return `<span class="amount">${money(value)}</span>`;
-    if (column === 'Estado' || column === 'Revisión' || column === 'Activo') return `<span class="pill ${pillClass(value)}">${html(value || '-')}</span>`;
-    const text = String(value || '-');
-    return html(text.length > 95 ? text.slice(0, 95) + '…' : text);
-  }
-  function pillClass(value) {
-    const v = normalize(value);
-    if (['recibido','en revision','borrador','enviado','preparado','despachado','apartado','pendiente','pendiente de pago'].includes(v) || v.includes('revisar')) return 'warning';
-    if (['aprobado','remitido','entregado','vendido','saldado','activo','si'].includes(v)) return 'success';
-    return 'neutral';
-  }
-  function money(value) { return new Intl.NumberFormat('es-AR', {style:'currency',currency:'ARS',maximumFractionDigits:2}).format(toNumber(value)); }
-  function budgetLinePrice(source, matchedProduct) {
-    const hasSavedPrice = source['Precio unitario'] !== undefined || source.price !== undefined;
-    const savedPrice = toNumber(source['Precio unitario'] !== undefined ? source['Precio unitario'] : source.price);
-    const catalogPrice = toNumber(matchedProduct && matchedProduct.precio);
-    if (hasSavedPrice && savedPrice > 0 && savedPrice < 1000 && catalogPrice >= 1000) return catalogPrice;
-    if (hasSavedPrice) return savedPrice;
-    return catalogPrice || '';
-  }
-  function toNumber(value) {
-    if (typeof value === 'number') return value;
-    let t = String(value || '').replace(/\$/g,'').replace(/\s/g,'');
-    if (!t) return 0;
-    const hasComma = t.includes(',');
-    const hasDot = t.includes('.');
-    if (hasComma && hasDot) {
-      t = t.lastIndexOf(',') > t.lastIndexOf('.')
-        ? t.replace(/\./g,'').replace(',','.')
-        : t.replace(/,/g,'');
-    } else if (hasComma) {
-      t = /^-?\d{1,3}(,\d{3})+$/.test(t) ? t.replace(/,/g,'') : t.replace(',','.');
-    } else if (hasDot && /^-?\d{1,3}(\.\d{3})+$/.test(t)) {
-      t = t.replace(/\./g,'');
-    }
-    return Number(t) || 0;
-  }
-  function normalize(value) { return String(value || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
-  function todayIso() { return new Date().toISOString().slice(0,10); }
-  function inputDate(value) {
-    const text = String(value || '').trim();
-    if (/^\d{4}-\d{2}-\d{2}/.test(text)) return text.slice(0, 10);
-    const match = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-    return match ? `${match[3]}-${match[2].padStart(2,'0')}-${match[1].padStart(2,'0')}` : todayIso();
-  }
-  function addDays(iso, days) { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + days); return d.toISOString().slice(0,10); }
-  function provinces() { return ['Buenos Aires','Ciudad Autónoma de Buenos Aires','Catamarca','Chaco','Chubut','Córdoba','Corrientes','Entre Ríos','Formosa','Jujuy','La Pampa','La Rioja','Mendoza','Misiones','Neuquén','Río Negro','Salta','San Juan','San Luis','Santa Cruz','Santa Fe','Santiago del Estero','Tierra del Fuego, Antártida e Islas del Atlántico Sur','Tucumán']; }
-  function html(value) { return String(value == null ? '' : value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c])); }
-  function attr(value) { return html(value); }
-  function showToast(message, error) {
-    const toast = document.getElementById('toast');
-    toast.textContent = message; toast.classList.toggle('error', !!error); toast.classList.remove('hidden');
-    clearTimeout(showToast.timer); showToast.timer = setTimeout(() => toast.classList.add('hidden'), 3500);
-  }
-  function showError(error) { showToast(error && error.message ? error.message : 'Ocurrió un error.', true); console.error(error); }
-  function server(name, ...args) {
+  return Number(t) || 0;
+}
+
+function normalize(value) {
+  return String(value || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
+function todayIso() { return new Date().toISOString().slice(0, 10); }
+
+function inputDate(value) {
+  const text = String(value || '').trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(text)) return text.slice(0, 10);
+  const match = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  return match ? `${match[3]}-${match[2].padStart(2, '0')}-${match[1].padStart(2, '0')}` : todayIso();
+}
+
+function addDays(iso, days) {
+  const d = new Date(iso + 'T12:00:00');
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function provinces() {
+  return ['Buenos Aires', 'Ciudad Autónoma de Buenos Aires', 'Catamarca', 'Chaco', 'Chubut', 'Córdoba', 'Corrientes', 'Entre Ríos', 'Formosa', 'Jujuy', 'La Pampa', 'La Rioja', 'Mendoza', 'Misiones', 'Neuquén', 'Río Negro', 'Salta', 'San Juan', 'San Luis', 'Santa Cruz', 'Santa Fe', 'Santiago del Estero', 'Tierra del Fuego, Antártida e Islas del Atlántico Sur', 'Tucumán'];
+}
+
+function html(value) {
+  return String(value == null ? '' : value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[c]));
+}
+
+function attr(value) { return html(value); }
+
+function showToast(message, error) {
+  const toast = document.getElementById('toast');
+  toast.textContent = message;
+  toast.classList.toggle('error', !!error);
+  toast.classList.remove('hidden');
+  clearTimeout(showToast.timer);
+  showToast.timer = setTimeout(() => toast.classList.add('hidden'), 3500);
+}
+
+function showError(error) {
+  showToast(error && error.message ? error.message : 'Ocurrió un error.', true);
+  console.error(error);
+}
+
+function server(name, ...args) {
   return new Promise(function (resolve, reject) {
     var cbName = 'jscbPanel_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
     var script = document.createElement('script');
     var done = false;
-    // Mismo motivo que en jsonp(): sin esto, un Web App desplegado viejo o
-    // sin permisos deja la promesa colgada para siempre (ventanas de
-    // impresión en blanco, botones que no vuelven a habilitarse, etc.)
-    // sin ningún aviso.
     var timeoutId = setTimeout(function () {
       if (done) return;
       done = true;
@@ -2093,13 +1712,11 @@ function invSubmitApartado() {
       if (script.parentNode) script.parentNode.removeChild(script);
       reject(new Error('No se pudo conectar con el servidor.'));
     };
-    var qs = '?callback=' + cbName
-      + '&accion=' + encodeURIComponent(name)
-      + '&args=' + encodeURIComponent(JSON.stringify(args));
+    var qs = '?callback=' + cbName + '&accion=' + encodeURIComponent(name) + '&args=' + encodeURIComponent(JSON.stringify(args));
     script.src = URL_API + qs;
     document.body.appendChild(script);
   });
 }
 </script>
-  </body>
+</body>
 </html>
